@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source "../**/*.blade.php";
+@source "../**/*.js";
+@source "../**/*.vue";
+
+@theme {
+    --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+    --font-display: 'Space Grotesk', 'Archivo', ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+    --bg-site: #f7f6f1;
+    --ink: #121212;
+    --muted: #6f6e68;
+    --line: #d6d5ce;
+    --surface: #fffef8;
+    --surface-dark: #101418;
+    --brand: #0f766e;
+    --accent: #ef4444;
+    --sand: #ede4d3;
+}
+
+html,
+body,
+#app {
+    min-height: 100%;
+}
+
+body {
+    background:
+        radial-gradient(circle at 10% 0%, rgba(15, 118, 110, 0.09), transparent 35%),
+        radial-gradient(circle at 90% 5%, rgba(239, 68, 68, 0.09), transparent 30%),
+        var(--bg-site);
+    color: var(--ink);
+}
+
+.bg-site {
+    background: transparent;
+}
+
+.text-ink {
+    color: var(--ink);
+}
+
+.font-display {
+    font-family: var(--font-display);
+}
+
+.glass {
+    background: color-mix(in oklab, var(--surface) 82%, white 18%);
+    border: 1px solid color-mix(in oklab, var(--line) 70%, white 30%);
+    backdrop-filter: blur(8px);
+}
+
+.chip {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.78rem;
+    line-height: 1;
+    letter-spacing: 0.01em;
+}
+
+.btn-main {
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    transition: transform .2s ease, opacity .2s ease;
+}
+
+.btn-main:hover {
+    transform: translateY(-1px);
+    opacity: .92;
+}
+
+.btn-soft {
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+}
