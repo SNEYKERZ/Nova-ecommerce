@@ -10,14 +10,18 @@ class CategoriaSeeder extends Seeder
     public function run(): void
     {
         $categorias = [
-            ['categoria' => 'CAMISETA', 'tipoDePrenda' => 'CAMISETA'],
-            ['categoria' => 'BASICA', 'tipoDePrenda' => 'BASICA'],
-            ['categoria' => 'SUMA', 'tipoDePrenda' => 'SUMA'],
-            ['categoria' => 'OTRAS', 'tipoDePrenda' => 'OTRAS'],
+            ['categoria' => 'CAMISETAS', 'tipoDePrenda' => 'SUPERIOR'],
+            ['categoria' => 'PANTALONES', 'tipoDePrenda' => 'INFERIOR'],
+            ['categoria' => 'CHAQUETAS', 'tipoDePrenda' => 'SUPERIOR'],
+            ['categoria' => 'BUZOS', 'tipoDePrenda' => 'SUPERIOR'],
+            ['categoria' => 'ACCESORIOS', 'tipoDePrenda' => 'ACCESORIO'],
         ];
 
         foreach ($categorias as $categoria) {
-            Categoria::create($categoria);
+            Categoria::updateOrCreate(
+                ['categoria' => $categoria['categoria']],
+                $categoria
+            );
         }
     }
 }

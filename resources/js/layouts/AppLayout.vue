@@ -7,10 +7,20 @@
         <nav class="hidden items-center gap-7 text-sm font-semibold md:flex">
           <Link href="/" class="text-[color:var(--ink)]/85 hover:text-[color:var(--ink)]">Inicio</Link>
           <Link href="/conocenos" class="text-[color:var(--ink)]/85 hover:text-[color:var(--ink)]">Marca</Link>
+          <Link v-if="isAdmin" href="/admin" class="text-[color:var(--ink)]/85 hover:text-[color:var(--ink)]">Panel Admin</Link>
+          <Link v-else href="/admin/login" class="text-[color:var(--ink)]/85 hover:text-[color:var(--ink)]">Login Admin</Link>
           <Link href="/carrito" class="relative inline-flex items-center gap-2 text-[color:var(--ink)]/85 hover:text-[color:var(--ink)]">
             Carrito
             <span class="rounded-full bg-[color:var(--ink)] px-2 py-0.5 text-xs text-white">{{ cartCount }}</span>
           </Link>
+          <button
+            v-if="isAdmin"
+            type="button"
+            class="rounded-full border border-[color:var(--line)] px-3 py-1 text-xs"
+            @click="logout"
+          >
+            Salir
+          </button>
         </nav>
 
         <Link href="/carrito" class="md:hidden rounded-full border border-[color:var(--line)] px-3 py-1.5 text-sm font-semibold">
@@ -36,11 +46,13 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3';
-import { onMounted, ref } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { computed, onMounted, ref } from 'vue';
 
 const cartCount = ref(0);
 const year = new Date().getFullYear();
+const page = usePage();
+const isAdmin = computed(() => ['admin', 'super_admin'].includes(page.props.auth?.user?.role || ''));
 
 const syncCart = async () => {
   try {
@@ -56,4 +68,8 @@ onMounted(() => {
   syncCart();
   window.addEventListener('cart-updated', syncCart);
 });
+
+const logout = () => {
+  router.post('/admin/logout');
+};
 </script>

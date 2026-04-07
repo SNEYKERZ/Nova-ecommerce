@@ -203,7 +203,7 @@ class CarritoController extends Controller
             $total += $subtotal;
 
             // Contar camisetas para descuentos
-            if ($item->producto->categoria && $item->producto->categoria->categoria === 'CAMISETA') {
+            if ($item->producto->categoria && str_starts_with($item->producto->categoria->categoria, 'CAMISETA')) {
                 $contadorCamisetas += $item->cantidad;
             }
         }

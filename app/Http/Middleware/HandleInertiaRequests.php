@@ -32,16 +32,20 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         return array_merge(parent::share($request), [
-            // Compartir datos globales del usuario si está autenticado
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user()
+                    ? [
+                        'id' => $request->user()->id,
+                        'name' => $request->user()->name,
+                        'email' => $request->user()->email,
+                        'role' => $request->user()->role,
+                    ]
+                    : null,
             ],
-            // Datos globales de la aplicación
             'app' => [
                 'name' => config('app.name', 'WebCaps'),
                 'env' => config('app.env'),
             ],
-            // Flash messages
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),
                 'success' => fn () => $request->session()->get('success'),

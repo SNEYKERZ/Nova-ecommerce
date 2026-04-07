@@ -6,6 +6,7 @@ use App\Models\Carrito;
 use App\Models\Categoria;
 use App\Models\Noticia;
 use App\Models\Producto;
+use Carbon\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -68,6 +69,9 @@ class StorefrontController extends Controller
     {
         $imagenPrincipal = $producto->foto ? asset('storage/'.$producto->foto) : asset('images/sinfoto.jpg');
         $galeria = collect();
+        $isNewByDate = $producto->created_at instanceof Carbon
+            ? $producto->created_at->greaterThanOrEqualTo(now()->subDays(30))
+            : false;
 
         if ($detalle && $producto->relationLoaded('imagenes')) {
             $galeria = $producto->imagenes->map(function ($imagen) {
@@ -90,8 +94,10 @@ class StorefrontController extends Controller
             'tallas' => $producto->tallas ? array_values(array_filter(explode(',', $producto->tallas))) : [],
             'foto' => $imagenPrincipal,
             'descripcion' => $producto->descripcion ?: 'Producto versatil para una tienda e-commerce moderna.',
-            'destacado' => (bool) ($producto->destacado ?? false),
-            'nuevo' => (bool) ($producto->nuevo ?? false),
+            'destacado' => (bool) ($producto->getAttribute('destacado') ?? false),
+            'nuevo' => (bool) ($producto->getAttribute('nuevo') ?? false),
+            'nuevaColeccion' => (bool) ($producto->getAttribute('nuevo') ?? false) || $isNewByDate,
+            'createdAt' => $producto->created_at?->toIso8601String(),
             'galeria' => $galeria,
             'tieneStock' => $producto->tiene_stock,
         ];

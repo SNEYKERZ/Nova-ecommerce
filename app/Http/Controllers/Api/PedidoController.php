@@ -102,7 +102,7 @@ class PedidoController extends Controller
             $contadorCamisetas = 0;
             foreach ($itemsParaCrear as $item) {
                 $producto = \App\Models\Producto::find($item['producto_id']);
-                if ($producto->categoria && $producto->categoria->categoria === 'CAMISETA') {
+                if ($producto->categoria && str_starts_with($producto->categoria->categoria, 'CAMISETA')) {
                     $contadorCamisetas += $item['cantidad'];
                 }
             }
