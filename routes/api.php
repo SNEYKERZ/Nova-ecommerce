@@ -37,14 +37,6 @@ Route::get('/categorias', [CategoriaController::class, 'index']);
 Route::get('/categorias/{id}', [CategoriaController::class, 'show']);
 Route::get('/categorias/{id}/productos', [CategoriaController::class, 'productos']);
 
-// ==================== CARRITO ====================
-
-Route::get('/carrito', [CarritoController::class, 'show']);
-Route::post('/carrito/agregar', [CarritoController::class, 'agregar']);
-Route::put('/carrito/actualizar/{id}', [CarritoController::class, 'actualizar']);
-Route::delete('/carrito/eliminar/{id}', [CarritoController::class, 'eliminar']);
-Route::delete('/carrito/vaciar', [CarritoController::class, 'vaciar']);
-
 // ==================== PEDIDOS ====================
 
 Route::post('/pedidos', [PedidoController::class, 'store']);

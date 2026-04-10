@@ -9,10 +9,12 @@ use App\Models\Oferta;
 use App\Models\Producto;
 use App\Models\ProductoImagen;
 use App\Models\ProductoVariante;
+use App\Models\StoreSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,6 +22,11 @@ class AdminController extends Controller
 {
     public function dashboard(): Response
     {
+        $settings = StoreSetting::firstOrCreate(
+            ['id' => 1],
+            ['store_name' => 'Nova Commerce']
+        );
+
         $productos = Producto::with(['categoria', 'variantes', 'imagenes'])
             ->orderByDesc('id')
             ->get()
@@ -58,6 +65,10 @@ class AdminController extends Controller
             'categorias' => Categoria::orderBy('categoria')->get(['id', 'categoria']),
             'productos' => $productos,
             'insumos' => Insumo::orderBy('nombre')->get(),
+            'settings' => [
+                'store_name' => $settings->store_name,
+                'logo_url' => $settings->logo_path ? asset('storage/'.$settings->logo_path) : null,
+            ],
             'ofertas' => Oferta::with(['producto:id,referencia', 'categoria:id,categoria'])
                 ->orderByDesc('id')
                 ->get()
@@ -230,14 +241,19 @@ class AdminController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'sku' => ['required', 'string', 'max:80', 'unique:insumos,sku'],
             'unidad' => ['required', 'string', 'max:50'],
+            'tipo_registro' => ['required', 'in:PAQUETE,UNIDAD'],
+            'unidades_por_paquete' => ['nullable', 'integer', 'min:1'],
+            'cantidad_compra' => ['nullable', 'integer', 'min:1'],
+            'costo_total_compra' => ['required', 'numeric', 'min:0.01'],
             'stock_actual' => ['required', 'integer', 'min:0'],
             'stock_minimo' => ['required', 'integer', 'min:0'],
-            'costo_unitario' => ['required', 'numeric', 'min:0'],
             'proveedor' => ['nullable', 'string', 'max:255'],
             'activo' => ['required', 'boolean'],
         ]);
 
-        Insumo::create($validated);
+        $payload = $this->normalizeSupplyPayload($validated);
+
+        Insumo::create($payload);
 
         return response()->json(['success' => true, 'message' => 'Insumo creado.']);
     }
@@ -248,14 +264,19 @@ class AdminController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'sku' => ['required', 'string', 'max:80', 'unique:insumos,sku,'.$insumo->id],
             'unidad' => ['required', 'string', 'max:50'],
+            'tipo_registro' => ['required', 'in:PAQUETE,UNIDAD'],
+            'unidades_por_paquete' => ['nullable', 'integer', 'min:1'],
+            'cantidad_compra' => ['nullable', 'integer', 'min:1'],
+            'costo_total_compra' => ['required', 'numeric', 'min:0.01'],
             'stock_actual' => ['required', 'integer', 'min:0'],
             'stock_minimo' => ['required', 'integer', 'min:0'],
-            'costo_unitario' => ['required', 'numeric', 'min:0'],
             'proveedor' => ['nullable', 'string', 'max:255'],
             'activo' => ['required', 'boolean'],
         ]);
 
-        $insumo->update($validated);
+        $payload = $this->normalizeSupplyPayload($validated);
+
+        $insumo->update($payload);
 
         return response()->json(['success' => true, 'message' => 'Insumo actualizado.']);
     }
@@ -265,6 +286,29 @@ class AdminController extends Controller
         $insumo->delete();
 
         return response()->json(['success' => true, 'message' => 'Insumo eliminado.']);
+    }
+
+    public function updateStoreSettings(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'store_name' => ['required', 'string', 'max:255'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+        ]);
+
+        $settings = StoreSetting::firstOrCreate(['id' => 1], ['store_name' => 'Nova Commerce']);
+        $settings->store_name = $validated['store_name'];
+
+        if ($request->hasFile('logo')) {
+            if ($settings->logo_path) {
+                Storage::disk('public')->delete($settings->logo_path);
+            }
+
+            $settings->logo_path = $request->file('logo')->store('store', 'public');
+        }
+
+        $settings->save();
+
+        return response()->json(['success' => true, 'message' => 'Configuracion de tienda actualizada.']);
     }
 
     private function syncStockBySize(Producto $producto, array $stocks): void
@@ -331,5 +375,36 @@ class AdminController extends Controller
             $producto->foto = $firstPath;
             $producto->save();
         }
+    }
+
+    private function normalizeSupplyPayload(array $validated): array
+    {
+        $mode = $validated['tipo_registro'];
+        $total = (float) $validated['costo_total_compra'];
+
+        if ($mode === 'PAQUETE') {
+            $units = (int) ($validated['unidades_por_paquete'] ?? 0);
+            if ($units <= 0) {
+                throw ValidationException::withMessages([
+                    'unidades_por_paquete' => 'Debes indicar unidades por paquete.',
+                ]);
+            }
+
+            $validated['cantidad_compra'] = null;
+            $validated['costo_unitario'] = round($total / $units, 2);
+            return $validated;
+        }
+
+        $qty = (int) ($validated['cantidad_compra'] ?? 0);
+        if ($qty <= 0) {
+            throw ValidationException::withMessages([
+                'cantidad_compra' => 'Debes indicar cantidad comprada.',
+            ]);
+        }
+
+        $validated['unidades_por_paquete'] = null;
+        $validated['costo_unitario'] = round($total / $qty, 2);
+
+        return $validated;
     }
 }

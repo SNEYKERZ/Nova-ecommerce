@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\StoreSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -31,6 +33,8 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $settings = Schema::hasTable('store_settings') ? StoreSetting::first() : null;
+
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $request->user()
@@ -43,7 +47,8 @@ class HandleInertiaRequests extends Middleware
                     : null,
             ],
             'app' => [
-                'name' => config('app.name', 'WebCaps'),
+                'name' => $settings?->store_name ?? config('app.name', 'WebCaps'),
+                'logo' => $settings?->logo_path ? asset('storage/'.$settings->logo_path) : null,
                 'env' => config('app.env'),
             ],
             'flash' => [

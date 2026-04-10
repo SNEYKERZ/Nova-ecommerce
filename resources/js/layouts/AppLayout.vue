@@ -2,7 +2,10 @@
   <div class="min-h-screen">
     <header class="sticky top-0 z-40 border-b border-black/5 bg-[color:var(--surface)]/90 backdrop-blur">
       <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" class="font-display text-xl font-bold tracking-tight">NOVA COMMERCE</Link>
+        <Link href="/" class="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
+          <img v-if="appLogo" :src="appLogo" alt="Logo tienda" class="h-8 w-8 rounded-full object-cover" />
+          <span>{{ appName }}</span>
+        </Link>
 
         <nav class="hidden items-center gap-7 text-sm font-semibold md:flex">
           <Link href="/" class="text-[color:var(--ink)]/85 hover:text-[color:var(--ink)]">Inicio</Link>
@@ -53,6 +56,8 @@ const cartCount = ref(0);
 const year = new Date().getFullYear();
 const page = usePage();
 const isAdmin = computed(() => ['admin', 'super_admin'].includes(page.props.auth?.user?.role || ''));
+const appName = computed(() => page.props.app?.name || 'Nova Commerce');
+const appLogo = computed(() => page.props.app?.logo || null);
 
 const syncCart = async () => {
   try {

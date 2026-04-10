@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Api\CarritoController;
 use App\Http\Controllers\StorefrontController;
 
 /*
@@ -16,6 +17,14 @@ Route::get('/carrito', [StorefrontController::class, 'cart'])->name('cart');
 Route::get('/productos/{id}', [StorefrontController::class, 'product'])->name('product.show');
 Route::get('/conocenos', [StorefrontController::class, 'about'])->name('about');
 Route::get('/pedido/gracias/{id}', [StorefrontController::class, 'thankYou'])->name('order.thankyou');
+
+Route::prefix('api')->group(function () {
+    Route::get('/carrito', [CarritoController::class, 'show']);
+    Route::post('/carrito/agregar', [CarritoController::class, 'agregar']);
+    Route::put('/carrito/actualizar/{id}', [CarritoController::class, 'actualizar']);
+    Route::delete('/carrito/eliminar/{id}', [CarritoController::class, 'eliminar']);
+    Route::delete('/carrito/vaciar', [CarritoController::class, 'vaciar']);
+});
 
 Route::middleware('guest')->group(function () {
     Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
@@ -35,6 +44,7 @@ Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::delete('/ofertas/{oferta}', [AdminController::class, 'deleteOffer'])->name('admin.offers.delete');
 
     Route::put('/noticias', [AdminController::class, 'updateNews'])->name('admin.news.update');
+    Route::post('/settings', [AdminController::class, 'updateStoreSettings'])->name('admin.settings.update');
 
     Route::post('/insumos', [AdminController::class, 'storeSupply'])->name('admin.supplies.store');
     Route::put('/insumos/{insumo}', [AdminController::class, 'updateSupply'])->name('admin.supplies.update');
