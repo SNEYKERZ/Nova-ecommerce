@@ -9,7 +9,8 @@ use App\Models\Oferta;
 use App\Models\Producto;
 use App\Models\ProductoImagen;
 use App\Models\ProductoVariante;
-use App\Models\StoreSetting;
+use App\Models\Store;
+use App\Services\TenantManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,10 +23,14 @@ class AdminController extends Controller
 {
     public function dashboard(): Response
     {
-        $settings = StoreSetting::firstOrCreate(
-            ['id' => 1],
-            ['store_name' => 'Nova Commerce']
-        );
+        // Obtener el store actual desde el TenantManager
+        $tenantManager = app(TenantManager::class);
+        $store = $tenantManager->getStore();
+
+        // Si es super admin y no hay store específico, mostrar dashboard diferente
+        // o redirigir a la gestión de stores
+        
+        $settings = $store ? $store : null;
 
         $productos = Producto::with(['categoria', 'variantes', 'imagenes'])
             ->orderByDesc('id')
@@ -66,8 +71,8 @@ class AdminController extends Controller
             'productos' => $productos,
             'insumos' => Insumo::orderBy('nombre')->get(),
             'settings' => [
-                'store_name' => $settings->store_name,
-                'logo_url' => $settings->logo_path ? asset('storage/'.$settings->logo_path) : null,
+                'store_name' => $settings?->nombre ?? 'Mi Tienda',
+                'logo_url' => $settings?->logo_path ? asset('storage/'.$settings->logo_path) : null,
             ],
             'ofertas' => Oferta::with(['producto:id,referencia', 'categoria:id,categoria'])
                 ->orderByDesc('id')
@@ -90,6 +95,11 @@ class AdminController extends Controller
                     ];
                 }),
             'noticia' => Noticia::first()?->campos_adicionales ?? '',
+            'currentStore' => $store ? [
+                'id' => $store->id,
+                'slug' => $store->slug,
+                'nombre' => $store->nombre,
+            ] : null,
         ]);
     }
 
@@ -295,18 +305,24 @@ class AdminController extends Controller
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
         ]);
 
-        $settings = StoreSetting::firstOrCreate(['id' => 1], ['store_name' => 'Nova Commerce']);
-        $settings->store_name = $validated['store_name'];
+        $tenantManager = app(TenantManager::class);
+        $store = $tenantManager->getStore();
 
-        if ($request->hasFile('logo')) {
-            if ($settings->logo_path) {
-                Storage::disk('public')->delete($settings->logo_path);
-            }
-
-            $settings->logo_path = $request->file('logo')->store('store', 'public');
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'No hay tienda seleccionada.'], 422);
         }
 
-        $settings->save();
+        $store->nombre = $validated['store_name'];
+
+        if ($request->hasFile('logo')) {
+            if ($store->logo_path) {
+                Storage::disk('public')->delete($store->logo_path);
+            }
+
+            $store->logo_path = $request->file('logo')->store('store', 'public');
+        }
+
+        $store->save();
 
         return response()->json(['success' => true, 'message' => 'Configuracion de tienda actualizada.']);
     }

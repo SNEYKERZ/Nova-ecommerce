@@ -6,6 +6,7 @@ use App\Models\Carrito;
 use App\Models\Categoria;
 use App\Models\Noticia;
 use App\Models\Producto;
+use App\Services\TenantManager;
 use Carbon\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,6 +15,7 @@ class StorefrontController extends Controller
 {
     public function home(): Response
     {
+        // El trait HasTenant filtra automáticamente por el store actual
         $productos = Producto::with('categoria')
             ->where('estado', 'DISPONIBLE')
             ->orderBy('id', 'desc')
@@ -27,10 +29,18 @@ class StorefrontController extends Controller
                 'nombre' => $categoria->categoria,
             ]);
 
+        // Obtener info del store actual
+        $tenantManager = app(TenantManager::class);
+        $store = $tenantManager->getStore();
+
         return Inertia::render('HomePage', [
             'productos' => $productos,
             'categorias' => $categorias,
             'promociones' => Noticia::getPromocionesActivas(),
+            'store' => $store ? [
+                'nombre' => $store->nombre,
+                'logo' => $store->logo_path ? asset('storage/'.$store->logo_path) : null,
+            ] : null,
         ]);
     }
 
@@ -55,7 +65,17 @@ class StorefrontController extends Controller
 
     public function about(): Response
     {
-        return Inertia::render('AboutPage');
+        $tenantManager = app(TenantManager::class);
+        $store = $tenantManager->getStore();
+
+        return Inertia::render('AboutPage', [
+            'store' => $store ? [
+                'nombre' => $store->nombre,
+                'descripcion' => $store->descripcion,
+                'email' => $store->email,
+                'telefono' => $store->telefono,
+            ] : null,
+        ]);
     }
 
     public function thankYou(int $id): Response

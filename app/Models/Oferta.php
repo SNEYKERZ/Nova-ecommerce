@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -24,7 +25,7 @@ class Wishlist extends Model
 
 class Resena extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenant;
 
     protected $fillable = [
         'producto_id',
@@ -75,7 +76,7 @@ class HistorialPrecio extends Model
 
 class Oferta extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenant;
 
     protected $fillable = [
         'titulo',

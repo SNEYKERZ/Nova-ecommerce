@@ -43,6 +43,11 @@ class AdminAuthController extends Controller
             ]);
         }
 
+        // Redirigir según el rol
+        if ($user->role === 'super_admin') {
+            return redirect()->intended('/super-admin');
+        }
+
         return redirect()->intended('/admin');
     }
 

@@ -4,13 +4,24 @@ namespace Database\Seeders;
 
 use App\Models\Categoria;
 use App\Models\Producto;
+use App\Models\Store;
 use Illuminate\Database\Seeder;
 
 class ProductoSeeder extends Seeder
 {
     public function run(): void
     {
-        $categoriaIds = Categoria::pluck('id', 'categoria');
+        $store = Store::where('slug', 'demo')->first();
+        
+        if (!$store) {
+            $this->command->warn('No se encontró el store demo.');
+            return;
+        }
+
+        // Ignorar el scope de tenant para el seeder
+        Producto::ignoreTenantScope();
+
+        $categoriaIds = Categoria::forStore($store)->pluck('id', 'categoria');
 
         $productos = [
             ['referencia' => 'Camiseta Oversize Beige', 'precio' => 89900, 'categoria' => 'CAMISETAS', 'tallas' => 'S,M,L,XL', 'dias' => 8],
@@ -43,17 +54,22 @@ class ProductoSeeder extends Seeder
             }
 
             Producto::updateOrCreate(
-                ['referencia' => $item['referencia']],
+                ['referencia' => $item['referencia'], 'store_id' => $store->id],
                 [
                     'precio' => $item['precio'],
                     'foto' => null,
                     'tallas' => $item['tallas'],
                     'categoria_id' => $categoriaId,
+                    'store_id' => $store->id,
                     'estado' => 'DISPONIBLE',
+                    'destacado' => in_array($item['categoria'], ['CAMISETAS', 'CHAQUETAS']),
+                    'nuevo' => $item['dias'] <= 10,
                     'created_at' => now()->subDays($item['dias']),
                     'updated_at' => now(),
                 ]
             );
         }
+
+        Producto::restoreTenantScope();
     }
 }
