@@ -23,6 +23,7 @@ class Producto extends Model
         'precio' => 'decimal:2',
         'destacado' => 'boolean',
         'nuevo' => 'boolean',
+        'nueva_coleccion' => 'boolean',
     ];
 
     // Relaciones

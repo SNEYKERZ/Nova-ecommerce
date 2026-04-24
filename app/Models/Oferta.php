@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Wishlist extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenant;
 
     protected $fillable = ['user_id', 'sesion_id', 'producto_id'];
 
@@ -54,7 +54,7 @@ class Resena extends Model
 
 class HistorialPrecio extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenant;
 
     protected $fillable = [
         'producto_id',

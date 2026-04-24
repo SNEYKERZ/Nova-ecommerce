@@ -12,52 +12,66 @@ class ResolveTenant
     /**
      * Handle an incoming request.
      *
-     * Detecta el tenant desde el subdomain o dominio y lo establece en el TenantManager.
-     * Las rutas públicas (tienda) siempre requieren un tenant válido.
-     * Las rutas de super admin no requieren tenant.
+     * Rutas que NO requieren tenant:
+     * - super-admin (gestión global)
+     - auth (login/logout)
+     - api/* (excepto admin operations)
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Usar el binding correcto - el servicio registrado como singleton
         $tenantManager = app(TenantManager::class);
-
-        // Rutas que NO requieren tenant (son del sistema, no de tiendas)
-        $noTenantRoutes = [
-            'admin/login',
-            'admin/logout',
-        ];
-
-        // Si es ruta del sistema (super-admin), continuar sin tenant
         $path = $request->path();
-        if ($request->is('super-admin') || in_array($path, $noTenantRoutes)) {
+
+        // 1. Rutas del sistema - no requieren tenant
+        if ($request->is('super-admin*') || 
+            $request->is('admin/login') || 
+            $request->is('admin/logout') ||
+            $request->is('sanctum/csrf-cookie')) {
             return $next($request);
         }
 
+        // 2. Rutas API públicas - pueden ejecutarse sin store
+        // El trait HasTenant filtra automáticamente por store si existe
+        if (str_starts_with($path, 'api/')) {
+            $store = $tenantManager->resolveFromRequest($request);
+            $tenantManager->setStore($store);
+            
+            if ($store) {
+                view()->share('tenant', $store);
+                view()->share('currentStore', $store);
+            }
+            
+            return $next($request);
+        }
+
+        // 3. Rutas web (frontend) - requieren store válido
         // Detectar si el usuario logueado es super_admin
         if ($user = $request->user()) {
             if ($user->role === 'super_admin') {
                 $tenantManager->setSuperAdmin(true);
-                // Super admin puede acceder a super-admin sin store
-                if ($request->is('super-admin')) {
-                    return $next($request);
-                }
+                return $next($request);
             }
         }
 
-        // Resolver el tenant desde el request (para tiendas)
+        // Resolver el tenant desde el request
         $store = $tenantManager->resolveFromRequest($request);
-        
-        // Establecer el store en el TenantManager
         $tenantManager->setStore($store);
 
-        // Compartir el store con las vistas
         if ($store) {
             view()->share('tenant', $store);
             view()->share('currentStore', $store);
         }
 
-        // Verificar que existe un tenant válido para las rutas de tienda
-        // Super admin puede acceder aunque no haya store
+        // En desarrollo local (localhost), permitir acceso aunque no haya tienda
+        // para poder crear la primera tienda
+        $isLocal = in_array($request->getHost(), ['localhost', '127.0.0.1']) || 
+                  str_starts_with($request->getHost(), 'localhost:');
+        
+        if ($isLocal) {
+            return $next($request);
+        }
+
+        // Frontend requiere store cuando no es localhost
         if (!$store && !$tenantManager->isSuperAdmin()) {
             abort(404, 'Tienda no encontrada');
         }

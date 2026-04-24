@@ -3,10 +3,15 @@
 use App\Models\Producto;
 use App\Models\Categoria;
 use App\Models\Noticia;
+use App\Models\BloqueHome;
 
 $productos = Producto::with('categoria')->where('estado', 'DISPONIBLE')->orderBy('id', 'desc')->get();
 $categorias = Categoria::all();
 $promociones = Noticia::getPromocionesActivas();
+
+// Obtener bloques home
+$bloque1 = BloqueHome::getPorPosicion(1);
+$bloque2 = BloqueHome::getPorPosicion(2);
 ?>
 
 <!DOCTYPE html>
@@ -40,10 +45,14 @@ $promociones = Noticia::getPromocionesActivas();
         .btn-shop {
             background-color: #0c6e09;
             color: white;
+            cursor: pointer;
         }
         .btn-shop:hover {
             background-color: #0a5507;
             color: white;
+        }
+        .product-card a, .product-card button, .product-card .btn {
+            cursor: pointer;
         }
         .promo-bar {
             background: linear-gradient(90deg, #ff6b6b, #ffa500);
@@ -122,8 +131,49 @@ $promociones = Noticia::getPromocionesActivas();
         </div>
     </nav>
 
-    <!-- Promo Bar -->
-    @if(count($promociones) > 0)
+    <!-- Bloque Home 1 (antes promo bar) -->
+    <!-- DEBUG: bloque1 = {{ $bloque1 ? '存在 tipo=' . $bloque1->tipo . ' activo=' . ($bloque1->activo ? '1' : '0') : 'null' }} -->
+    @if($bloque1 && $bloque1->activo)
+    <section class="bloque-home-section py-3">
+        <div class="container">
+            @if($bloque1->tipo === 'banner' && $bloque1->imagenes->count() > 0)
+                <div id="bloque1Carousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+                    <div class="carousel-inner">
+                        @foreach($bloque1->imagenes as $key => $imagen)
+                            <div class="carousel-item {{ $key === 0 ? 'active' : '' }}">
+                                @if($imagen->url_destino)
+                                    <a href="{{ $imagen->url_destino }}">
+                                        <img src="{{ asset('storage/' . $imagen->imagen) }}" class="d-block w-100" alt="Banner {{ $key + 1 }}" style="max-height: 300px; object-fit: cover;">
+                                    </a>
+                                @else
+                                    <img src="{{ asset('storage/' . $imagen->imagen) }}" class="d-block w-100" alt="Banner {{ $key + 1 }}" style="max-height: 300px; object-fit: cover;">
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                    @if($bloque1->imagenes->count() > 1)
+                        <button class="carousel-control-prev" type="button" data-bs-target="#bloque1Carousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#bloque1Carousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        </button>
+                    @endif
+                </div>
+            @elseif($bloque1->tipo === 'texto')
+                <div class="bloque-texto" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    @if($bloque1->titulo)
+                        <h3 class="{{ $bloque1->tamano_texto === 'grande' ? 'display-5' : 'h4' }}">{{ $bloque1->titulo }}</h3>
+                    @endif
+                    @if($bloque1->contenido)
+                        <p class="mb-0">{{ $bloque1->contenido }}</p>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </section>
+    @elseif(count($promociones) > 0)
+    <!-- Legacy promo bar si no hay bloque configurado -->
     <div class="promo-bar">
         <div class="container">
             <span>
@@ -155,6 +205,48 @@ $promociones = Noticia::getPromocionesActivas();
             <span class="carousel-control-next-icon" aria-hidden="true"></span>
         </button>
     </div>
+
+    <!-- Bloque Home 2 (entre carousel y productos) -->
+    @if($bloque2 && $bloque2->activo)
+    <section class="bloque-home-section py-3">
+        <div class="container">
+            @if($bloque2->tipo === 'banner' && $bloque2->imagenes->count() > 0)
+                <div id="bloque2Carousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+                    <div class="carousel-inner">
+                        @foreach($bloque2->imagenes as $key => $imagen)
+                            <div class="carousel-item {{ $key === 0 ? 'active' : '' }}">
+                                @if($imagen->url_destino)
+                                    <a href="{{ $imagen->url_destino }}">
+                                        <img src="{{ asset('storage/' . $imagen->imagen) }}" class="d-block w-100" alt="Banner {{ $key + 1 }}" style="max-height: 300px; object-fit: cover;">
+                                    </a>
+                                @else
+                                    <img src="{{ asset('storage/' . $imagen->imagen) }}" class="d-block w-100" alt="Banner {{ $key + 1 }}" style="max-height: 300px; object-fit: cover;">
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                    @if($bloque2->imagenes->count() > 1)
+                        <button class="carousel-control-prev" type="button" data-bs-target="#bloque2Carousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#bloque2Carousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        </button>
+                    @endif
+                </div>
+            @elseif($bloque2->tipo === 'texto')
+                <div class="bloque-texto" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    @if($bloque2->titulo)
+                        <h3 class="{{ $bloque2->tamano_texto === 'grande' ? 'display-5' : 'h4' }}">{{ $bloque2->titulo }}</h3>
+                    @endif
+                    @if($bloque2->contenido)
+                        <p class="mb-0">{{ $bloque2->contenido }}</p>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </section>
+    @endif
 
     <!-- Products Section -->
     <main class="container py-5" id="productos">

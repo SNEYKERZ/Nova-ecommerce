@@ -19,6 +19,17 @@ use App\Http\Controllers\Api\ResenaController;
 |--------------------------------------------------------------------------
 */
 
+// Rutas API también necesitan resolver el tenant desde el subdomain
+Route::middleware('tenant')->group(function () {
+
+// ==================== BLOQUES HOME ====================
+
+Route::get('/bloques-home', [\App\Http\Controllers\Api\BloqueHomeController::class, 'index']);
+Route::post('/bloques-home', [\App\Http\Controllers\Api\BloqueHomeController::class, 'store']);
+Route::post('/bloques-home/{id}/imagenes', [\App\Http\Controllers\Api\BloqueHomeController::class, 'storeImagen']);
+Route::put('/bloques-home/{id}/imagenes/{imgId}', [\App\Http\Controllers\Api\BloqueHomeController::class, 'updateImagen']);
+Route::delete('/bloques-home/{id}/imagenes/{imgId}', [\App\Http\Controllers\Api\BloqueHomeController::class, 'destroyImagen']);
+
 // ==================== PRODUCTOS ====================
 
 // Rutas públicas
@@ -92,3 +103,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/resenas/pendientes', [ResenaController::class, 'pendientes']);
     Route::put('/resenas/{id}/aprobar', [ResenaController::class, 'aprobar']);
 });
+
+}); // Fin grupo tenant

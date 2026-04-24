@@ -99,23 +99,6 @@ class SuperAdminController extends Controller
             'recentOrders' => $recentOrders,
         ]);
     }
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'store_id' => $user->store_id,
-                    'store_nombre' => $user->store_id ? Store::find($user->store_id)?->nombre : null,
-                    'created_at' => $user->created_at?->toIso8601String(),
-                ];
-            });
-
-        return Inertia::render('admin/SuperAdminDashboard', [
-            'stats' => $stats,
-            'stores' => $stores,
-            'users' => $users,
-        ]);
-    }
 
     /**
      * Crear una nueva tienda

@@ -9,6 +9,9 @@ class StoreSeeder extends Seeder
 {
     public function run(): void
     {
+        // Sin global scopes para el seeder
+        Store::withoutGlobalScopes();
+
         // Tienda demo para desarrollo
         Store::updateOrCreate(
             ['slug' => 'demo'],

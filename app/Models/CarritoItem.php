@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class CarritoItem extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenant;
 
     protected $fillable = ['carrito_id', 'producto_id', 'cantidad', 'talla'];
 

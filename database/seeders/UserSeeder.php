@@ -11,15 +11,15 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $store = Store::where('slug', 'demo')->first();
+        // Sin global scopes para el seeder
+        User::withoutGlobalScopes();
+        
+        $store = Store::withoutGlobalScopes()->where('slug', 'demo')->first();
         
         if (!$store) {
-            $this->command->warn('No se encontró el store demo.');
+            $this->command->warn('No se encontró el store demo. Ejecuta StoreSeeder primero.');
             return;
         }
-
-        // Ignorar el scope de tenant para el seeder
-        User::ignoreTenantScope();
 
         $users = [
             [
@@ -58,7 +58,5 @@ class UserSeeder extends Seeder
                 ]
             );
         }
-
-        User::restoreTenantScope();
     }
 }

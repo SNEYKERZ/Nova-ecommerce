@@ -21,7 +21,7 @@ use Inertia\Response;
 
 class AdminController extends Controller
 {
-    public function dashboard(): Response
+    public function dashboard(Request $request): Response
     {
         // Obtener el store actual desde el TenantManager
         $tenantManager = app(TenantManager::class);
@@ -32,33 +32,48 @@ class AdminController extends Controller
         
         $settings = $store ? $store : null;
 
+        $search = $request->input('search', '');
+        $perPage = 10;
+
+        // Productos con búsqueda y paginación
         $productos = Producto::with(['categoria', 'variantes', 'imagenes'])
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('referencia', 'like', "%{$search}%")
+                      ->orWhere('nombre', 'like', "%{$search}%")
+                      ->orWhere('codigo', 'like', "%{$search}%")
+                      ->orWhereHas('categoria', fn ($cq) => $cq->where('categoria', 'like', "%{$search}%"));
+                });
+            })
             ->orderByDesc('id')
-            ->get()
-            ->map(function (Producto $producto) {
-                return [
-                    'id' => $producto->id,
-                    'referencia' => $producto->referencia,
-                    'precio' => (float) $producto->precio,
-                    'categoria_id' => $producto->categoria_id,
-                    'categoria' => $producto->categoria?->categoria,
-                    'tallas' => $producto->tallas,
-                    'estado' => $producto->estado,
-                    'stock_total' => (int) $producto->variantes->sum('stock'),
-                    'stock_por_talla' => $producto->variantes->map(fn ($variante) => [
-                        'id' => $variante->id,
-                        'talla' => $variante->talla,
-                        'stock' => (int) $variante->stock,
-                    ])->values(),
-                    'imagenes' => $producto->imagenes->sortBy('orden')->map(function (ProductoImagen $imagen) {
-                        return [
-                            'id' => $imagen->id,
-                            'url' => asset('storage/'.$imagen->imagen),
-                            'es_principal' => (bool) $imagen->es_principal,
-                        ];
-                    })->values(),
-                ];
-            });
+            ->paginate($perPage)->withQueryString();
+
+        // Mapear datos manteniendo la paginación
+        $productos->getCollection()->transform(function (Producto $producto) {
+            return [
+                'id' => $producto->id,
+                'referencia' => $producto->referencia,
+                'precio' => (float) $producto->precio,
+                'categoria_id' => $producto->categoria_id,
+                'categoria' => $producto->categoria?->categoria,
+                'tallas' => $producto->tallas,
+                'estado' => $producto->estado,
+                'nueva_coleccion' => (bool) $producto->nueva_coleccion,
+                'stock_total' => (int) $producto->variantes->sum('stock'),
+                'stock_por_talla' => $producto->variantes->map(fn ($variante) => [
+                    'id' => $variante->id,
+                    'talla' => $variante->talla,
+                    'stock' => (int) $variante->stock,
+                ])->values(),
+                'imagenes' => $producto->imagenes->sortBy('orden')->map(function (ProductoImagen $imagen) {
+                    return [
+                        'id' => $imagen->id,
+                        'url' => asset('storage/'.$imagen->imagen),
+                        'es_principal' => (bool) $imagen->es_principal,
+                    ];
+                })->values(),
+            ];
+        });
 
         return Inertia::render('admin/AdminDashboardPage', [
             'stats' => [
@@ -69,32 +84,19 @@ class AdminController extends Controller
             ],
             'categorias' => Categoria::orderBy('categoria')->get(['id', 'categoria']),
             'productos' => $productos,
-            'insumos' => Insumo::orderBy('nombre')->get(),
+            'insumos' => $this->paginateAndMap(Insumo::class, $search, [
+                'sku' => 'sku',
+                'nombre' => 'nombre', 
+                'codigo' => 'codigo',
+                'referencia' => 'referencia',
+            ], $perPage),
             'settings' => [
                 'store_name' => $settings?->nombre ?? 'Mi Tienda',
                 'logo_url' => $settings?->logo_path ? asset('storage/'.$settings->logo_path) : null,
             ],
-            'ofertas' => Oferta::with(['producto:id,referencia', 'categoria:id,categoria'])
-                ->orderByDesc('id')
-                ->get()
-                ->map(function (Oferta $oferta) {
-                    return [
-                        'id' => $oferta->id,
-                        'titulo' => $oferta->titulo,
-                        'descripcion' => $oferta->descripcion,
-                        'producto_id' => $oferta->producto_id,
-                        'categoria_id' => $oferta->categoria_id,
-                        'producto' => $oferta->producto?->referencia,
-                        'categoria' => $oferta->categoria?->categoria,
-                        'descuento_porcentaje' => $oferta->descuento_porcentaje,
-                        'descuento_fijo' => $oferta->descuento_fijo,
-                        'precio_oferta' => $oferta->precio_oferta,
-                        'fecha_inicio' => optional($oferta->fecha_inicio)->format('Y-m-d\TH:i'),
-                        'fecha_fin' => optional($oferta->fecha_fin)->format('Y-m-d\TH:i'),
-                        'esta_activa' => (bool) $oferta->esta_activa,
-                    ];
-                }),
+            'ofertas' => $this->paginateAndMapOfertas($search, $perPage),
             'noticia' => Noticia::first()?->campos_adicionales ?? '',
+            'bloques' => $this->getBloques(),
             'currentStore' => $store ? [
                 'id' => $store->id,
                 'slug' => $store->slug,
@@ -111,6 +113,7 @@ class AdminController extends Controller
             'categoria_id' => ['required', 'exists:categorias,id'],
             'tallas' => ['nullable', 'string'],
             'estado' => ['required', 'in:DISPONIBLE,NO_DISPONIBLE'],
+            'nueva_coleccion' => ['nullable', 'boolean'],
             'stock_por_talla' => ['nullable', 'array'],
             'stock_por_talla.*.talla' => ['required', 'string', 'max:40'],
             'stock_por_talla.*.stock' => ['required', 'integer', 'min:0'],
@@ -125,6 +128,7 @@ class AdminController extends Controller
                 'categoria_id' => $validated['categoria_id'],
                 'tallas' => $validated['tallas'] ?? null,
                 'estado' => $validated['estado'],
+                'nueva_coleccion' => $validated['nueva_coleccion'] ?? false,
             ]);
 
             $this->syncStockBySize($producto, $validated['stock_por_talla'] ?? []);
@@ -142,6 +146,7 @@ class AdminController extends Controller
             'categoria_id' => ['required', 'exists:categorias,id'],
             'tallas' => ['nullable', 'string'],
             'estado' => ['required', 'in:DISPONIBLE,NO_DISPONIBLE'],
+            'nueva_coleccion' => ['nullable', 'boolean'],
             'stock_por_talla' => ['nullable', 'array'],
             'stock_por_talla.*.talla' => ['required', 'string', 'max:40'],
             'stock_por_talla.*.stock' => ['required', 'integer', 'min:0'],
@@ -156,6 +161,7 @@ class AdminController extends Controller
                 'categoria_id' => $validated['categoria_id'],
                 'tallas' => $validated['tallas'] ?? null,
                 'estado' => $validated['estado'],
+                'nueva_coleccion' => $validated['nueva_coleccion'] ?? false,
             ]);
 
             $this->syncStockBySize($producto, $validated['stock_por_talla'] ?? []);
@@ -174,6 +180,20 @@ class AdminController extends Controller
         $producto->delete();
 
         return response()->json(['success' => true, 'message' => 'Producto eliminado.']);
+    }
+
+    /**
+     * Toggle nueva colección desde la lista de productos
+     */
+    public function toggleNuevaColeccion(Producto $producto): JsonResponse
+    {
+        $producto->update(['nueva_coleccion' => !$producto->nueva_coleccion]);
+
+        return response()->json([
+            'success' => true,
+            'nueva_coleccion' => $producto->nueva_coleccion,
+            'message' => $producto->nueva_coleccion ? 'Marcado como nueva colección' : 'Desmarcado de nueva colección',
+        ]);
     }
 
     public function storeOffer(Request $request): JsonResponse
@@ -237,10 +257,13 @@ class AdminController extends Controller
             'campos_adicionales' => ['nullable', 'string'],
         ]);
 
-        Noticia::updateOrCreate(
-            ['id' => 1],
-            ['campos_adicionales' => $validated['campos_adicionales'] ?? '']
-        );
+        // Solo actualizar si hay una noticia existente (usa el trait para filtrar por store)
+        $noticia = Noticia::first();
+        if ($noticia) {
+            $noticia->update(['campos_adicionales' => $validated['campos_adicionales'] ?? '']);
+        } else {
+            Noticia::create(['campos_adicionales' => $validated['campos_adicionales'] ?? '']);
+        }
 
         return response()->json(['success' => true, 'message' => 'Noticias actualizadas.']);
     }
@@ -422,5 +445,204 @@ class AdminController extends Controller
         $validated['costo_unitario'] = round($total / $qty, 2);
 
         return $validated;
+    }
+
+    // ==================== BLOQUES HOME ====================
+
+    /**
+     * GET /admin/bloques - Ver configuración de bloques
+     */
+    public function getBloques(): array
+    {
+        $result = [];
+        
+        for ($posicion = 1; $posicion <= 2; $posicion++) {
+            $bloque = \App\Models\BloqueHome::getAllPorPosicion($posicion);
+            
+            if (!$bloque) {
+                $result[$posicion] = [
+                    'posicion' => $posicion,
+                    'tipo' => 'banner',
+                    'titulo' => null,
+                    'contenido' => null,
+                    'tamano_texto' => 'normal',
+                    'activo' => true,
+                    'imagenes' => [],
+                ];
+                continue;
+            }
+
+            $data = [
+                'id' => $bloque->id,
+                'posicion' => $bloque->posicion,
+                'tipo' => $bloque->tipo,
+                'titulo' => $bloque->titulo,
+                'contenido' => $bloque->contenido,
+                'tamano_texto' => $bloque->tamano_texto,
+                'activo' => $bloque->activo,
+            ];
+
+            if ($bloque->tipo === 'banner') {
+                $data['imagenes'] = $bloque->imagenes->map(fn($img) => [
+                    'id' => $img->id,
+                    'imagen' => asset('storage/' . $img->imagen),
+                    'url_destino' => $img->url_destino,
+                    'orden' => $img->orden,
+                ]);
+            } else {
+                $data['imagenes'] = [];
+            }
+
+            $result[$posicion] = $data;
+        }
+
+        return $result;
+    }
+
+    /**
+     * PUT /admin/bloques - Guardar configuración de bloque
+     */
+    public function updateBloque(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        $validated = $request->validate([
+            'posicion' => 'required|integer|min:1|max:2',
+            'tipo' => 'required|in:banner,texto',
+            'titulo' => 'nullable|string|max:255',
+            'contenido' => 'nullable|string',
+            'tamano_texto' => 'nullable|in:normal,grande',
+            'activo' => 'nullable|boolean',
+        ]);
+
+        $bloque = \App\Models\BloqueHome::getAllPorPosicion($validated['posicion']);
+        
+        if ($bloque) {
+            $bloque->update([
+                'tipo' => $validated['tipo'],
+                'titulo' => $validated['titulo'] ?? null,
+                'contenido' => $validated['contenido'] ?? null,
+                'tamano_texto' => $validated['tamano_texto'] ?? 'normal',
+                'activo' => $validated['activo'] ?? true,
+            ]);
+        } else {
+            $bloque = \App\Models\BloqueHome::create([
+                'posicion' => $validated['posicion'],
+                'tipo' => $validated['tipo'],
+                'titulo' => $validated['titulo'] ?? null,
+                'contenido' => $validated['contenido'] ?? null,
+                'tamano_texto' => $validated['tamano_texto'] ?? 'normal',
+                'activo' => $validated['activo'] ?? true,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bloque guardado',
+        ]);
+    }
+
+    /**
+     * POST /admin/bloques/{id}/imagenes - Agregar imagen
+     */
+    public function storeBloqueImagen(\Illuminate\Http\Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $validated = $request->validate([
+            'imagen' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'url_destino' => 'nullable|url',
+        ]);
+
+        $bloque = \App\Models\BloqueHome::findOrFail($id);
+
+        if ($bloque->tipo !== 'banner') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este bloque es de tipo texto',
+            ], 422);
+        }
+
+        if ($bloque->imagenes()->count() >= 4) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Máximo 4 imágenes',
+            ], 422);
+        }
+
+        $imagen = $request->file('imagen')->store('bloques', 'public');
+
+        $bloqueImg = \App\Models\BloqueHomeImagen::create([
+            'bloque_home_id' => $bloque->id,
+            'imagen' => $imagen,
+            'url_destino' => $validated['url_destino'] ?? null,
+            'orden' => $bloque->imagenes()->max('orden') + 1,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'imagen' => [
+                'id' => $bloqueImg->id,
+                'imagen' => asset('storage/' . $bloqueImg->imagen),
+                'url_destino' => $bloqueImg->url_destino,
+                'orden' => $bloqueImg->orden,
+            ],
+        ]);
+    }
+
+    /**
+     * DELETE /admin/bloques/{id}/imagenes/{imgId} - Eliminar imagen
+     */
+    public function destroyBloqueImagen(int $id, int $imgId): \Illuminate\Http\JsonResponse
+    {
+        $imagen = \App\Models\BloqueHomeImagen::where('bloque_home_id', $id)->findOrFail($imgId);
+        
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($imagen->imagen);
+        $imagen->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Imagen eliminada',
+        ]);
+    }
+
+    /**
+     * Helper para paginar y mapear modelos simples (sin relaciones complejas)
+     */
+    private function paginateAndMap(string $modelClass, string $search, array $searchFields, int $perPage = 10)
+    {
+        $query = $modelClass::query();
+        
+        if ($search) {
+            $query->where(function ($q) use ($search, $searchFields) {
+                foreach ($searchFields as $column => $label) {
+                    $q->orWhere($column, 'like', "%{$search}%");
+                }
+            });
+        }
+
+        $query->orderBy('id', 'desc');
+        
+        // Si es Insumo, ordenamos por nombre
+        if ($modelClass === Insumo::class) {
+            $query->orderBy('nombre');
+        }
+
+        return $query->paginate($perPage)->withQueryString();
+    }
+
+    /**
+     * Helper para paginar ofertas con relaciones
+     */
+    private function paginateAndMapOfertas(string $search, int $perPage = 10)
+    {
+        $query = Oferta::with(['producto:id,referencia', 'categoria:id,categoria']);
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('titulo', 'like', "%{$search}%")
+                  ->orWhere('descripcion', 'like', "%{$search}%")
+                  ->orWhereHas('producto', fn ($pq) => $pq->where('referencia', 'like', "%{$search}%"))
+                  ->orWhereHas('categoria', fn ($cq) => $cq->where('categoria', 'like', "%{$search}%"));
+            });
+        }
+
+        return $query->orderByDesc('id')->paginate($perPage)->withQueryString();
     }
 }

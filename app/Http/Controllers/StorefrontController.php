@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BloqueHome;
 use App\Models\Carrito;
 use App\Models\Categoria;
 use App\Models\Noticia;
@@ -29,6 +30,9 @@ class StorefrontController extends Controller
                 'nombre' => $categoria->categoria,
             ]);
 
+        // Obtener bloques del home
+        $bloques = $this->getBloquesHome();
+
         // Obtener info del store actual
         $tenantManager = app(TenantManager::class);
         $store = $tenantManager->getStore();
@@ -37,11 +41,52 @@ class StorefrontController extends Controller
             'productos' => $productos,
             'categorias' => $categorias,
             'promociones' => Noticia::getPromocionesActivas(),
+            'bloques' => $bloques,
             'store' => $store ? [
                 'nombre' => $store->nombre,
                 'logo' => $store->logo_path ? asset('storage/'.$store->logo_path) : null,
             ] : null,
         ]);
+    }
+
+    /**
+     * Obtener bloques home configurables
+     */
+    private function getBloquesHome(): array
+    {
+        $result = [];
+        
+        for ($posicion = 1; $posicion <= 2; $posicion++) {
+            $bloque = BloqueHome::getPorPosicion($posicion);
+            
+            if (!$bloque) {
+                $result[$posicion] = null;
+                continue;
+            }
+
+            $data = [
+                'id' => $bloque->id,
+                'tipo' => $bloque->tipo,
+                'posicion' => $bloque->posicion,
+                'titulo' => $bloque->titulo,
+                'contenido' => $bloque->contenido,
+                'tamano_texto' => $bloque->tamano_texto,
+                'activo' => $bloque->activo,
+            ];
+
+            if ($bloque->tipo === 'banner') {
+                $data['imagenes'] = $bloque->imagenes->map(fn($img) => [
+                    'id' => $img->id,
+                    'imagen' => asset('storage/' . $img->imagen),
+                    'url_destino' => $img->url_destino,
+                    'orden' => $img->orden,
+                ]);
+            }
+
+            $result[$posicion] = $data;
+        }
+
+        return $result;
     }
 
     public function product(int $id): Response

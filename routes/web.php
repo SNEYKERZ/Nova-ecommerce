@@ -65,6 +65,7 @@ Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::post('/productos', [AdminController::class, 'storeProduct'])->name('admin.products.store');
     Route::put('/productos/{producto}', [AdminController::class, 'updateProduct'])->name('admin.products.update');
     Route::delete('/productos/{producto}', [AdminController::class, 'deleteProduct'])->name('admin.products.delete');
+    Route::post('/productos/{producto}/toggle-coleccion', [AdminController::class, 'toggleNuevaColeccion'])->name('admin.products.toggleColeccion');
 
     Route::post('/ofertas', [AdminController::class, 'storeOffer'])->name('admin.offers.store');
     Route::put('/ofertas/{oferta}', [AdminController::class, 'updateOffer'])->name('admin.offers.update');
@@ -76,4 +77,9 @@ Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::post('/insumos', [AdminController::class, 'storeSupply'])->name('admin.supplies.store');
     Route::put('/insumos/{insumo}', [AdminController::class, 'updateSupply'])->name('admin.supplies.update');
     Route::delete('/insumos/{insumo}', [AdminController::class, 'deleteSupply'])->name('admin.supplies.delete');
+
+    // Bloques del home
+    Route::post('/bloques', [AdminController::class, 'updateBloque'])->name('admin.bloques.update');
+    Route::post('/bloques/{id}/imagenes', [AdminController::class, 'storeBloqueImagen'])->name('admin.bloques.imagenes.store');
+    Route::delete('/bloques/{id}/imagenes/{imgId}', [AdminController::class, 'destroyBloqueImagen'])->name('admin.bloques.imagenes.destroy');
 });
