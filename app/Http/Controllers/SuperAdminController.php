@@ -58,8 +58,9 @@ class SuperAdminController extends Controller
             'total_ingresos' => Pedido::allStores()->sum('total') ?? 0,
         ];
 
-        // Todos los usuarios (sin scope de tenant)
+        // Todos los usuarios (sin scope de tenant) — eager load store
         $users = User::allStores()
+            ->with('store')
             ->orderByDesc('created_at')
             ->get()
             ->map(function (User $user) {
@@ -69,14 +70,14 @@ class SuperAdminController extends Controller
                     'email' => $user->email,
                     'role' => $user->role,
                     'store_id' => $user->store_id,
-                    'store_nombre' => $user->store_id ? Store::find($user->store_id)?->nombre : null,
+                    'store_nombre' => $user->store?->nombre,
                     'created_at' => $user->created_at?->toIso8601String(),
                 ];
             });
 
-        // Actividad reciente (últimos pedidos en el sistema)
+        // Actividad reciente — eager load cliente y store para evitar N+1
         $recentOrders = Pedido::allStores()
-            ->with(['cliente'])
+            ->with(['cliente', 'store'])
             ->orderByDesc('created_at')
             ->limit(10)
             ->get()
@@ -87,7 +88,7 @@ class SuperAdminController extends Controller
                     'estado' => $pedido->estado,
                     'cliente' => $pedido->cliente?->nombre ?? 'Sin cliente',
                     'store_id' => $pedido->store_id,
-                    'store_nombre' => Store::find($pedido->store_id)?->nombre,
+                    'store_nombre' => $pedido->store?->nombre,
                     'created_at' => $pedido->created_at?->toIso8601String(),
                 ];
             });
@@ -288,7 +289,7 @@ class SuperAdminController extends Controller
         ]);
 
         $user->update([
-            'password' => $validated['password'],
+            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
         ]);
 
         return response()->json([

@@ -82,4 +82,7 @@ Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::post('/bloques', [AdminController::class, 'updateBloque'])->name('admin.bloques.update');
     Route::post('/bloques/{id}/imagenes', [AdminController::class, 'storeBloqueImagen'])->name('admin.bloques.imagenes.store');
     Route::delete('/bloques/{id}/imagenes/{imgId}', [AdminController::class, 'destroyBloqueImagen'])->name('admin.bloques.imagenes.destroy');
+
+    // Gestión de pedidos del admin de tienda
+    Route::put('/pedidos/{pedido}/estado', [AdminController::class, 'updatePedidoEstado'])->name('admin.pedidos.estado');
 });

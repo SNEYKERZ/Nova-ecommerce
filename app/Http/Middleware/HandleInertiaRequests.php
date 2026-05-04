@@ -2,9 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\StoreSetting;
+use App\Services\TenantManager;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -33,7 +32,7 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $settings = Schema::hasTable('store_settings') ? StoreSetting::first() : null;
+        $store = app(TenantManager::class)->getStore();
 
         return array_merge(parent::share($request), [
             'auth' => [
@@ -47,9 +46,10 @@ class HandleInertiaRequests extends Middleware
                     : null,
             ],
             'app' => [
-                'name' => $settings?->store_name ?? config('app.name', 'WebCaps'),
-                'logo' => $settings?->logo_path ? asset('storage/'.$settings->logo_path) : null,
+                'name' => $store?->nombre ?? config('app.name', 'Vendex'),
+                'logo' => $store?->logo_path ? asset('storage/'.$store->logo_path) : null,
                 'env' => config('app.env'),
+                'whatsapp' => $store?->telefono,
             ],
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),

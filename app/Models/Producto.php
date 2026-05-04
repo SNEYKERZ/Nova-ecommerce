@@ -12,11 +12,16 @@ class Producto extends Model
 
     protected $fillable = [
         'referencia',
+        'nombre',
+        'descripcion',
         'precio',
         'foto',
         'tallas',
         'categoria_id',
         'estado',
+        'destacado',
+        'nuevo',
+        'nueva_coleccion',
     ];
 
     protected $casts = [

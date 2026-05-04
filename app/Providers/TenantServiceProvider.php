@@ -17,8 +17,8 @@ class TenantServiceProvider extends ServiceProvider
             return new TenantManager();
         });
 
-        // 注册别名 para acceso rápido via app('tenant.store')
-        $this->app->singleton('tenant.store', function ($app) {
+        // Binding (no singleton) para que se re-resuelva en cada acceso
+        $this->app->bind('tenant.store', function ($app) {
             return $app->make(TenantManager::class)->getStore();
         });
     }

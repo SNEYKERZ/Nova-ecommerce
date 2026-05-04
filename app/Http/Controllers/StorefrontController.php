@@ -17,9 +17,11 @@ class StorefrontController extends Controller
     public function home(): Response
     {
         // El trait HasTenant filtra automáticamente por el store actual
+        // Límite de 200 para evitar cargar catálogos enormes en memoria del cliente
         $productos = Producto::with('categoria')
             ->where('estado', 'DISPONIBLE')
             ->orderBy('id', 'desc')
+            ->limit(200)
             ->get()
             ->map(fn (Producto $producto) => $this->mapProducto($producto));
 
@@ -43,8 +45,10 @@ class StorefrontController extends Controller
             'promociones' => Noticia::getPromocionesActivas(),
             'bloques' => $bloques,
             'store' => $store ? [
-                'nombre' => $store->nombre,
-                'logo' => $store->logo_path ? asset('storage/'.$store->logo_path) : null,
+                'nombre'    => $store->nombre,
+                'logo'      => $store->logo_path ? asset('storage/'.$store->logo_path) : null,
+                'telefono'  => $store->telefono,
+                'email'     => $store->email,
             ] : null,
         ]);
     }
@@ -151,20 +155,21 @@ class StorefrontController extends Controller
         }
 
         return [
-            'id' => $producto->id,
-            'sku' => $producto->referencia,
-            'precio' => (float) $producto->precio,
-            'categoria' => $producto->categoria?->categoria ?? 'General',
-            'estado' => $producto->estado,
-            'tallas' => $producto->tallas ? array_values(array_filter(explode(',', $producto->tallas))) : [],
-            'foto' => $imagenPrincipal,
-            'descripcion' => $producto->descripcion ?: 'Producto versatil para una tienda e-commerce moderna.',
-            'destacado' => (bool) ($producto->getAttribute('destacado') ?? false),
-            'nuevo' => (bool) ($producto->getAttribute('nuevo') ?? false),
-            'nuevaColeccion' => (bool) ($producto->getAttribute('nuevo') ?? false) || $isNewByDate,
-            'createdAt' => $producto->created_at?->toIso8601String(),
-            'galeria' => $galeria,
-            'tieneStock' => $producto->tiene_stock,
+            'id'            => $producto->id,
+            'sku'           => $producto->referencia,
+            'nombre'        => $producto->nombre ?: $producto->referencia,
+            'precio'        => (float) $producto->precio,
+            'categoria'     => $producto->categoria?->categoria ?? 'General',
+            'estado'        => $producto->estado,
+            'tallas'        => $producto->tallas ? array_values(array_filter(explode(',', $producto->tallas))) : [],
+            'foto'          => $imagenPrincipal,
+            'descripcion'   => $producto->descripcion ?: null,
+            'destacado'     => (bool) ($producto->getAttribute('destacado') ?? false),
+            'nuevo'         => (bool) ($producto->getAttribute('nuevo') ?? false),
+            'nuevaColeccion' => (bool) ($producto->getAttribute('nueva_coleccion') ?? false) || $isNewByDate,
+            'createdAt'     => $producto->created_at?->toIso8601String(),
+            'galeria'       => $galeria,
+            'tieneStock'    => $producto->tiene_stock,
         ];
     }
 }

@@ -26,93 +26,70 @@
       </div>
     </section>
 
-    <section id="catalogo" class="mx-auto mt-12 w-full max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
-      <div class="mb-4 flex items-center justify-between">
+    <section id="catalogo" class="mt-12 w-full px-4 pb-12 sm:px-6 lg:px-8">
+      <div class="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-black/10 pb-4">
         <div>
-          <p class="text-xs font-semibold tracking-[0.2em] text-[color:var(--muted)] uppercase">Catalogo</p>
-          <h2 class="font-display mt-2 text-3xl font-bold">Productos listos para vender</h2>
+          <p class="text-[11px] font-bold tracking-[0.22em] text-[color:var(--muted)] uppercase">Catalogo</p>
+          <h2 class="font-display mt-2 text-3xl font-bold sm:text-4xl">Productos listos para vender</h2>
         </div>
-        <button class="btn-soft px-4 py-2 text-sm font-semibold lg:hidden" @click="mobileFiltersOpen = true">Filtros</button>
+
+        <div class="flex items-center gap-3">
+          <p class="text-sm font-semibold text-[color:var(--muted)]">{{ filteredProducts.length }} resultados</p>
+          <button class="btn-soft px-4 py-2 text-xs font-bold tracking-[0.12em] uppercase" @click="filtersOpen = !filtersOpen">
+            {{ filtersOpen ? 'Ocultar filtros' : 'Mostrar filtros' }}
+          </button>
+        </div>
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-[300px_1fr]">
-        <aside class="hidden lg:block">
-          <div class="sticky top-24 rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)] p-4">
-            <FilterSidebar
-              :categorias="categorias"
-              :available-sizes="availableSizes"
-              v-model:selected-category="selectedCategory"
-              v-model:selected-size="selectedSize"
-              v-model:selected-recency="selectedRecency"
-              v-model:only-new-collection="onlyNewCollection"
-              v-model:sort-by="sortBy"
-              v-model:min-price="minPrice"
-              v-model:max-price="maxPrice"
-              @reset="resetFilters"
-            />
-          </div>
-        </aside>
-
-        <div>
-          <p class="mb-3 text-sm font-semibold text-[color:var(--muted)]">{{ filteredProducts.length }} resultados</p>
-          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <article v-for="item in filteredProducts" :key="item.id" class="group overflow-hidden rounded-3xl border border-black/5 bg-[color:var(--surface)] shadow-[0_10px_40px_rgba(0,0,0,0.04)]">
-              <Link :href="`/productos/${item.id}`" class="block overflow-hidden">
-                <img :src="item.foto" :alt="item.sku" class="h-64 w-full object-cover transition duration-500 group-hover:scale-105" />
-              </Link>
-
-              <div class="space-y-3 p-4">
-                <div class="flex items-center justify-between gap-2">
-                  <p class="truncate text-sm font-semibold text-[color:var(--muted)]">{{ item.categoria }}</p>
-                  <p class="chip bg-[color:var(--sand)]">{{ item.nuevaColeccion ? 'Nueva' : 'Stock' }}</p>
-                </div>
-
-                <div>
-                  <h3 class="font-display truncate text-lg font-semibold">{{ item.sku }}</h3>
-                  <p class="mt-1 text-sm text-[color:var(--muted)] line-clamp-2">{{ item.descripcion }}</p>
-                </div>
-
-                <div class="flex items-center justify-between">
-                  <p class="text-xl font-bold">{{ money(item.precio) }}</p>
-                  <button class="btn-main px-4 py-2 text-xs font-bold tracking-wide uppercase" @click="addToCart(item)">Agregar</button>
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <div v-if="!filteredProducts.length" class="mt-10 rounded-2xl border border-dashed border-[color:var(--line)] bg-[color:var(--surface)] p-10 text-center text-[color:var(--muted)]">
-            No encontramos productos con esos filtros. Prueba limpiarlos o ajustar el rango de precio.
-          </div>
+      <transition name="slide-up">
+        <div v-if="filtersOpen" class="mb-6 rounded-2xl border border-black/10 bg-[color:var(--surface)] p-4 sm:p-5">
+          <FilterSidebar
+            :categorias="categorias"
+            :available-sizes="availableSizes"
+            v-model:selected-category="selectedCategory"
+            v-model:selected-size="selectedSize"
+            v-model:selected-recency="selectedRecency"
+            v-model:only-new-collection="onlyNewCollection"
+            v-model:sort-by="sortBy"
+            v-model:min-price="minPrice"
+            v-model:max-price="maxPrice"
+            @reset="resetFilters"
+          />
         </div>
+      </transition>
+
+      <div class="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-4 xl:grid-cols-4">
+        <article v-for="item in filteredProducts" :key="item.id" class="group">
+          <Link :href="`/productos/${item.id}`" class="relative block overflow-hidden bg-[#efefee]">
+            <img :src="item.foto" :alt="item.sku" loading="lazy" class="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+
+            <div class="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-full items-center gap-2 bg-black/90 p-2 text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              <button v-if="whatsappPhone" :href="whatsappLink(item)" @click.prevent="openWhatsapp(item)" class="pointer-events-auto btn-soft !border-white/20 !bg-white/10 px-3 py-2 text-[10px] font-bold tracking-[0.08em] !text-white uppercase" title="Pedir por WhatsApp">
+                WhatsApp
+              </button>
+              <button class="pointer-events-auto btn-main flex-1 px-3 py-2 text-[10px] font-bold tracking-[0.08em] uppercase" @click.prevent="addToCart(item)">Agregar</button>
+            </div>
+          </Link>
+
+          <div class="pt-3">
+            <h3 class="truncate text-[15px] font-semibold text-[color:var(--ink)]">{{ item.nombre || item.sku }}</h3>
+            <p class="mt-1 text-[11px] tracking-[0.09em] text-[color:var(--muted)] uppercase">{{ item.categoria }} · Ref {{ item.sku }}</p>
+            <p class="mt-2 text-base font-bold">{{ money(item.precio) }}</p>
+          </div>
+        </article>
+      </div>
+
+      <div v-if="!filteredProducts.length" class="mt-10 rounded-2xl border border-dashed border-[color:var(--line)] bg-[color:var(--surface)] p-10 text-center text-[color:var(--muted)]">
+        No encontramos productos con esos filtros. Prueba limpiarlos o ajustar el rango de precio.
       </div>
     </section>
-
-    <div v-if="mobileFiltersOpen" class="fixed inset-0 z-50 bg-black/40 lg:hidden" @click="mobileFiltersOpen = false"></div>
-    <aside class="fixed top-0 right-0 z-50 h-full w-[88%] max-w-sm bg-[color:var(--surface)] p-4 transition-transform duration-300 lg:hidden" :class="mobileFiltersOpen ? 'translate-x-0' : 'translate-x-full'">
-      <div class="mb-3 flex items-center justify-between">
-        <h3 class="font-display text-xl font-bold">Filtros</h3>
-        <button class="chip" @click="mobileFiltersOpen = false">Cerrar</button>
-      </div>
-      <FilterSidebar
-        :categorias="categorias"
-        :available-sizes="availableSizes"
-        v-model:selected-category="selectedCategory"
-        v-model:selected-size="selectedSize"
-        v-model:selected-recency="selectedRecency"
-        v-model:only-new-collection="onlyNewCollection"
-        v-model:sort-by="sortBy"
-        v-model:min-price="minPrice"
-        v-model:max-price="maxPrice"
-        @reset="resetFilters"
-      />
-    </aside>
 
     <div v-if="toast" class="fixed right-5 bottom-5 z-50 rounded-full bg-[color:var(--surface-dark)] px-4 py-2 text-sm font-semibold text-white shadow-2xl">{{ toast }}</div>
   </AppLayout>
 </template>
 
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AppLayout from '../layouts/AppLayout.vue';
 import FilterSidebar from '../components/FilterSidebar.vue';
@@ -121,7 +98,23 @@ const props = defineProps({
   productos: { type: Array, default: () => [] },
   categorias: { type: Array, default: () => [] },
   promociones: { type: Array, default: () => [] },
+  store: { type: Object, default: null },
 });
+
+const page = usePage();
+const whatsappPhone = computed(() => page.props.app?.whatsapp || props.store?.telefono || null);
+
+const whatsappLink = (item) => {
+  const phone = whatsappPhone.value?.replace(/\D/g, '');
+  if (!phone) return '#';
+  const msg = encodeURIComponent(`Hola! Me interesa el producto: ${item.nombre || item.sku} - ${money(item.precio)}`);
+  return `https://wa.me/${phone}?text=${msg}`;
+};
+
+const openWhatsapp = (item) => {
+  const url = whatsappLink(item);
+  if (url !== '#') window.open(url, '_blank', 'noopener');
+};
 
 const selectedCategory = ref('ALL');
 const selectedSize = ref('ALL');
@@ -131,7 +124,7 @@ const sortBy = ref('recentes');
 const minPrice = ref('');
 const maxPrice = ref('');
 const toast = ref('');
-const mobileFiltersOpen = ref(false);
+const filtersOpen = ref(false);
 
 const availableSizes = computed(() => {
   const sizes = new Set();

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan *)",
+      "Bash(php -l app/Http/Controllers/AdminController.php)",
+      "Bash(php -l app/Http/Controllers/Api/PedidoController.php)",
+      "Bash(php -l app/Http/Controllers/SuperAdminController.php)",
+      "Bash(php -l app/Http/Middleware/HandleInertiaRequests.php)",
+      "Bash(php -l app/Models/Oferta.php)",
+      "Bash(php -l routes/web.php)",
+      "Bash(php -l routes/api.php)",
+      "Bash(php -l database/migrations/2026_04_30_000001_add_nombre_to_productos_table.php)",
+      "Bash(php -l app/Http/Controllers/StorefrontController.php)"
+    ]
+  }
+}

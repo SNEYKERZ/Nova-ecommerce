@@ -6,6 +6,7 @@ use App\Models\Categoria;
 use App\Models\Insumo;
 use App\Models\Noticia;
 use App\Models\Oferta;
+use App\Models\Pedido;
 use App\Models\Producto;
 use App\Models\ProductoImagen;
 use App\Models\ProductoVariante;
@@ -41,7 +42,7 @@ class AdminController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('referencia', 'like', "%{$search}%")
                       ->orWhere('nombre', 'like', "%{$search}%")
-                      ->orWhere('codigo', 'like', "%{$search}%")
+                      ->orWhere('descripcion', 'like', "%{$search}%")
                       ->orWhereHas('categoria', fn ($cq) => $cq->where('categoria', 'like', "%{$search}%"));
                 });
             })
@@ -53,6 +54,8 @@ class AdminController extends Controller
             return [
                 'id' => $producto->id,
                 'referencia' => $producto->referencia,
+                'nombre' => $producto->nombre,
+                'descripcion' => $producto->descripcion,
                 'precio' => (float) $producto->precio,
                 'categoria_id' => $producto->categoria_id,
                 'categoria' => $producto->categoria?->categoria,
@@ -97,6 +100,7 @@ class AdminController extends Controller
             'ofertas' => $this->paginateAndMapOfertas($search, $perPage),
             'noticia' => Noticia::first()?->campos_adicionales ?? '',
             'bloques' => $this->getBloques(),
+            'pedidos' => $this->getPedidosList($perPage),
             'currentStore' => $store ? [
                 'id' => $store->id,
                 'slug' => $store->slug,
@@ -108,26 +112,30 @@ class AdminController extends Controller
     public function storeProduct(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'referencia' => ['required', 'string', 'max:255', 'unique:productos,referencia'],
-            'precio' => ['required', 'numeric', 'min:0'],
-            'categoria_id' => ['required', 'exists:categorias,id'],
-            'tallas' => ['nullable', 'string'],
-            'estado' => ['required', 'in:DISPONIBLE,NO_DISPONIBLE'],
-            'nueva_coleccion' => ['nullable', 'boolean'],
-            'stock_por_talla' => ['nullable', 'array'],
+            'referencia'              => ['required', 'string', 'max:255'],
+            'nombre'                  => ['nullable', 'string', 'max:255'],
+            'descripcion'             => ['nullable', 'string'],
+            'precio'                  => ['required', 'numeric', 'min:0'],
+            'categoria_id'            => ['required', 'exists:categorias,id'],
+            'tallas'                  => ['nullable', 'string'],
+            'estado'                  => ['required', 'in:DISPONIBLE,NO_DISPONIBLE'],
+            'nueva_coleccion'         => ['nullable', 'boolean'],
+            'stock_por_talla'         => ['nullable', 'array'],
             'stock_por_talla.*.talla' => ['required', 'string', 'max:40'],
             'stock_por_talla.*.stock' => ['required', 'integer', 'min:0'],
-            'images' => ['nullable', 'array', 'max:4'],
-            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images'                  => ['nullable', 'array', 'max:4'],
+            'images.*'                => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         DB::transaction(function () use ($validated, $request) {
             $producto = Producto::create([
-                'referencia' => $validated['referencia'],
-                'precio' => $validated['precio'],
-                'categoria_id' => $validated['categoria_id'],
-                'tallas' => $validated['tallas'] ?? null,
-                'estado' => $validated['estado'],
+                'referencia'      => $validated['referencia'],
+                'nombre'          => $validated['nombre'] ?? null,
+                'descripcion'     => $validated['descripcion'] ?? null,
+                'precio'          => $validated['precio'],
+                'categoria_id'    => $validated['categoria_id'],
+                'tallas'          => $validated['tallas'] ?? null,
+                'estado'          => $validated['estado'],
                 'nueva_coleccion' => $validated['nueva_coleccion'] ?? false,
             ]);
 
@@ -141,26 +149,30 @@ class AdminController extends Controller
     public function updateProduct(Request $request, Producto $producto): JsonResponse
     {
         $validated = $request->validate([
-            'referencia' => ['required', 'string', 'max:255', 'unique:productos,referencia,'.$producto->id],
-            'precio' => ['required', 'numeric', 'min:0'],
-            'categoria_id' => ['required', 'exists:categorias,id'],
-            'tallas' => ['nullable', 'string'],
-            'estado' => ['required', 'in:DISPONIBLE,NO_DISPONIBLE'],
-            'nueva_coleccion' => ['nullable', 'boolean'],
-            'stock_por_talla' => ['nullable', 'array'],
+            'referencia'              => ['required', 'string', 'max:255'],
+            'nombre'                  => ['nullable', 'string', 'max:255'],
+            'descripcion'             => ['nullable', 'string'],
+            'precio'                  => ['required', 'numeric', 'min:0'],
+            'categoria_id'            => ['required', 'exists:categorias,id'],
+            'tallas'                  => ['nullable', 'string'],
+            'estado'                  => ['required', 'in:DISPONIBLE,NO_DISPONIBLE'],
+            'nueva_coleccion'         => ['nullable', 'boolean'],
+            'stock_por_talla'         => ['nullable', 'array'],
             'stock_por_talla.*.talla' => ['required', 'string', 'max:40'],
             'stock_por_talla.*.stock' => ['required', 'integer', 'min:0'],
-            'images' => ['nullable', 'array', 'max:4'],
-            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images'                  => ['nullable', 'array', 'max:4'],
+            'images.*'                => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         DB::transaction(function () use ($validated, $request, $producto) {
             $producto->update([
-                'referencia' => $validated['referencia'],
-                'precio' => $validated['precio'],
-                'categoria_id' => $validated['categoria_id'],
-                'tallas' => $validated['tallas'] ?? null,
-                'estado' => $validated['estado'],
+                'referencia'      => $validated['referencia'],
+                'nombre'          => $validated['nombre'] ?? null,
+                'descripcion'     => $validated['descripcion'] ?? null,
+                'precio'          => $validated['precio'],
+                'categoria_id'    => $validated['categoria_id'],
+                'tallas'          => $validated['tallas'] ?? null,
+                'estado'          => $validated['estado'],
                 'nueva_coleccion' => $validated['nueva_coleccion'] ?? false,
             ]);
 
@@ -348,6 +360,45 @@ class AdminController extends Controller
         $store->save();
 
         return response()->json(['success' => true, 'message' => 'Configuracion de tienda actualizada.']);
+    }
+
+    public function updatePedidoEstado(Request $request, Pedido $pedido): JsonResponse
+    {
+        $validated = $request->validate([
+            'estado' => ['required', 'in:PENDIENTE,CONFIRMADO,ENVIADO,ENTREGADO,CANCELADO'],
+        ]);
+
+        $pedido->update(['estado' => $validated['estado']]);
+
+        return response()->json(['success' => true, 'message' => 'Estado del pedido actualizado.']);
+    }
+
+    private function getPedidosList(int $perPage = 15)
+    {
+        return Pedido::with(['cliente', 'items'])
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->withQueryString()
+            ->through(fn (Pedido $p) => [
+                'id'          => $p->id,
+                'total'       => (float) $p->total,
+                'estado'      => $p->estado,
+                'direccion'   => $p->direccion_envio,
+                'cliente'     => [
+                    'nombre'    => $p->cliente?->nombre,
+                    'apellidos' => $p->cliente?->apellidos,
+                    'email'     => $p->cliente?->email,
+                    'telefono'  => $p->cliente?->telefono,
+                ],
+                'items_count' => $p->items->count(),
+                'items'       => $p->items->map(fn ($i) => [
+                    'producto_referencia' => $i->producto?->referencia ?? '—',
+                    'cantidad'            => $i->cantidad,
+                    'talla'               => $i->talla,
+                    'subtotal'            => (float) $i->subtotal,
+                ]),
+                'created_at'  => $p->created_at?->format('d/m/Y H:i'),
+            ]);
     }
 
     private function syncStockBySize(Producto $producto, array $stocks): void

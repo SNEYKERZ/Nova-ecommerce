@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-3">
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
     <div>
       <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Categoria</label>
-      <select :value="selectedCategory" class="w-full rounded-xl border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:selectedCategory', $event.target.value)">
+      <select :value="selectedCategory" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:selectedCategory', $event.target.value)">
         <option value="ALL">Todas</option>
         <option v-for="cat in categorias" :key="cat.id" :value="cat.nombre || cat.categoria">{{ cat.nombre || cat.categoria }}</option>
       </select>
@@ -10,7 +10,7 @@
 
     <div>
       <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Talla</label>
-      <select :value="selectedSize" class="w-full rounded-xl border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:selectedSize', $event.target.value)">
+      <select :value="selectedSize" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:selectedSize', $event.target.value)">
         <option value="ALL">Todas</option>
         <option v-for="size in availableSizes" :key="size" :value="size">{{ size }}</option>
       </select>
@@ -18,7 +18,7 @@
 
     <div>
       <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Ordenar por</label>
-      <select :value="sortBy" class="w-full rounded-xl border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:sortBy', $event.target.value)">
+      <select :value="sortBy" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:sortBy', $event.target.value)">
         <option value="recentes">Recientes</option>
         <option value="precio_menor">Precio: menor a mayor</option>
         <option value="precio_mayor">Precio: mayor a menor</option>
@@ -29,7 +29,7 @@
 
     <div>
       <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Recientes</label>
-      <select :value="selectedRecency" class="w-full rounded-xl border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:selectedRecency', $event.target.value)">
+      <select :value="selectedRecency" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:selectedRecency', $event.target.value)">
         <option value="ALL">Todos</option>
         <option value="7">Ultimos 7 dias</option>
         <option value="30">Ultimos 30 dias</option>
@@ -39,20 +39,20 @@
 
     <div>
       <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Precio minimo</label>
-      <input :value="minPrice" type="number" min="0" class="w-full rounded-xl border border-[color:var(--line)] bg-white px-3 py-2 text-sm" placeholder="0" @input="$emit('update:minPrice', $event.target.value)" />
+      <input :value="minPrice" type="number" min="0" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" placeholder="0" @input="$emit('update:minPrice', $event.target.value)" />
     </div>
 
     <div>
       <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Precio maximo</label>
-      <input :value="maxPrice" type="number" min="0" class="w-full rounded-xl border border-[color:var(--line)] bg-white px-3 py-2 text-sm" placeholder="300000" @input="$emit('update:maxPrice', $event.target.value)" />
+      <input :value="maxPrice" type="number" min="0" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" placeholder="300000" @input="$emit('update:maxPrice', $event.target.value)" />
     </div>
 
-    <label class="flex items-center gap-2 text-sm font-semibold">
+    <label class="flex items-center gap-2 self-end border border-dashed border-[color:var(--line)] px-3 py-2 text-sm font-semibold text-[color:var(--ink)]">
       <input :checked="onlyNewCollection" type="checkbox" class="h-4 w-4 rounded border-[color:var(--line)]" @change="$emit('update:onlyNewCollection', $event.target.checked)" />
       Solo nueva coleccion
     </label>
 
-    <button class="btn-soft w-full px-4 py-2 text-sm font-semibold" @click="$emit('reset')">Limpiar filtros</button>
+    <button class="btn-soft self-end px-4 py-2 text-sm font-semibold" @click="$emit('reset')">Limpiar filtros</button>
   </div>
 </template>
 

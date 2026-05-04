@@ -19,8 +19,8 @@ use App\Http\Controllers\Api\ResenaController;
 |--------------------------------------------------------------------------
 */
 
-// Rutas API también necesitan resolver el tenant desde el subdomain
-Route::middleware('tenant')->group(function () {
+// Rutas API con rate limiting y resolución de tenant
+Route::middleware(['tenant', 'throttle:60,1'])->group(function () {
 
 // ==================== BLOQUES HOME ====================
 
@@ -50,7 +50,7 @@ Route::get('/categorias/{id}/productos', [CategoriaController::class, 'productos
 
 // ==================== PEDIDOS ====================
 
-Route::post('/pedidos', [PedidoController::class, 'store']);
+Route::post('/pedidos', [PedidoController::class, 'store'])->middleware('throttle:5,1');
 Route::get('/pedidos', [PedidoController::class, 'index']);
 Route::get('/pedidos/{id}', [PedidoController::class, 'show']);
 

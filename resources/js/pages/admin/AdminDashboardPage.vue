@@ -19,6 +19,104 @@
         </button>
       </div>
 
+      <!-- ==================== PEDIDOS ==================== -->
+      <section v-if="activeTab === 'pedidos'" class="space-y-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-semibold text-slate-900">Pedidos recibidos</h2>
+              <p class="mt-1 text-sm text-slate-500">Gestiona y actualiza el estado de los pedidos de tu tienda.</p>
+            </div>
+            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+              {{ pedidosList.filter(p => p.estado === 'PENDIENTE').length }} pendientes
+            </span>
+          </div>
+        </div>
+
+        <!-- Detalle del pedido seleccionado -->
+        <div v-if="pedidoDetalle" class="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-semibold text-blue-900">Pedido #{{ pedidoDetalle.id }} — {{ pedidoDetalle.cliente?.nombre }} {{ pedidoDetalle.cliente?.apellidos }}</h3>
+            <button class="text-xs text-blue-600 underline" @click="pedidoDetalle = null">Cerrar detalle</button>
+          </div>
+          <div class="grid gap-2 text-sm text-blue-900 sm:grid-cols-2">
+            <p><span class="font-semibold">Email:</span> {{ pedidoDetalle.cliente?.email }}</p>
+            <p><span class="font-semibold">Teléfono:</span> {{ pedidoDetalle.cliente?.telefono || '—' }}</p>
+            <p class="sm:col-span-2"><span class="font-semibold">Dirección:</span> {{ pedidoDetalle.direccion }}</p>
+          </div>
+          <table class="mt-3 min-w-full text-xs">
+            <thead><tr class="text-left text-blue-700"><th class="py-1 pr-3">Producto</th><th class="py-1 pr-3">Talla</th><th class="py-1 pr-3">Cant.</th><th class="py-1">Subtotal</th></tr></thead>
+            <tbody>
+              <tr v-for="(item, i) in pedidoDetalle.items" :key="i" class="border-t border-blue-200">
+                <td class="py-1 pr-3">{{ item.producto_referencia }}</td>
+                <td class="py-1 pr-3">{{ item.talla || '—' }}</td>
+                <td class="py-1 pr-3">{{ item.cantidad }}</td>
+                <td class="py-1">{{ money(item.subtotal) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="mt-2 font-bold text-blue-900">Total: {{ money(pedidoDetalle.total) }}</p>
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-100 text-left text-slate-600">
+              <tr>
+                <th class="px-3 py-3">#</th>
+                <th class="px-3 py-3">Cliente</th>
+                <th class="px-3 py-3">Total</th>
+                <th class="px-3 py-3">Items</th>
+                <th class="px-3 py-3">Fecha</th>
+                <th class="px-3 py-3">Estado</th>
+                <th class="px-3 py-3">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="!pedidosList.length">
+                <td colspan="7" class="px-4 py-6 text-center text-slate-400">No hay pedidos todavía.</td>
+              </tr>
+              <tr v-for="pedido in pedidosList" :key="pedido.id" class="border-t border-slate-200 hover:bg-slate-50">
+                <td class="px-3 py-2 font-semibold text-slate-700">#{{ pedido.id }}</td>
+                <td class="px-3 py-2">
+                  <p class="font-semibold">{{ pedido.cliente?.nombre }} {{ pedido.cliente?.apellidos }}</p>
+                  <p class="text-xs text-slate-400">{{ pedido.cliente?.email }}</p>
+                </td>
+                <td class="px-3 py-2 font-bold">{{ money(pedido.total) }}</td>
+                <td class="px-3 py-2 text-slate-500">{{ pedido.items_count }} art.</td>
+                <td class="px-3 py-2 text-slate-500 text-xs">{{ pedido.created_at }}</td>
+                <td class="px-3 py-2">
+                  <span class="rounded-full px-2 py-1 text-xs font-semibold" :class="estadoColors[pedido.estado] || 'bg-slate-100 text-slate-700'">
+                    {{ pedido.estado }}
+                  </span>
+                </td>
+                <td class="px-3 py-2">
+                  <div class="flex flex-wrap gap-1.5">
+                    <button class="rounded-md border border-slate-300 px-2 py-1 text-xs cursor-pointer hover:bg-slate-50" @click="pedidoDetalle = pedidoDetalle?.id === pedido.id ? null : pedido">
+                      {{ pedidoDetalle?.id === pedido.id ? 'Ocultar' : 'Ver' }}
+                    </button>
+                    <select class="rounded-md border border-slate-300 px-2 py-1 text-xs cursor-pointer bg-white" :value="pedido.estado" @change="updateEstadoPedido(pedido.id, $event.target.value)">
+                      <option value="PENDIENTE">Pendiente</option>
+                      <option value="CONFIRMADO">Confirmado</option>
+                      <option value="ENVIADO">Enviado</option>
+                      <option value="ENTREGADO">Entregado</option>
+                      <option value="CANCELADO">Cancelado</option>
+                    </select>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación pedidos -->
+        <div v-if="pedidosMeta" class="flex items-center justify-between">
+          <p class="text-sm text-slate-600">{{ pedidosMeta.from }} - {{ pedidosMeta.to }} de {{ pedidosMeta.total }} pedidos</p>
+          <div class="flex gap-1">
+            <Link v-for="link in pedidosLinks" :key="link.label" :href="link.url" class="rounded-md border border-slate-300 px-3 py-1 text-sm" :class="link.active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 cursor-pointer'" :disabled="!link.url" v-html="link.label"></Link>
+          </div>
+        </div>
+      </section>
+
       <section v-if="activeTab === 'configuracion'" class="space-y-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Configuracion de Tienda</h2>
@@ -51,8 +149,16 @@
           <h2 class="text-xl font-semibold text-slate-900">Crear / Editar Producto</h2>
 <div class="mt-4 grid gap-3 lg:grid-cols-2">
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Referencia del producto</label>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Nombre del producto <span class="normal-case font-normal text-slate-400">(visible en tienda)</span></label>
+              <input v-model="productForm.nombre" placeholder="Ej: Camiseta Polo Azul Manga Corta" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Referencia / SKU <span class="normal-case font-normal text-slate-400">(código interno)</span></label>
               <input v-model="productForm.referencia" placeholder="Ej: CAMISETA-001" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+            </div>
+            <div class="lg:col-span-2">
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Descripción</label>
+              <textarea v-model="productForm.descripcion" rows="2" placeholder="Descripción del producto para el catálogo..." class="rounded-xl border border-slate-300 px-3 py-2.5 w-full resize-none"></textarea>
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Precio (COP)</label>
@@ -400,23 +506,25 @@ const props = defineProps({
   productos: { type: [Object, Array], default: () => [] },
   insumos: { type: [Object, Array], default: () => [] },
   ofertas: { type: [Object, Array], default: () => [] },
+  pedidos: { type: [Object, Array], default: () => [] },
   noticia: { type: String, default: '' },
   bloques: { type: Object, default: () => ({}) },
-  settings: { type: Object, default: () => ({ store_name: 'Nova Commerce', logo_url: null }) },
+  settings: { type: Object, default: () => ({ store_name: 'Vendex', logo_url: null }) },
   filters: { type: Object, default: () => ({ search: '' }) },
 });
 
 const tabs = [
-  { key: 'configuracion', label: 'Configuracion Tienda' },
+  { key: 'pedidos', label: 'Pedidos' },
   { key: 'productos', label: 'Productos y Stock' },
   { key: 'promociones', label: 'Promociones' },
-  { key: 'noticias', label: 'Noticias Activas' },
-  { key: 'bloques', label: 'Bloques Home' },
   { key: 'insumos', label: 'Insumos Fabrica' },
+  { key: 'bloques', label: 'Bloques Home' },
+  { key: 'noticias', label: 'Noticias Activas' },
+  { key: 'configuracion', label: 'Config Tienda' },
 ];
 
 const sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '28', '30', '32', '34', '36', 'UNICA'];
-const activeTab = ref('configuracion');
+const activeTab = ref('pedidos');
 const feedback = ref('');
 const newsText = ref(props.noticia || '');
 const search = ref(props.filters.search || '');
@@ -472,6 +580,30 @@ const insumosLinks = computed(() => {
   const meta = resolveMeta(props.insumos);
   return meta?.links || [];
 });
+
+// Pedidos
+const pedidosList = computed(() => resolvePagedData(props.pedidos));
+const pedidosMeta = computed(() => resolveMeta(props.pedidos));
+const pedidosLinks = computed(() => resolveMeta(props.pedidos)?.links || []);
+
+const estadoColors = {
+  PENDIENTE: 'bg-amber-100 text-amber-800',
+  CONFIRMADO: 'bg-blue-100 text-blue-800',
+  ENVIADO: 'bg-indigo-100 text-indigo-800',
+  ENTREGADO: 'bg-green-100 text-green-800',
+  CANCELADO: 'bg-red-100 text-red-800',
+};
+
+const pedidoDetalle = ref(null);
+
+const updateEstadoPedido = async (pedidoId, estado) => {
+  try {
+    await requestJson(`/admin/pedidos/${pedidoId}/estado`, 'PUT', { estado });
+    refresh();
+  } catch (e) {
+    notify(e.message);
+  }
+};
 
 // Paginación y búsqueda
 const performSearch = () => {
@@ -578,6 +710,8 @@ function emptyProduct() {
   return {
     id: null,
     referencia: '',
+    nombre: '',
+    descripcion: '',
     precio: null,
     categoria_id: null,
     estado: 'DISPONIBLE',
@@ -638,9 +772,9 @@ const calculatedSupplyUnitCost = computed(() => {
 
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 const money = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(value || 0);
-const refresh = () => router.reload({ 
-  only: ['stats', 'productos', 'categorias', 'insumos', 'ofertas', 'noticia', 'settings'],
-  data: search.value ? { search: search.value } : {}
+const refresh = () => router.reload({
+  only: ['stats', 'productos', 'categorias', 'insumos', 'ofertas', 'pedidos', 'noticia', 'settings'],
+  data: search.value ? { search: search.value } : {},
 });
 
 const notify = (message) => {
@@ -716,6 +850,8 @@ const saveProduct = async () => {
   const stockBySize = selectedStockBySize();
   const formData = new FormData();
   formData.append('referencia', productForm.value.referencia || '');
+  formData.append('nombre', productForm.value.nombre || '');
+  formData.append('descripcion', productForm.value.descripcion || '');
   formData.append('precio', String(Number(productForm.value.precio || 0)));
   formData.append('categoria_id', String(productForm.value.categoria_id || ''));
   formData.append('estado', productForm.value.estado || 'DISPONIBLE');
@@ -745,6 +881,8 @@ const editProduct = (item) => {
 productForm.value = {
     id: item.id,
     referencia: item.referencia,
+    nombre: item.nombre || '',
+    descripcion: item.descripcion || '',
     precio: item.precio,
     categoria_id: item.categoria_id,
     estado: item.estado,

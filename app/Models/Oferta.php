@@ -3,76 +3,8 @@
 namespace App\Models;
 
 use App\Traits\HasTenant;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-
-class Wishlist extends Model
-{
-    use HasFactory, HasTenant;
-
-    protected $fillable = ['user_id', 'sesion_id', 'producto_id'];
-
-    public function producto()
-    {
-        return $this->belongsTo(Producto::class);
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-}
-
-class Resena extends Model
-{
-    use HasFactory, HasTenant;
-
-    protected $fillable = [
-        'producto_id',
-        'user_id',
-        'nombre',
-        'email',
-        'calificacion',
-        'comentario',
-        'aprobada'
-    ];
-
-    protected $casts = [
-        'aprobada' => 'boolean',
-    ];
-
-    public function producto()
-    {
-        return $this->belongsTo(Producto::class);
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-}
-
-class HistorialPrecio extends Model
-{
-    use HasFactory, HasTenant;
-
-    protected $fillable = [
-        'producto_id',
-        'precio_anterior',
-        'precio_nuevo',
-        'motivo'
-    ];
-
-    protected $casts = [
-        'precio_anterior' => 'decimal:2',
-        'precio_nuevo' => 'decimal:2',
-    ];
-
-    public function producto()
-    {
-        return $this->belongsTo(Producto::class);
-    }
-}
+use Illuminate\Database\Eloquent\Model;
 
 class Oferta extends Model
 {
@@ -88,7 +20,7 @@ class Oferta extends Model
         'precio_oferta',
         'fecha_inicio',
         'fecha_fin',
-        'esta_activa'
+        'esta_activa',
     ];
 
     protected $casts = [
@@ -110,27 +42,21 @@ class Oferta extends Model
         return $this->belongsTo(Categoria::class);
     }
 
-    /**
-     * Obtener oferta activa para un producto específico
-     */
     public static function getOfertaActiva($productoId = null)
     {
         $ahora = now();
-        
+
         return static::where('esta_activa', true)
             ->where('fecha_inicio', '<=', $ahora)
             ->where('fecha_fin', '>=', $ahora)
-            ->when($productoId, fn($q) => $q->where('producto_id', $productoId))
+            ->when($productoId, fn ($q) => $q->where('producto_id', $productoId))
             ->first();
     }
 
-    /**
-     * Obtener todas las ofertas activas
-     */
     public static function getOfertasActivas()
     {
         $ahora = now();
-        
+
         return static::where('esta_activa', true)
             ->where('fecha_inicio', '<=', $ahora)
             ->where('fecha_fin', '>=', $ahora)
