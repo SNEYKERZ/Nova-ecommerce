@@ -24,23 +24,23 @@ class UserSeeder extends Seeder
         $users = [
             [
                 'name' => 'Super Admin Vendex',
-                'email' => 'superadmin@vendex.app',
+                'email' => 'superadmin@vendez.app',
                 'role' => 'super_admin',
-                'password' => 'Vendex2026*',
+                'password' => bcrypt('123456'),
                 'store_id' => null, // Super admin no tiene store
             ],
             [
                 'name' => 'Admin Demo Store',
-                'email' => 'admin@demo.vendex.app',
+                'email' => 'admin@demo.vendez.app',
                 'role' => 'admin',
-                'password' => 'Vendex2026*',
+                'password' => bcrypt('123456'),
                 'store_id' => $store->id,
             ],
             [
                 'name' => 'Cliente Demo',
-                'email' => 'cliente@demo.vendex.app',
+                'email' => 'cliente@demo.vendez.app',
                 'role' => 'cliente',
-                'password' => 'Vendex2026*',
+                'password' => bcrypt('123456'),
                 'store_id' => $store->id,
             ],
         ];

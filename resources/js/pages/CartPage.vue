@@ -31,42 +31,42 @@
       </div>
 
       <!-- Items + Summary -->
-      <div v-else class="grid gap-6 lg:grid-cols-3 items-start">
+      <div v-else class="grid gap-4 sm:gap-6 lg:grid-cols-3 items-start">
 
         <!-- Items list -->
         <div class="lg:col-span-2" style="border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
           <article
             v-for="item in items"
             :key="item.id"
-            class="grid gap-4 p-4 border-b"
-            style="grid-template-columns:72px 1fr;border-color:var(--border-light);background:var(--white);transition:opacity 0.18s"
+            class="grid gap-3 p-3 sm:gap-4 sm:p-4 border-b"
+            style="grid-template-columns:60px 1fr;border-color:var(--border-light);background:var(--white);transition:opacity 0.18s"
             :style="item._syncing ? 'opacity:0.55' : ''"
           >
             <!-- Image -->
-            <div style="border-radius:var(--r);overflow:hidden;background:#f0ede8;aspect-ratio:3/4;width:72px;flex-shrink:0">
+            <div style="border-radius:var(--r);overflow:hidden;background:#f0ede8;aspect-ratio:3/4;width:60px;flex-shrink:0" class="sm:w-[72px]">
               <img :src="productImage(item)" :alt="item.producto.referencia" style="width:100%;height:100%;object-fit:cover;display:block" />
             </div>
 
             <!-- Info -->
-            <div class="flex flex-col gap-2 min-w-0">
-              <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col gap-1.5 sm:gap-2 min-w-0">
+              <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                  <h3 class="font-display text-sm font-black uppercase tracking-wide truncate" style="color:var(--ink)">
+                  <h3 class="font-display text-xs font-black uppercase tracking-wide truncate sm:text-sm" style="color:var(--ink)">
                     {{ item.producto.nombre || item.producto.referencia }}
                   </h3>
-                  <p class="text-xs mt-0.5" style="color:var(--muted)">{{ item.producto.categoria }}</p>
-                  <p class="text-xs" style="color:var(--muted)">Ref: {{ item.producto.referencia }}</p>
+                  <p class="text-[10px] mt-0.5 sm:text-xs" style="color:var(--muted)">{{ item.producto.categoria }}</p>
+                  <p class="text-[10px] sm:text-xs" style="color:var(--muted)">Ref: {{ item.producto.referencia }}</p>
                 </div>
-                <button @click="removeItem(item.id)" class="shrink-0 text-xs font-semibold" style="color:var(--accent);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px">
+                <button @click="removeItem(item.id)" class="shrink-0 text-[10px] font-semibold sm:text-xs" style="color:var(--accent);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px">
                   Eliminar
                 </button>
               </div>
 
-              <div class="flex flex-wrap items-center justify-between gap-3 mt-auto">
+              <div class="flex flex-wrap items-center justify-between gap-2 mt-auto">
                 <!-- Size selector -->
-                <div v-if="sizeOptions(item).length" class="flex items-center gap-2">
+                <div v-if="sizeOptions(item).length" class="flex items-center gap-1.5">
                   <label class="label-xs">Talla</label>
-                  <select style="width:auto;padding:0.3rem 2.2rem 0.3rem 0.65rem" :value="item.talla || ''" @change="changeSize(item, $event.target.value)">
+                  <select style="width:auto;padding:0.25rem 2rem 0.25rem 0.5rem;font-size:0.75rem" :value="item.talla || ''" @change="changeSize(item, $event.target.value)">
                     <option value="">—</option>
                     <option v-for="s in sizeOptions(item)" :key="s" :value="s">{{ s }}</option>
                   </select>
@@ -138,29 +138,31 @@
       <div v-if="showCheckout" class="overlay" @click.self="showCheckout = false"></div>
     </transition>
 
-    <transition name="slide-up">
-      <div v-if="showCheckout" class="fixed inset-0 z-50 flex items-center justify-center px-4" style="pointer-events:none">
-        <div class="card w-full max-w-lg p-6" style="pointer-events:auto;max-height:90vh;overflow-y:auto">
-          <div class="flex items-center justify-between mb-5">
-            <h3 class="font-display text-lg font-black uppercase tracking-[0.08em]">Datos de entrega</h3>
-            <button @click="showCheckout = false" class="btn-ghost text-xs">✕ Cerrar</button>
-          </div>
-          <form class="grid gap-3 sm:grid-cols-2" @submit.prevent="submitOrder">
-            <input v-model="form.nombre" required placeholder="Nombre *" />
-            <input v-model="form.apellidos" placeholder="Apellidos" />
-            <input v-model="form.email" required type="email" placeholder="Correo electrónico *" class="sm:col-span-2" />
-            <input v-model="form.telefono" placeholder="Teléfono" class="sm:col-span-2" />
-            <textarea v-model="form.direccion" required placeholder="Dirección de entrega *" class="sm:col-span-2" rows="2"></textarea>
-            <div class="sm:col-span-2 flex justify-end gap-2 mt-1">
-              <button type="button" class="btn-soft px-4 py-2 text-xs" @click="showCheckout = false">Cancelar</button>
-              <button type="submit" class="btn-main px-5 py-2.5 text-xs" :disabled="saving">
-                {{ saving ? 'Procesando...' : 'Confirmar pedido' }}
-              </button>
+      <transition name="slide-up">
+        <div v-if="showCheckout" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4" style="pointer-events:none">
+          <div class="card w-full max-w-lg p-5 sm:p-6 rounded-b-none sm:rounded-b-2xl" style="pointer-events:auto;max-height:90vh;overflow-y:auto">
+            <div class="flex items-center justify-between mb-4 sm:mb-5">
+              <h3 class="font-display text-base font-black uppercase tracking-[0.08em] sm:text-lg">Datos de entrega</h3>
+              <button @click="showCheckout = false" class="btn-ghost text-xs">✕ Cerrar</button>
             </div>
-          </form>
+            <form class="grid gap-3" @submit.prevent="submitOrder">
+              <div class="grid grid-cols-2 gap-3">
+                <input v-model="form.nombre" required placeholder="Nombre *" class="text-sm" />
+                <input v-model="form.apellidos" placeholder="Apellidos" class="text-sm" />
+              </div>
+              <input v-model="form.email" required type="email" placeholder="Correo electrónico *" class="text-sm" />
+              <input v-model="form.telefono" placeholder="Teléfono" class="text-sm" />
+              <textarea v-model="form.direccion" required placeholder="Dirección de entrega *" rows="2" class="text-sm"></textarea>
+              <div class="flex justify-end gap-2 mt-1">
+                <button type="button" class="btn-soft px-3 py-2 text-xs sm:px-4" @click="showCheckout = false">Cancelar</button>
+                <button type="submit" class="btn-main px-4 py-2 text-xs sm:px-5 sm:py-2.5" :disabled="saving">
+                  {{ saving ? 'Procesando...' : 'Confirmar pedido' }}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
-    </transition>
+      </transition>
   </AppLayout>
 </template>
 

@@ -59,4 +59,24 @@ class AdminAuthController extends Controller
 
         return redirect('/');
     }
+
+    public function leaveImpersonation(Request $request): RedirectResponse
+    {
+        $impersonatorId = session()->pull('impersonator_id');
+
+        if (!$impersonatorId) {
+            return redirect('/admin');
+        }
+
+        $impersonator = \App\Models\User::find($impersonatorId);
+
+        if (!$impersonator) {
+            Auth::logout();
+            return redirect('/admin/login');
+        }
+
+        Auth::login($impersonator);
+
+        return redirect('/super-admin');
+    }
 }

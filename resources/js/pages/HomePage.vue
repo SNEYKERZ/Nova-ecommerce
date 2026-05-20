@@ -1,22 +1,41 @@
 <template>
   <AppLayout>
     <Head title="Inicio" />
-    <section class="mx-auto grid w-full max-w-7xl gap-8 px-4 pt-10 sm:px-6 lg:grid-cols-5 lg:px-8">
-      <div class="glass rounded-3xl p-8 lg:col-span-3">
-        <p class="chip inline-flex bg-[color:var(--sand)]">E-commerce base</p>
-        <h1 class="font-display mt-5 text-4xl leading-tight font-bold sm:text-5xl">Vende cualquier producto con una vitrina moderna y fluida.</h1>
-        <p class="mt-4 max-w-2xl text-base text-[color:var(--muted)] sm:text-lg">Arquitectura Laravel + Vue + Inertia para una experiencia SPA sin recargas, disenada para escalar por categorias, colecciones y temporadas.</p>
-        <div class="mt-7 flex flex-wrap gap-3">
-          <a href="#catalogo" class="btn-main px-6 py-3 text-sm font-bold">Explorar catalogo</a>
-          <Link href="/conocenos" class="btn-soft px-6 py-3 text-sm font-semibold">Conocer la plataforma</Link>
-        </div>
-      </div>
 
-      <div class="relative overflow-hidden rounded-3xl bg-[color:var(--surface-dark)] p-8 text-white lg:col-span-2">
-        <div class="absolute -right-16 -top-14 h-44 w-44 rounded-full bg-[color:var(--brand)]/40 blur-2xl"></div>
-        <p class="text-sm text-white/70">Coleccion destacada</p>
-        <h2 class="font-display mt-2 text-2xl font-bold">Lanzamientos de temporada</h2>
-        <p class="mt-3 text-sm text-white/80">Visual premium, navegacion fluida y control total desde el panel admin.</p>
+    <section v-if="carouselImages.length" class="w-full">
+      <div class="relative overflow-hidden bg-black">
+        <div class="relative h-[40vh] min-h-[280px] sm:h-[55vh] lg:h-[85vh]">
+          <transition name="fade" mode="out-in">
+            <button
+              :key="activeSlide.id || currentSlide"
+              type="button"
+              class="absolute inset-0 block h-full w-full cursor-default"
+              :class="activeSlide.url_destino ? 'cursor-pointer' : ''"
+              @click="openSlide(activeSlide.url_destino)"
+            >
+              <img
+                :src="activeSlide.imagen"
+                :alt="`Slide ${currentSlide + 1}`"
+                class="h-full w-full object-cover"
+                loading="eager"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-black/20"></div>
+            </button>
+          </transition>
+
+          <div v-if="carouselImages.length > 1" class="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center">
+            <div class="pointer-events-auto flex items-center gap-2 rounded-full bg-black/30 px-3 py-2 backdrop-blur-sm">
+              <button
+                v-for="(slide, index) in carouselImages"
+                :key="slide.id || index"
+                type="button"
+                class="h-2.5 rounded-full transition-all duration-300"
+                :class="currentSlide === index ? 'w-8 bg-white' : 'w-2.5 bg-white/45'"
+                @click="setSlide(index)"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -29,8 +48,8 @@
     <section id="catalogo" class="mt-12 w-full px-4 pb-12 sm:px-6 lg:px-8">
       <div class="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-black/10 pb-4">
         <div>
-          <p class="text-[11px] font-bold tracking-[0.22em] text-[color:var(--muted)] uppercase">Catalogo</p>
-          <h2 class="font-display mt-2 text-3xl font-bold sm:text-4xl">Productos listos para vender</h2>
+          <p class="text-[10px] font-bold tracking-[0.22em] text-[color:var(--muted)] uppercase sm:text-[11px]">Catalogo</p>
+          <h2 class="font-display mt-1 text-2xl font-bold sm:mt-2 sm:text-3xl md:text-4xl">Productos listos para vender</h2>
         </div>
 
         <div class="flex items-center gap-3">
@@ -58,8 +77,8 @@
         </div>
       </transition>
 
-      <div class="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-4 xl:grid-cols-4">
-        <article v-for="item in filteredProducts" :key="item.id" class="group">
+      <div class="grid grid-cols-2 gap-x-2 gap-y-6 sm:gap-x-3 sm:gap-y-8 md:grid-cols-3 md:gap-x-4 xl:grid-cols-5">
+        <article v-for="item in paginatedProducts" :key="item.id" class="group">
           <Link :href="`/productos/${item.id}`" class="relative block overflow-hidden bg-[#efefee]">
             <img :src="item.foto" :alt="item.sku" loading="lazy" class="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
 
@@ -79,6 +98,37 @@
         </article>
       </div>
 
+      <div v-if="bottomCatalogBanners.length" class="mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
+        <div class="grid gap-0 md:grid-cols-2">
+          <a
+            v-for="banner in bottomCatalogBanners"
+            :key="banner.id || banner.identificador"
+            :href="banner.url_destino || '#catalogo'"
+            class="group relative block overflow-hidden"
+          >
+            <img :src="banner.imagen" :alt="banner.nombre || banner.identificador" class="h-[260px] w-full object-cover transition duration-500 group-hover:scale-[1.03] sm:h-[340px]" loading="lazy" />
+            <div class="absolute inset-0 bg-gradient-to-r from-black/35 to-black/10"></div>
+          </a>
+        </div>
+      </div>
+
+      <div v-if="totalPages > 1" class="mt-8 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-[color:var(--muted)]">Pagina {{ currentPage }} de {{ totalPages }}</p>
+        <div class="flex flex-wrap gap-2">
+          <button class="btn-soft px-4 py-2 text-xs font-bold uppercase" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">Anterior</button>
+          <button
+            v-for="pageNumber in visiblePages"
+            :key="pageNumber"
+            class="rounded-full px-4 py-2 text-xs font-bold uppercase transition"
+            :class="pageNumber === currentPage ? 'bg-[color:var(--ink)] text-white' : 'bg-white text-[color:var(--ink)] border border-black/10'"
+            @click="goToPage(pageNumber)"
+          >
+            {{ pageNumber }}
+          </button>
+          <button class="btn-soft px-4 py-2 text-xs font-bold uppercase" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">Siguiente</button>
+        </div>
+      </div>
+
       <div v-if="!filteredProducts.length" class="mt-10 rounded-2xl border border-dashed border-[color:var(--line)] bg-[color:var(--surface)] p-10 text-center text-[color:var(--muted)]">
         No encontramos productos con esos filtros. Prueba limpiarlos o ajustar el rango de precio.
       </div>
@@ -90,19 +140,44 @@
 
 <script setup>
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppLayout from '../layouts/AppLayout.vue';
 import FilterSidebar from '../components/FilterSidebar.vue';
+
+const PRODUCTS_PER_PAGE = 10;
 
 const props = defineProps({
   productos: { type: Array, default: () => [] },
   categorias: { type: Array, default: () => [] },
   promociones: { type: Array, default: () => [] },
+  carousel: { type: Object, default: null },
+  catalogBanners: { type: Array, default: () => [] },
   store: { type: Object, default: null },
 });
 
 const page = usePage();
 const whatsappPhone = computed(() => page.props.app?.whatsapp || props.store?.telefono || null);
+const selectedCategory = ref('ALL');
+const selectedSize = ref('ALL');
+const selectedRecency = ref('ALL');
+const onlyNewCollection = ref(false);
+const sortBy = ref('recentes');
+const minPrice = ref('');
+const maxPrice = ref('');
+const toast = ref('');
+const filtersOpen = ref(false);
+const currentSlide = ref(0);
+const currentPage = ref(1);
+let autoplayInterval = null;
+const bannerOrder = { 'banner-izq': 1, 'banner-der': 2 };
+
+const carouselImages = computed(() => props.carousel?.imagenes || []);
+const activeSlide = computed(() => carouselImages.value[currentSlide.value] || {});
+const bottomCatalogBanners = computed(() =>
+  [...props.catalogBanners]
+    .filter((banner) => ['banner-izq', 'banner-der'].includes(banner.identificador))
+    .sort((left, right) => (left.posicion || bannerOrder[left.identificador] || 99) - (right.posicion || bannerOrder[right.identificador] || 99)),
+);
 
 const whatsappLink = (item) => {
   const phone = whatsappPhone.value?.replace(/\D/g, '');
@@ -116,15 +191,35 @@ const openWhatsapp = (item) => {
   if (url !== '#') window.open(url, '_blank', 'noopener');
 };
 
-const selectedCategory = ref('ALL');
-const selectedSize = ref('ALL');
-const selectedRecency = ref('ALL');
-const onlyNewCollection = ref(false);
-const sortBy = ref('recentes');
-const minPrice = ref('');
-const maxPrice = ref('');
-const toast = ref('');
-const filtersOpen = ref(false);
+const openSlide = (url) => {
+  if (url) window.location.href = url;
+};
+
+const setSlide = (index) => {
+  currentSlide.value = index;
+};
+
+const nextSlide = () => {
+  if (carouselImages.value.length <= 1) return;
+  currentSlide.value = (currentSlide.value + 1) % carouselImages.value.length;
+};
+
+const startAutoplay = () => {
+  if (autoplayInterval) clearInterval(autoplayInterval);
+  if (carouselImages.value.length > 1) {
+    autoplayInterval = setInterval(nextSlide, 2000);
+  }
+};
+
+onMounted(startAutoplay);
+onUnmounted(() => {
+  if (autoplayInterval) clearInterval(autoplayInterval);
+});
+
+watch(carouselImages, () => {
+  currentSlide.value = 0;
+  startAutoplay();
+});
 
 const availableSizes = computed(() => {
   const sizes = new Set();
@@ -158,6 +253,37 @@ const filteredProducts = computed(() => {
   return list;
 });
 
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredProducts.value.length / PRODUCTS_PER_PAGE)));
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * PRODUCTS_PER_PAGE;
+  return filteredProducts.value.slice(start, start + PRODUCTS_PER_PAGE);
+});
+
+const visiblePages = computed(() => {
+  const pages = [];
+  const start = Math.max(1, currentPage.value - 2);
+  const end = Math.min(totalPages.value, start + 4);
+
+  for (let pageNumber = start; pageNumber <= end; pageNumber += 1) {
+    pages.push(pageNumber);
+  }
+
+  return pages;
+});
+
+const goToPage = (pageNumber) => {
+  currentPage.value = Math.min(Math.max(pageNumber, 1), totalPages.value);
+  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+watch([selectedCategory, selectedSize, selectedRecency, onlyNewCollection, sortBy, minPrice, maxPrice], () => {
+  currentPage.value = 1;
+});
+
+watch(totalPages, (value) => {
+  if (currentPage.value > value) currentPage.value = value;
+});
+
 const resetFilters = () => {
   selectedCategory.value = 'ALL';
   selectedSize.value = 'ALL';
@@ -166,6 +292,7 @@ const resetFilters = () => {
   sortBy.value = 'recentes';
   minPrice.value = '';
   maxPrice.value = '';
+  currentPage.value = 1;
 };
 
 const money = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value || 0);
@@ -192,10 +319,26 @@ const addToCart = async (product) => {
 
     toast.value = 'Producto agregado al carrito';
     window.dispatchEvent(new Event('cart-updated'));
-    setTimeout(() => (toast.value = ''), 1800);
+    setTimeout(() => {
+      toast.value = '';
+    }, 1800);
   } catch {
     toast.value = 'No fue posible agregar el producto';
-    setTimeout(() => (toast.value = ''), 1800);
+    setTimeout(() => {
+      toast.value = '';
+    }, 1800);
   }
 };
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.6s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

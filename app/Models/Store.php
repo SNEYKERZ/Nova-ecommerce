@@ -20,6 +20,9 @@ class Store extends Model
         'descripcion',
         'configuracion',
         'activo',
+        'bg_color',
+        'navbar_color',
+        'footer_color',
     ];
 
     protected $casts = [

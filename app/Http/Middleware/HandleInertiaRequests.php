@@ -42,6 +42,7 @@ class HandleInertiaRequests extends Middleware
                         'name' => $request->user()->name,
                         'email' => $request->user()->email,
                         'role' => $request->user()->role,
+                        'impersonating' => session()->has('impersonator_id'),
                     ]
                     : null,
             ],
@@ -50,6 +51,9 @@ class HandleInertiaRequests extends Middleware
                 'logo' => $store?->logo_path ? asset('storage/'.$store->logo_path) : null,
                 'env' => config('app.env'),
                 'whatsapp' => $store?->telefono,
+                'bg_color' => $store?->bg_color ?? '#ffffff',
+                'navbar_color' => $store?->navbar_color ?? '#1e293b',
+                'footer_color' => $store?->footer_color ?? '#1e293b',
             ],
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),

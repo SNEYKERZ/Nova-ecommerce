@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CatalogBanner;
 use App\Models\Categoria;
 use App\Models\Insumo;
 use App\Models\Noticia;
@@ -12,6 +13,7 @@ use App\Models\ProductoImagen;
 use App\Models\ProductoVariante;
 use App\Models\Store;
 use App\Services\TenantManager;
+use App\Traits\HasMediaUrls;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +24,8 @@ use Inertia\Response;
 
 class AdminController extends Controller
 {
+    use HasMediaUrls;
+
     public function dashboard(Request $request): Response
     {
         // Obtener el store actual desde el TenantManager
@@ -71,7 +75,7 @@ class AdminController extends Controller
                 'imagenes' => $producto->imagenes->sortBy('orden')->map(function (ProductoImagen $imagen) {
                     return [
                         'id' => $imagen->id,
-                        'url' => asset('storage/'.$imagen->imagen),
+                        'url' => $this->mediaUrl($imagen->imagen),
                         'es_principal' => (bool) $imagen->es_principal,
                     ];
                 })->values(),
@@ -96,10 +100,14 @@ class AdminController extends Controller
             'settings' => [
                 'store_name' => $settings?->nombre ?? 'Mi Tienda',
                 'logo_url' => $settings?->logo_path ? asset('storage/'.$settings->logo_path) : null,
+                'bg_color' => $settings?->bg_color ?? '#ffffff',
+                'navbar_color' => $settings?->navbar_color ?? '#1e293b',
+                'footer_color' => $settings?->footer_color ?? '#1e293b',
             ],
             'ofertas' => $this->paginateAndMapOfertas($search, $perPage),
             'noticia' => Noticia::first()?->campos_adicionales ?? '',
             'bloques' => $this->getBloques(),
+            'catalogBanners' => $this->getCatalogBanners(),
             'pedidos' => $this->getPedidosList($perPage),
             'currentStore' => $store ? [
                 'id' => $store->id,
@@ -124,7 +132,7 @@ class AdminController extends Controller
             'stock_por_talla.*.talla' => ['required', 'string', 'max:40'],
             'stock_por_talla.*.stock' => ['required', 'integer', 'min:0'],
             'images'                  => ['nullable', 'array', 'max:4'],
-            'images.*'                => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images.*'                => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ]);
 
         DB::transaction(function () use ($validated, $request) {
@@ -161,7 +169,7 @@ class AdminController extends Controller
             'stock_por_talla.*.talla' => ['required', 'string', 'max:40'],
             'stock_por_talla.*.stock' => ['required', 'integer', 'min:0'],
             'images'                  => ['nullable', 'array', 'max:4'],
-            'images.*'                => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images.*'                => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ]);
 
         DB::transaction(function () use ($validated, $request, $producto) {
@@ -337,7 +345,10 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'store_name' => ['required', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:10240'],
+            'bg_color' => ['nullable', 'string', 'max:20'],
+            'navbar_color' => ['nullable', 'string', 'max:20'],
+            'footer_color' => ['nullable', 'string', 'max:20'],
         ]);
 
         $tenantManager = app(TenantManager::class);
@@ -348,6 +359,9 @@ class AdminController extends Controller
         }
 
         $store->nombre = $validated['store_name'];
+        $store->bg_color = $validated['bg_color'] ?? $store->bg_color;
+        $store->navbar_color = $validated['navbar_color'] ?? $store->navbar_color;
+        $store->footer_color = $validated['footer_color'] ?? $store->footer_color;
 
         if ($request->hasFile('logo')) {
             if ($store->logo_path) {
@@ -536,7 +550,9 @@ class AdminController extends Controller
             if ($bloque->tipo === 'banner') {
                 $data['imagenes'] = $bloque->imagenes->map(fn($img) => [
                     'id' => $img->id,
-                    'imagen' => asset('storage/' . $img->imagen),
+                    'nombre' => $img->nombre,
+                    'identificador' => $img->identificador,
+                    'imagen' => $this->mediaUrl($img->imagen),
                     'url_destino' => $img->url_destino,
                     'orden' => $img->orden,
                 ]);
@@ -562,6 +578,12 @@ class AdminController extends Controller
             'contenido' => 'nullable|string',
             'tamano_texto' => 'nullable|in:normal,grande',
             'activo' => 'nullable|boolean',
+            'imagen' => 'nullable|array|max:10',
+            'imagen.*' => 'image|mimes:jpg,jpeg,png,webp|max:10240',
+            'image_names' => 'nullable|array',
+            'image_names.*' => 'nullable|string|max:255',
+            'image_links' => 'nullable|array',
+            'image_links.*' => 'nullable|string|max:2048',
         ]);
 
         $bloque = \App\Models\BloqueHome::getAllPorPosicion($validated['posicion']);
@@ -585,6 +607,39 @@ class AdminController extends Controller
             ]);
         }
 
+        if ($request->hasFile('imagen')) {
+            $files = $request->file('imagen', []);
+
+            foreach ($files as $file) {
+                $nextOrder = ((int) $bloque->imagenes()->max('orden')) + 1;
+                $path = $this->storeVisualImage($file);
+
+                \App\Models\BloqueHomeImagen::create([
+                    'bloque_home_id' => $bloque->id,
+                    'imagen' => $path,
+                    'nombre' => 'Slide '.$nextOrder,
+                    'identificador' => 'carrusel',
+                    'url_destino' => null,
+                    'orden' => $nextOrder,
+                ]);
+            }
+        }
+
+        foreach (($validated['image_names'] ?? []) as $imageId => $nombre) {
+            \App\Models\BloqueHomeImagen::where('bloque_home_id', $bloque->id)
+                ->where('id', $imageId)
+                ->update([
+                    'nombre' => $nombre ?: 'Slide '.$imageId,
+                    'identificador' => 'carrusel',
+                ]);
+        }
+
+        foreach (($validated['image_links'] ?? []) as $imageId => $urlDestino) {
+            \App\Models\BloqueHomeImagen::where('bloque_home_id', $bloque->id)
+                ->where('id', $imageId)
+                ->update(['url_destino' => $urlDestino ?: null]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Bloque guardado',
@@ -597,7 +652,7 @@ class AdminController extends Controller
     public function storeBloqueImagen(\Illuminate\Http\Request $request, int $id): \Illuminate\Http\JsonResponse
     {
         $validated = $request->validate([
-            'imagen' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'imagen' => 'required|image|mimes:jpg,jpeg,png,webp|max:10240',
             'url_destino' => 'nullable|url',
         ]);
 
@@ -617,11 +672,13 @@ class AdminController extends Controller
             ], 422);
         }
 
-        $imagen = $request->file('imagen')->store('bloques', 'public');
+        $imagen = $this->storeVisualImage($request->file('imagen'));
 
         $bloqueImg = \App\Models\BloqueHomeImagen::create([
             'bloque_home_id' => $bloque->id,
             'imagen' => $imagen,
+            'nombre' => 'Slide '.(((int) $bloque->imagenes()->max('orden')) + 1),
+            'identificador' => 'carrusel',
             'url_destino' => $validated['url_destino'] ?? null,
             'orden' => $bloque->imagenes()->max('orden') + 1,
         ]);
@@ -630,7 +687,9 @@ class AdminController extends Controller
             'success' => true,
             'imagen' => [
                 'id' => $bloqueImg->id,
-                'imagen' => asset('storage/' . $bloqueImg->imagen),
+                'nombre' => $bloqueImg->nombre,
+                'identificador' => $bloqueImg->identificador,
+                'imagen' => $this->mediaUrl($bloqueImg->imagen),
                 'url_destino' => $bloqueImg->url_destino,
                 'orden' => $bloqueImg->orden,
             ],
@@ -644,12 +703,139 @@ class AdminController extends Controller
     {
         $imagen = \App\Models\BloqueHomeImagen::where('bloque_home_id', $id)->findOrFail($imgId);
         
-        \Illuminate\Support\Facades\Storage::disk('public')->delete($imagen->imagen);
+        $this->deleteMediaPath($imagen->imagen);
         $imagen->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Imagen eliminada',
+        ]);
+    }
+
+    public function saveVisualAssets(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'carousel_active' => ['nullable', 'boolean'],
+            'carousel_images' => ['nullable', 'array', 'max:10'],
+            'carousel_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'carousel_existing_names' => ['nullable', 'array'],
+            'carousel_existing_names.*' => ['nullable', 'string', 'max:255'],
+            'carousel_existing_links' => ['nullable', 'array'],
+            'carousel_existing_links.*' => ['nullable', 'string', 'max:2048'],
+            'left_nombre' => ['nullable', 'string', 'max:255'],
+            'left_url_destino' => ['nullable', 'string', 'max:2048'],
+            'left_activo' => ['nullable', 'boolean'],
+            'left_imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'right_nombre' => ['nullable', 'string', 'max:255'],
+            'right_url_destino' => ['nullable', 'string', 'max:2048'],
+            'right_activo' => ['nullable', 'boolean'],
+            'right_imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ]);
+
+        DB::transaction(function () use ($validated, $request) {
+            $bloque = \App\Models\BloqueHome::getAllPorPosicion(1);
+
+            if ($bloque) {
+                $bloque->update([
+                    'tipo' => 'banner',
+                    'activo' => $validated['carousel_active'] ?? true,
+                ]);
+            } else {
+                $bloque = \App\Models\BloqueHome::create([
+                    'posicion' => 1,
+                    'tipo' => 'banner',
+                    'activo' => $validated['carousel_active'] ?? true,
+                ]);
+            }
+
+            foreach (($validated['carousel_existing_names'] ?? []) as $imageId => $nombre) {
+                \App\Models\BloqueHomeImagen::where('bloque_home_id', $bloque->id)
+                    ->where('id', $imageId)
+                    ->update([
+                        'nombre' => $nombre ?: 'Slide '.$imageId,
+                        'identificador' => 'carrusel',
+                    ]);
+            }
+
+            foreach (($validated['carousel_existing_links'] ?? []) as $imageId => $urlDestino) {
+                \App\Models\BloqueHomeImagen::where('bloque_home_id', $bloque->id)
+                    ->where('id', $imageId)
+                    ->update(['url_destino' => $urlDestino ?: null]);
+            }
+
+            foreach ($request->file('carousel_images', []) as $file) {
+                $nextOrder = ((int) $bloque->imagenes()->max('orden')) + 1;
+
+                \App\Models\BloqueHomeImagen::create([
+                    'bloque_home_id' => $bloque->id,
+                    'imagen' => $this->storeVisualImage($file),
+                    'nombre' => 'Slide '.$nextOrder,
+                    'identificador' => 'carrusel',
+                    'url_destino' => null,
+                    'orden' => $nextOrder,
+                ]);
+            }
+
+            $this->upsertCatalogBannerRecord(
+                1,
+                $validated['left_nombre'] ?? 'Banner izquierdo',
+                $validated['left_url_destino'] ?? null,
+                $validated['left_activo'] ?? true,
+                $request->file('left_imagen')
+            );
+
+            $this->upsertCatalogBannerRecord(
+                2,
+                $validated['right_nombre'] ?? 'Banner derecho',
+                $validated['right_url_destino'] ?? null,
+                $validated['right_activo'] ?? true,
+                $request->file('right_imagen')
+            );
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Visuales guardados correctamente.',
+        ]);
+    }
+
+    public function upsertCatalogBanner(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'posicion' => ['required', 'integer', 'min:1', 'max:2'],
+            'nombre' => ['nullable', 'string', 'max:255'],
+            'url_destino' => ['nullable', 'string', 'max:2048'],
+            'activo' => ['nullable', 'boolean'],
+            'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ]);
+
+        $this->upsertCatalogBannerRecord(
+            (int) $validated['posicion'],
+            $validated['nombre'] ?? ($validated['posicion'] == 1 ? 'Banner izquierdo' : 'Banner derecho'),
+            $validated['url_destino'] ?? null,
+            $validated['activo'] ?? true,
+            $request->file('imagen')
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Banner del catalogo guardado.',
+        ]);
+    }
+
+    public function destroyCatalogBanner(int $posicion): JsonResponse
+    {
+        $banner = CatalogBanner::query()->where('posicion', $posicion)->firstOrFail();
+
+        if ($banner->imagen) {
+            $this->deleteMediaPath($banner->imagen);
+        }
+
+        $banner->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Banner del catalogo eliminado.',
         ]);
     }
 
@@ -695,5 +881,60 @@ class AdminController extends Controller
         }
 
         return $query->orderByDesc('id')->paginate($perPage)->withQueryString();
+    }
+
+    private function getCatalogBanners(): array
+    {
+        $items = CatalogBanner::query()
+            ->orderBy('posicion')
+            ->get()
+            ->keyBy('posicion');
+
+        $result = [];
+
+        foreach ([1, 2] as $posicion) {
+            $banner = $items->get($posicion);
+
+            $result[$posicion] = [
+                'id' => $banner?->id,
+                'nombre' => $banner?->nombre ?? ($posicion === 1 ? 'Banner izquierdo' : 'Banner derecho'),
+                'identificador' => $banner?->identificador ?? ($posicion === 1 ? 'banner-izq' : 'banner-der'),
+                'posicion' => $posicion,
+                'imagen' => $banner?->imagen ? $this->mediaUrl($banner->imagen) : null,
+                'url_destino' => $banner?->url_destino,
+                'activo' => $banner?->activo ?? true,
+            ];
+        }
+
+        return $result;
+    }
+
+    private function upsertCatalogBannerRecord(int $posicion, ?string $nombre, ?string $urlDestino, bool $activo, $imageFile = null): void
+    {
+        $banner = CatalogBanner::query()->firstOrNew([
+            'posicion' => $posicion,
+        ]);
+
+        $identificador = $posicion === 1 ? 'banner-izq' : 'banner-der';
+        $banner->nombre = $nombre ?: ($posicion === 1 ? 'Banner izquierdo' : 'Banner derecho');
+        $banner->identificador = $identificador;
+        $banner->url_destino = $urlDestino;
+        $banner->activo = $activo;
+
+        if ($imageFile) {
+            if ($banner->exists && $banner->imagen) {
+                $this->deleteMediaPath($banner->imagen);
+            }
+
+            $banner->imagen = $this->storeVisualImage($imageFile);
+        }
+
+        // Si el banner ya existe, guardar aunque no haya imagen nueva (metadata update)
+        // Si es nuevo y no tiene imagen, no guardar (no tendría sentido un banner vacío)
+        if ($banner->exists) {
+            $banner->save();
+        } elseif ($banner->imagen) {
+            $banner->save();
+        }
     }
 }

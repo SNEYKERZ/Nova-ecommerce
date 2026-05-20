@@ -3,7 +3,7 @@ import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 
 createInertiaApp({
-    title: (title) => `${title} - Nova Commerce`,
+    title: (title) => `${title} - ${import.meta.env.VITE_APP_NAME || 'Vendex'}`,
 
     resolve: async (name) => {
         const pages = import.meta.glob('./pages/**/*.vue');

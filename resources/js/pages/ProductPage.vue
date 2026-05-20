@@ -1,30 +1,30 @@
 <template>
   <AppLayout>
     <Head title="Producto" />
-    <section class="mx-auto grid w-full max-w-7xl gap-8 px-4 pt-10 sm:px-6 lg:grid-cols-2 lg:px-8">
-      <div class="space-y-4">
-        <div class="overflow-hidden rounded-3xl border border-black/5 bg-[color:var(--surface)]">
-          <img :src="activeImage" :alt="producto.sku" class="h-[30rem] w-full object-cover" />
+    <section class="mx-auto grid w-full max-w-7xl gap-6 px-4 pt-8 sm:gap-8 sm:px-6 sm:pt-10 lg:grid-cols-2 lg:px-8">
+      <div class="space-y-3 sm:space-y-4">
+        <div class="overflow-hidden rounded-2xl border border-black/5 bg-[color:var(--surface)] sm:rounded-3xl">
+          <img :src="activeImage" :alt="producto.sku" class="h-72 w-full object-cover sm:h-[30rem]" />
         </div>
 
         <div v-if="gallery.length" class="grid grid-cols-4 gap-3">
           <button
             v-for="(img, index) in gallery"
             :key="index"
-            class="overflow-hidden rounded-2xl border border-[color:var(--line)]"
+            class="overflow-hidden rounded-xl border border-[color:var(--line)] sm:rounded-2xl"
             @click="activeImage = img"
           >
-            <img :src="img" alt="Galeria" class="h-24 w-full object-cover" />
+            <img :src="img" alt="Galeria" class="h-16 w-full object-cover sm:h-24" />
           </button>
         </div>
       </div>
 
-      <div class="space-y-6 rounded-3xl border border-black/5 bg-[color:var(--surface)] p-7">
+      <div class="space-y-4 rounded-2xl border border-black/5 bg-[color:var(--surface)] p-5 sm:space-y-6 sm:rounded-3xl sm:p-7">
         <p class="chip inline-flex bg-[color:var(--sand)]">{{ producto.categoria }}</p>
-        <h1 class="font-display text-4xl leading-tight font-bold">{{ producto.nombre || producto.sku }}</h1>
+        <h1 class="font-display text-2xl leading-tight font-bold sm:text-4xl">{{ producto.nombre || producto.sku }}</h1>
         <p class="text-xs text-[color:var(--muted)]/60 -mt-1">Ref: {{ producto.sku }}</p>
-        <p v-if="producto.descripcion" class="text-base text-[color:var(--muted)]">{{ producto.descripcion }}</p>
-        <p class="text-3xl font-extrabold">{{ money(producto.precio) }}</p>
+        <p v-if="producto.descripcion" class="text-sm text-[color:var(--muted)] sm:text-base">{{ producto.descripcion }}</p>
+        <p class="text-2xl font-extrabold sm:text-3xl">{{ money(producto.precio) }}</p>
 
         <div v-if="producto.tallas.length" class="space-y-2">
           <p class="text-sm font-semibold">Selecciona una variante</p>

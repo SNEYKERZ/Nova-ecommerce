@@ -1,5 +1,13 @@
 <template>
-  <div class="min-h-screen flex flex-col" style="background:var(--bg)">
+  <div class="min-h-screen flex flex-col" :style="storeStyles">
+
+    <!-- ── Impersonation banner ──────────────────────── -->
+    <div v-if="isImpersonating" class="flex items-center justify-center gap-3 bg-amber-400 px-4 py-2 text-center text-xs font-bold text-amber-900">
+      <span>⚡ Estás operando como <span class="underline">{{ page.props.auth?.user?.name }}</span></span>
+      <button class="rounded bg-amber-900/20 px-3 py-1 font-semibold hover:bg-amber-900/30 cursor-pointer" @click="leaveImpersonation">
+        Volver a mi cuenta
+      </button>
+    </div>
 
     <!-- ── Announcement bar ────────────────────────────── -->
     <div v-if="announcement" class="text-center py-2 text-white text-xs font-semibold tracking-widest uppercase" style="background:var(--ink)">
@@ -7,7 +15,7 @@
     </div>
 
     <!-- ── Header ─────────────────────────────────────── -->
-    <header class="sticky top-0 z-40 border-b" style="background:var(--white);border-color:var(--border)">
+      <header class="sticky top-0 z-40 border-b" :style="navbarStyles">
       <div class="mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 max-w-screen-2xl" style="height:56px">
 
         <!-- Logo -->
@@ -25,8 +33,8 @@
         <!-- Right icons -->
         <div class="flex items-center gap-3">
           <!-- Admin pill -->
-          <Link v-if="isAdmin" href="/admin" class="hidden sm:inline-flex btn-soft px-3 py-1.5 text-xs">
-            Admin
+          <Link v-if="isAdmin" :href="adminUrl" class="hidden sm:inline-flex btn-soft px-3 py-1.5 text-xs">
+            {{ isSuperAdmin ? 'Super Admin' : 'Admin' }}
           </Link>
           <Link v-else href="/admin/login" class="hidden sm:inline-flex btn-ghost text-xs normal-case no-underline">
             Admin
@@ -46,7 +54,7 @@
           </button>
 
           <!-- Mobile menu button -->
-          <button class="md:hidden flex items-center justify-center w-9 h-9" style="border-radius:var(--r)" @click="mobileOpen=!mobileOpen">
+          <button class="md:hidden flex items-center justify-center w-9 h-9 cursor-pointer" style="border-radius:var(--r)" @click="mobileOpen=!mobileOpen">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path v-if="!mobileOpen" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
               <path v-else stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -56,12 +64,12 @@
       </div>
 
       <!-- Mobile nav -->
-      <div v-if="mobileOpen" class="md:hidden border-t px-4 py-4 space-y-3" style="border-color:var(--border);background:var(--white)">
+      <div v-if="mobileOpen" class="md:hidden border-t px-4 py-4 space-y-3" :style="{ borderColor: 'var(--border)', background: navbarBg }">
         <Link href="/" class="block nav-link text-sm py-1" @click="mobileOpen=false">Catálogo</Link>
         <Link href="/conocenos" class="block nav-link text-sm py-1" @click="mobileOpen=false">Nosotros</Link>
         <Link href="/carrito" class="block nav-link text-sm py-1" @click="mobileOpen=false">Carrito ({{ cartCount }})</Link>
         <Link v-if="isAdmin" href="/admin" class="block nav-link text-sm py-1" @click="mobileOpen=false">Panel Admin</Link>
-        <button v-if="isAdmin" @click="logout" class="block nav-link text-sm py-1 text-left w-full">Cerrar sesión</button>
+        <button v-if="isAdmin" @click="logout" class="block nav-link text-sm py-1 text-left w-full cursor-pointer">Cerrar sesión</button>
       </div>
     </header>
 
@@ -71,7 +79,7 @@
     </main>
 
     <!-- ── Footer ─────────────────────────────────────── -->
-    <footer class="border-t mt-20" style="background:var(--ink);color:var(--white);border-color:transparent">
+      <footer class="border-t mt-20" :style="footerStyles">
       <div class="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-12">
         <div class="grid gap-10 md:grid-cols-3 lg:grid-cols-4">
 
@@ -125,11 +133,34 @@ const year       = new Date().getFullYear();
 const mobileOpen = ref(false);
 const hoverCart  = ref(false);
 
-const isAdmin      = computed(() => ['admin', 'super_admin'].includes(page.props.auth?.user?.role || ''));
-const appName      = computed(() => page.props.app?.name || 'Vendex');
-const appLogo      = computed(() => page.props.app?.logo || null);
-const appWhatsapp  = computed(() => page.props.app?.whatsapp || null);
-const announcement = computed(() => null); // Set to a string to show the bar
+const isAdmin          = computed(() => ['admin', 'super_admin'].includes(page.props.auth?.user?.role || ''));
+const isSuperAdmin     = computed(() => page.props.auth?.user?.role === 'super_admin');
+const isImpersonating  = computed(() => page.props.auth?.user?.impersonating === true);
+const adminUrl         = computed(() => isSuperAdmin.value ? '/super-admin' : '/admin');
+const appName          = computed(() => page.props.app?.name || 'Vendex');
+const appLogo          = computed(() => page.props.app?.logo || null);
+const appWhatsapp      = computed(() => page.props.app?.whatsapp || null);
+const announcement     = computed(() => null); // Set to a string to show the bar
+
+const storeBg    = computed(() => page.props.app?.bg_color ?? '#ffffff');
+const navbarBg   = computed(() => page.props.app?.navbar_color ?? '#ffffff');
+const footerBg   = computed(() => page.props.app?.footer_color ?? '#111111');
+
+const storeStyles = computed(() => ({
+  background: storeBg.value,
+  '--store-bg': storeBg.value,
+}));
+
+const navbarStyles = computed(() => ({
+  background: navbarBg.value,
+  borderColor: 'var(--border)',
+}));
+
+const footerStyles = computed(() => ({
+  background: footerBg.value,
+  color: 'var(--white)',
+  borderColor: 'transparent',
+}));
 
 const syncCart = async () => {
   try {
@@ -143,9 +174,27 @@ const syncCart = async () => {
 
 const onCartUpdated = () => syncCart();
 
-onMounted(() => {
+onMounted(async () => {
   syncCart();
   window.addEventListener('cart-updated', onCartUpdated);
+
+  // Auth consistency check — si shared props se desincronizan,
+  // forzamos un re-check silencioso
+  if (page.props.auth?.user && !page.props.auth.user.role) {
+    try {
+      const res = await fetch('/api/user/me', {
+        headers: { Accept: 'application/json' },
+      });
+      if (res.ok) {
+        const payload = await res.json();
+        if (payload.role) {
+          page.props.auth.user.role = payload.role;
+        }
+      }
+    } catch {
+      // silencio — no romper la UI por esto
+    }
+  }
 });
 
 onUnmounted(() => {
@@ -153,4 +202,8 @@ onUnmounted(() => {
 });
 
 const logout = () => router.post('/admin/logout');
+
+const leaveImpersonation = () => {
+  router.post('/admin/leave-impersonation');
+};
 </script>

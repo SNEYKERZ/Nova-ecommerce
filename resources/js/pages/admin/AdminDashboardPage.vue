@@ -37,7 +37,7 @@
         <div v-if="pedidoDetalle" class="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-semibold text-blue-900">Pedido #{{ pedidoDetalle.id }} — {{ pedidoDetalle.cliente?.nombre }} {{ pedidoDetalle.cliente?.apellidos }}</h3>
-            <button class="text-xs text-blue-600 underline" @click="pedidoDetalle = null">Cerrar detalle</button>
+            <button class="text-xs text-blue-600 underline cursor-pointer" @click="pedidoDetalle = null">Cerrar detalle</button>
           </div>
           <div class="grid gap-2 text-sm text-blue-900 sm:grid-cols-2">
             <p><span class="font-semibold">Email:</span> {{ pedidoDetalle.cliente?.email }}</p>
@@ -120,7 +120,7 @@
       <section v-if="activeTab === 'configuracion'" class="space-y-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Configuracion de Tienda</h2>
-          <p class="mt-1 text-sm text-slate-600">Personaliza nombre y logo global del e-commerce.</p>
+          <p class="mt-1 text-sm text-slate-600">Personaliza nombre, logo y colores del e-commerce.</p>
           <div class="mt-4 grid gap-4 lg:grid-cols-2">
             <div class="space-y-3">
               <div>
@@ -131,13 +131,52 @@
                 <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Logo</label>
                 <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" @change="handleSettingsLogo" />
               </div>
-              <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white" @click="saveSettings">Guardar configuracion</button>
+
+              <!-- Colores de la tienda -->
+              <div>
+                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Color de Fondo</label>
+                <div class="flex gap-2">
+                  <input v-model="settingsForm.bg_color" type="color" class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                  <input v-model="settingsForm.bg_color" placeholder="#ffffff" class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+                </div>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Color Navbar</label>
+                <div class="flex gap-2">
+                  <input v-model="settingsForm.navbar_color" type="color" class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                  <input v-model="settingsForm.navbar_color" placeholder="#1e293b" class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+                </div>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Color Footer</label>
+                <div class="flex gap-2">
+                  <input v-model="settingsForm.footer_color" type="color" class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                  <input v-model="settingsForm.footer_color" placeholder="#1e293b" class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+                </div>
+              </div>
+
+              <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="saveSettings">Guardar configuracion</button>
             </div>
             <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p class="text-xs font-semibold uppercase text-slate-500">Vista previa</p>
               <div class="mt-3 flex items-center gap-3">
                 <img v-if="settingsLogoPreview" :src="settingsLogoPreview" class="h-14 w-14 rounded-full object-cover" alt="Logo" />
                 <div class="text-lg font-semibold text-slate-900">{{ settingsForm.store_name || 'Nombre Tienda' }}</div>
+              </div>
+              <!-- Previsualización de colores -->
+              <div class="mt-4 space-y-2">
+                <div class="flex items-center gap-2">
+                  <span class="inline-block h-4 w-4 rounded border border-slate-300" :style="{ background: settingsForm.bg_color }"></span>
+                  <span class="text-xs text-slate-500">Fondo</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="inline-block h-4 w-4 rounded border border-slate-300" :style="{ background: settingsForm.navbar_color }"></span>
+                  <span class="text-xs text-slate-500">Navbar</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="inline-block h-4 w-4 rounded border border-slate-300" :style="{ background: settingsForm.footer_color }"></span>
+                  <span class="text-xs text-slate-500">Footer</span>
+                </div>
               </div>
             </div>
           </div>
@@ -319,79 +358,86 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Noticias / Promociones Activas</h2>
           <textarea v-model="newsText" rows="5" class="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2.5"></textarea>
-          <button class="mt-3 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white" @click="saveNews">Guardar noticias</button>
+          <button class="mt-3 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="saveNews">Guardar noticias</button>
         </div>
       </section>
 
       <section v-if="activeTab === 'bloques'" class="space-y-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 class="text-xl font-semibold text-slate-900">Bloques del Home</h2>
-          <p class="mt-1 text-sm text-slate-600">Configura los dos bloques superiores del home (banner o texto).</p>
-          
-          <!-- Selector de Bloque -->
-          <div class="mt-4 flex gap-2">
-            <button v-for="n in [1, 2]" :key="n" class="rounded-xl px-4 py-2 text-sm font-semibold cursor-pointer" :class="bloqueActivo === n ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'" @click="bloqueActivo = n">
-              Bloque {{ n }}
-            </button>
-          </div>
+          <h2 class="text-xl font-semibold text-slate-900">Carrusel del Home</h2>
+          <p class="mt-1 text-sm text-slate-600">Este carrusel reemplaza por completo los dos bloques anteriores. Puedes subir varias imágenes y el frontend las rota automáticamente cada 2 segundos.</p>
 
-          <!-- Formulario del Bloque -->
           <div class="mt-4 grid gap-4">
-            <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Tipo</label>
-              <select v-model="bloqueForm.tipo" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
-                <option value="banner">Banner (carrusel de imagenes)</option>
-                <option value="texto">Texto</option>
-              </select>
-            </div>
-            
             <div class="flex items-center gap-2">
               <input type="checkbox" v-model="bloqueForm.activo" id="bloqueActivo" class="rounded border-slate-300" />
-              <label for="bloqueActivo" class="text-sm font-semibold text-slate-700">Bloque activo</label>
+              <label for="bloqueActivo" class="text-sm font-semibold text-slate-700">Carrusel activo</label>
             </div>
 
-            <!-- Campos de Texto -->
-            <template v-if="bloqueForm.tipo === 'texto'">
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Titulo</label>
-                <input v-model="bloqueForm.titulo" placeholder="Titulo del bloque" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Contenido</label>
-                <textarea v-model="bloqueForm.contenido" rows="3" placeholder="Contenido del bloque" class="w-full rounded-xl border border-slate-300 px-3 py-2.5"></textarea>
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Tamano de texto</label>
-                <select v-model="bloqueForm.tamano_texto" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
-                  <option value="normal">Normal</option>
-                  <option value="grande">Grande</option>
-                </select>
-              </div>
-            </template>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Imagenes del carrusel</label>
+              <input type="file" multiple accept="image/*" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" @change="handleBloqueImagenes" />
+              <p class="mt-1 text-xs text-slate-400">Puedes cargar varias imágenes. Se mostrarán en ancho completo.</p>
+            </div>
 
-            <!-- Imagenes para Banner -->
-            <template v-if="bloqueForm.tipo === 'banner'">
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Imagenes (max 4)</label>
-                <input type="file" multiple accept="image/*" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" @change="handleBloqueImagenes" />
-              </div>
-              
-              <!-- Lista de imagenes actuales -->
-              <div v-if="bloqueForm.imagenes?.length" class="space-y-2">
-                <p class="text-xs font-semibold uppercase text-slate-500">Imagenes actuales</p>
-                <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <div v-for="img in bloqueForm.imagenes" :key="img.id" class="relative rounded-lg border border-slate-200 p-2">
-                    <img :src="img.imagen" class="h-20 w-full rounded object-cover" />
-                    <input v-model="img.url_destino" placeholder="URL destino (opcional)" class="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs" />
-                    <button @click="deleteBloqueImagen(img.id)" class="mt-1 w-full rounded bg-red-100 px-2 py-1 text-xs text-red-600">Eliminar</button>
-                  </div>
+            <div v-if="bloqueForm.nuevasImagenes?.length" class="space-y-2">
+              <p class="text-xs font-semibold uppercase text-slate-500">Nuevas imagenes por guardar</p>
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div v-for="(img, index) in bloqueForm.nuevasImagenes" :key="`${img.name}-${index}`" class="rounded-xl border border-dashed border-slate-300 p-3">
+                  <img :src="img.preview" class="h-28 w-full rounded-lg object-cover" />
+                  <p class="mt-2 truncate text-xs text-slate-500">{{ img.name }}</p>
                 </div>
               </div>
-            </template>
+            </div>
+
+            <div v-if="bloqueForm.imagenes?.length" class="space-y-2">
+              <p class="text-xs font-semibold uppercase text-slate-500">Slides actuales</p>
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div v-for="img in bloqueForm.imagenes" :key="img.id" class="rounded-xl border border-slate-200 p-3">
+                  <img :src="img.imagen" class="h-28 w-full rounded-lg object-cover" />
+                  <input v-model="img.nombre" placeholder="Nombre del slide" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs" />
+                  <input :value="img.identificador || 'carrusel'" readonly class="mt-2 w-full rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-500" />
+                  <input v-model="img.url_destino" placeholder="Link del slide (opcional)" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs" />
+                  <button @click="deleteBloqueImagen(img.id)" class="mt-2 w-full rounded bg-red-100 px-2 py-1.5 text-xs font-semibold text-red-600 cursor-pointer">Eliminar slide</button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="mt-4 flex gap-2">
-            <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white" @click="saveBloque">Guardar Bloque {{ bloqueActivo }}</button>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="text-xl font-semibold text-slate-900">Banners del Catalogo</h2>
+          <p class="mt-1 text-sm text-slate-600">Estos dos banners aparecen debajo del bloque paginado de productos y cada uno puede llevar a una categoria, coleccion o filtro del catalogo.</p>
+
+          <div class="mt-4 grid gap-4 lg:grid-cols-2">
+            <div v-for="banner in [1, 2]" :key="banner" class="rounded-2xl border border-slate-200 p-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-slate-900">Banner {{ banner === 1 ? 'Izquierdo' : 'Derecho' }}</h3>
+                <label class="flex items-center gap-2 text-sm text-slate-600">
+                  <input v-model="catalogBannerForms[banner].activo" type="checkbox" class="rounded border-slate-300" />
+                  Activo
+                </label>
+              </div>
+
+              <div class="mt-3 space-y-3">
+                <div v-if="catalogBannerForms[banner].imagen" class="overflow-hidden rounded-xl border border-slate-200">
+                  <img :src="catalogBannerForms[banner].imagen" class="h-32 w-full object-cover" />
+                </div>
+
+                <input type="file" accept="image/*" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" @change="handleCatalogBannerImage(banner, $event)" />
+                <input v-model="catalogBannerForms[banner].nombre" placeholder="Nombre del banner" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input :value="catalogBannerForms[banner].identificador" readonly class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500" />
+                <input v-model="catalogBannerForms[banner].url_destino" placeholder="/?categoria=chaquetas o enlace completo" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+              </div>
+
+              <div class="mt-3 flex gap-2">
+                <button v-if="catalogBannerForms[banner].id" class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 cursor-pointer" @click="deleteCatalogBanner(banner)">Eliminar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-5 flex justify-end">
+            <button class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white cursor-pointer" @click="saveVisualAssets">Guardar carrusel y banners</button>
           </div>
         </div>
       </section>
@@ -509,6 +555,7 @@ const props = defineProps({
   pedidos: { type: [Object, Array], default: () => [] },
   noticia: { type: String, default: '' },
   bloques: { type: Object, default: () => ({}) },
+  catalogBanners: { type: Object, default: () => ({}) },
   settings: { type: Object, default: () => ({ store_name: 'Vendex', logo_url: null }) },
   filters: { type: Object, default: () => ({ search: '' }) },
 });
@@ -529,7 +576,7 @@ const feedback = ref('');
 const newsText = ref(props.noticia || '');
 const search = ref(props.filters.search || '');
 
-const settingsForm = ref({ store_name: props.settings.store_name || 'Nova Commerce', logoFile: null });
+const settingsForm = ref({ store_name: props.settings.store_name || import.meta.env.VITE_APP_NAME || 'Vendex', logoFile: null, bg_color: props.settings.bg_color || '#ffffff', navbar_color: props.settings.navbar_color || '#1e293b', footer_color: props.settings.footer_color || '#1e293b' });
 const settingsLogoPreview = ref(props.settings.logo_url || null);
 
 const productForm = ref(emptyProduct());
@@ -615,8 +662,11 @@ watch(search, (val) => {
 });
 
 // Bloques Home
-const bloqueActivo = ref(1);
 const bloqueForm = ref({ tipo: 'banner', activo: true, titulo: '', contenido: '', tamano_texto: 'normal', imagenes: [], nuevasImagenes: [] });
+const catalogBannerForms = ref({
+  1: createCatalogBannerForm(1, props.catalogBanners?.[1] || null),
+  2: createCatalogBannerForm(2, props.catalogBanners?.[2] || null),
+});
 
 const initBloqueForm = (bloque) => {
   bloqueForm.value = {
@@ -631,29 +681,41 @@ const initBloqueForm = (bloque) => {
   };
 };
 
-// Cargar bloques desde props
 const propsBloques = props.bloques || {};
 if (propsBloques[1]) initBloqueForm(propsBloques[1]);
-else if (propsBloques[2]) initBloqueForm(propsBloques[2]);
+
+watch(() => props.bloques, (value) => {
+  if (value?.[1]) initBloqueForm(value[1]);
+}, { deep: true });
+
+watch(() => props.catalogBanners, (value) => {
+  catalogBannerForms.value = {
+    1: createCatalogBannerForm(1, value?.[1] || null),
+    2: createCatalogBannerForm(2, value?.[2] || null),
+  };
+}, { deep: true });
 
 const handleBloqueImagenes = (event) => {
   const files = Array.from(event.target.files || []).slice(0, 4 - (bloqueForm.value.imagenes?.length || 0));
-  bloqueForm.value.nuevasImagenes = files;
+  bloqueForm.value.nuevasImagenes = files.map((file) => ({
+    file,
+    name: file.name,
+    preview: URL.createObjectURL(file),
+  }));
 };
 
 const saveBloque = async () => {
   const formData = new FormData();
-  formData.append('posicion', String(bloqueActivo.value));
-  formData.append('tipo', bloqueForm.value.tipo);
+  formData.append('posicion', '1');
+  formData.append('tipo', 'banner');
   formData.append('activo', bloqueForm.value.activo ? '1' : '0');
-  if (bloqueForm.value.tipo === 'texto') {
-    formData.append('titulo', bloqueForm.value.titulo || '');
-    formData.append('contenido', bloqueForm.value.contenido || '');
-    formData.append('tamano_texto', bloqueForm.value.tamano_texto);
-  }
-  
-  // Si tiene nuevas imagenes
-  bloqueForm.value.nuevasImagenes.forEach(file => formData.append('imagen', file));
+  bloqueForm.value.imagenes.forEach((image) => {
+    formData.append(`image_names[${image.id}]`, image.nombre || '');
+  });
+  bloqueForm.value.imagenes.forEach((image) => {
+    formData.append(`image_links[${image.id}]`, image.url_destino || '');
+  });
+  bloqueForm.value.nuevasImagenes.forEach((item) => formData.append('imagen[]', item.file));
 
   try {
     const res = await fetch('/admin/bloques', {
@@ -666,11 +728,9 @@ const saveBloque = async () => {
     });
     const payload = await res.json();
     if (!res.ok || !payload.success) throw new Error(payload.message || 'Error al guardar');
-    notify('Bloque guardado');
-    refresh();
   } catch (e) {
     console.error('Error saveBloque:', e);
-    notify('Error al guardar bloque');
+    throw e;
   }
 };
 
@@ -692,11 +752,77 @@ const deleteBloqueImagen = async (imgId) => {
   }
 };
 
-// Cuando cambia el bloque activo, actualizar el formulario
-watch(bloqueActivo, (newVal) => {
-  const bloque = props.bloques?.[newVal] || null;
-  initBloqueForm(bloque);
-});
+function createCatalogBannerForm(position, banner) {
+  return {
+    id: banner?.id || null,
+    nombre: banner?.nombre || '',
+    identificador: banner?.identificador || (position === 1 ? 'banner-izq' : 'banner-der'),
+    imagen: banner?.imagen || null,
+    url_destino: banner?.url_destino || '',
+    activo: banner?.activo ?? true,
+    imageFile: null,
+  };
+}
+
+const handleCatalogBannerImage = (position, event) => {
+  const file = event.target.files?.[0] || null;
+  catalogBannerForms.value[position].imageFile = file;
+
+  if (file) {
+    catalogBannerForms.value[position].imagen = URL.createObjectURL(file);
+  }
+};
+
+const saveCatalogBanner = async (position) => {
+  const banner = catalogBannerForms.value[position];
+  const formData = new FormData();
+  formData.append('posicion', String(position));
+  formData.append('nombre', banner.nombre || '');
+  formData.append('url_destino', banner.url_destino || '');
+  formData.append('activo', banner.activo ? '1' : '0');
+  if (banner.imageFile) formData.append('imagen', banner.imageFile);
+
+  await requestFormData('/admin/catalog-banners', 'POST', formData);
+};
+
+const saveVisualAssets = async () => {
+  try {
+    const formData = new FormData();
+    formData.append('carousel_active', bloqueForm.value.activo ? '1' : '0');
+    bloqueForm.value.imagenes.forEach((image) => {
+      formData.append(`carousel_existing_names[${image.id}]`, image.nombre || '');
+      formData.append(`carousel_existing_links[${image.id}]`, image.url_destino || '');
+    });
+    bloqueForm.value.nuevasImagenes.forEach((item) => formData.append('carousel_images[]', item.file));
+
+    formData.append('left_nombre', catalogBannerForms.value[1].nombre || '');
+    formData.append('left_url_destino', catalogBannerForms.value[1].url_destino || '');
+    formData.append('left_activo', catalogBannerForms.value[1].activo ? '1' : '0');
+    if (catalogBannerForms.value[1].imageFile) {
+      formData.append('left_imagen', catalogBannerForms.value[1].imageFile);
+    }
+
+    formData.append('right_nombre', catalogBannerForms.value[2].nombre || '');
+    formData.append('right_url_destino', catalogBannerForms.value[2].url_destino || '');
+    formData.append('right_activo', catalogBannerForms.value[2].activo ? '1' : '0');
+    if (catalogBannerForms.value[2].imageFile) {
+      formData.append('right_imagen', catalogBannerForms.value[2].imageFile);
+    }
+
+    await requestFormData('/admin/visual-assets', 'POST', formData);
+
+    // requestFormData ya muestra el notify, refresh con delay para que se vea
+    setTimeout(() => refresh(), 2000);
+  } catch (e) {
+    notify(e.message || 'No se pudieron guardar los visuales');
+  }
+};
+
+const deleteCatalogBanner = async (position) => {
+  if (!confirm('Eliminar banner del catalogo?')) return;
+  await requestJson(`/admin/catalog-banners/${position}`, 'DELETE');
+  refresh();
+};
 
 function buildSizeStock() {
   const state = {};
@@ -773,7 +899,7 @@ const calculatedSupplyUnitCost = computed(() => {
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 const money = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(value || 0);
 const refresh = () => router.reload({
-  only: ['stats', 'productos', 'categorias', 'insumos', 'ofertas', 'pedidos', 'noticia', 'settings'],
+  only: ['stats', 'productos', 'categorias', 'insumos', 'ofertas', 'pedidos', 'noticia', 'settings', 'bloques', 'catalogBanners'],
   data: search.value ? { search: search.value } : {},
 });
 
@@ -820,8 +946,11 @@ const handleSettingsLogo = (event) => {
 
 const saveSettings = async () => {
   const formData = new FormData();
-  formData.append('store_name', settingsForm.value.store_name || 'Nova Commerce');
+  formData.append('store_name', settingsForm.value.store_name || import.meta.env.VITE_APP_NAME || 'Vendex');
   if (settingsForm.value.logoFile) formData.append('logo', settingsForm.value.logoFile);
+  formData.append('bg_color', settingsForm.value.bg_color || '#ffffff');
+  formData.append('navbar_color', settingsForm.value.navbar_color || '#1e293b');
+  formData.append('footer_color', settingsForm.value.footer_color || '#1e293b');
   await requestFormData('/admin/settings', 'POST', withMethod(formData, 'POST'));
   refresh();
 };

@@ -3,17 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\BloqueHome;
+use App\Models\CatalogBanner;
 use App\Models\Carrito;
 use App\Models\Categoria;
 use App\Models\Noticia;
 use App\Models\Producto;
 use App\Services\TenantManager;
+use App\Traits\HasMediaUrls;
 use Carbon\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class StorefrontController extends Controller
 {
+    use HasMediaUrls;
+
     public function home(): Response
     {
         // El trait HasTenant filtra automáticamente por el store actual
@@ -43,12 +47,16 @@ class StorefrontController extends Controller
             'productos' => $productos,
             'categorias' => $categorias,
             'promociones' => Noticia::getPromocionesActivas(),
-            'bloques' => $bloques,
+            'carousel' => $bloques[1] ?? null,
+            'catalogBanners' => $this->getCatalogBanners(),
             'store' => $store ? [
                 'nombre'    => $store->nombre,
                 'logo'      => $store->logo_path ? asset('storage/'.$store->logo_path) : null,
                 'telefono'  => $store->telefono,
                 'email'     => $store->email,
+                'bg_color'  => $store->bg_color ?? '#ffffff',
+                'navbar_color' => $store->navbar_color ?? '#1e293b',
+                'footer_color' => $store->footer_color ?? '#1e293b',
             ] : null,
         ]);
     }
@@ -60,7 +68,7 @@ class StorefrontController extends Controller
     {
         $result = [];
         
-        for ($posicion = 1; $posicion <= 2; $posicion++) {
+        for ($posicion = 1; $posicion <= 1; $posicion++) {
             $bloque = BloqueHome::getPorPosicion($posicion);
             
             if (!$bloque) {
@@ -81,7 +89,9 @@ class StorefrontController extends Controller
             if ($bloque->tipo === 'banner') {
                 $data['imagenes'] = $bloque->imagenes->map(fn($img) => [
                     'id' => $img->id,
-                    'imagen' => asset('storage/' . $img->imagen),
+                    'nombre' => $img->nombre,
+                    'identificador' => $img->identificador,
+                    'imagen' => $this->mediaUrl($img->imagen),
                     'url_destino' => $img->url_destino,
                     'orden' => $img->orden,
                 ]);
@@ -91,6 +101,24 @@ class StorefrontController extends Controller
         }
 
         return $result;
+    }
+
+    private function getCatalogBanners(): array
+    {
+        return CatalogBanner::query()
+            ->where('activo', true)
+            ->orderBy('posicion')
+            ->get()
+            ->map(fn (CatalogBanner $banner) => [
+                'id' => $banner->id,
+                'nombre' => $banner->nombre,
+                'identificador' => $banner->identificador,
+                'posicion' => $banner->posicion,
+                'imagen' => $this->mediaUrl($banner->imagen),
+                'url_destino' => $banner->url_destino,
+            ])
+            ->values()
+            ->all();
     }
 
     public function product(int $id): Response
@@ -172,4 +200,5 @@ class StorefrontController extends Controller
             'tieneStock'    => $producto->tiene_stock,
         ];
     }
+
 }

@@ -10,6 +10,7 @@ use App\Models\Categoria;
 use App\Services\TenantManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -33,6 +34,9 @@ class SuperAdminController extends Controller
                 'email' => $store->email,
                 'telefono' => $store->telefono,
                 'activo' => $store->activo,
+                'bg_color' => $store->bg_color ?? '#ffffff',
+                'navbar_color' => $store->navbar_color ?? '#1e293b',
+                'footer_color' => $store->footer_color ?? '#1e293b',
                 'created_at' => $store->created_at?->toIso8601String(),
                 // Stats por tienda
                 'stats' => [
@@ -113,6 +117,9 @@ class SuperAdminController extends Controller
             'email' => ['nullable', 'email'],
             'telefono' => ['nullable', 'string', 'max:50'],
             'descripcion' => ['nullable', 'string'],
+            'bg_color' => ['nullable', 'string', 'max:20'],
+            'navbar_color' => ['nullable', 'string', 'max:20'],
+            'footer_color' => ['nullable', 'string', 'max:20'],
         ]);
 
         $store = Store::create([
@@ -140,6 +147,9 @@ class SuperAdminController extends Controller
             'telefono' => ['nullable', 'string', 'max:50'],
             'descripcion' => ['nullable', 'string'],
             'activo' => ['required', 'boolean'],
+            'bg_color' => ['nullable', 'string', 'max:20'],
+            'navbar_color' => ['nullable', 'string', 'max:20'],
+            'footer_color' => ['nullable', 'string', 'max:20'],
         ]);
 
         $store->update($validated);
@@ -296,6 +306,27 @@ class SuperAdminController extends Controller
             'success' => true,
             'message' => 'Contraseña actualizada',
         ]);
+    }
+
+    /**
+     * Impersonar a otro usuario admin
+     */
+    public function impersonate(Request $request, User $user): \Illuminate\Http\RedirectResponse
+    {
+        if ($request->user()->role !== 'super_admin') {
+            abort(403, 'Solo el super admin puede impersonar.');
+        }
+
+        if ($user->role === 'super_admin') {
+            abort(403, 'No puedes impersonar a otro super admin.');
+        }
+
+        // Guardar quién era el super admin original
+        session()->put('impersonator_id', $request->user()->id);
+
+        Auth::login($user);
+
+        return redirect('/admin');
     }
 
     /**

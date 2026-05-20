@@ -15,6 +15,8 @@ class BloqueHomeImagen extends Model
     protected $fillable = [
         'bloque_home_id',
         'imagen',
+        'nombre',
+        'identificador',
         'url_destino',
         'orden',
     ];

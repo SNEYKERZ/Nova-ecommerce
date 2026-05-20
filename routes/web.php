@@ -20,13 +20,23 @@ Route::get('/productos/{id}', [StorefrontController::class, 'product'])->name('p
 Route::get('/conocenos', [StorefrontController::class, 'about'])->name('about');
 Route::get('/pedido/gracias/{id}', [StorefrontController::class, 'thankYou'])->name('order.thankyou');
 
-// API del carrito
+// API del carrito y utilidades
 Route::prefix('api')->group(function () {
     Route::get('/carrito', [CarritoController::class, 'show']);
     Route::post('/carrito/agregar', [CarritoController::class, 'agregar']);
     Route::put('/carrito/actualizar/{id}', [CarritoController::class, 'actualizar']);
     Route::delete('/carrito/eliminar/{id}', [CarritoController::class, 'eliminar']);
     Route::delete('/carrito/vaciar', [CarritoController::class, 'vaciar']);
+
+    Route::get('/user/me', function (\Illuminate\Http\Request $request) {
+        $user = $request->user();
+        return response()->json($user ? [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+        ] : null);
+    })->middleware('auth');
 });
 
 // Rutas de autenticación
@@ -51,13 +61,21 @@ Route::middleware(['auth', 'admin.role'])->prefix('super-admin')->group(function
     Route::delete('/users/{user}', [SuperAdminController::class, 'destroyUser'])->name('superadmin.users.destroy');
     Route::put('/users/{user}/password', [SuperAdminController::class, 'updateUserPassword']);
 
+    // Impersonación
+    Route::post('/users/{user}/impersonate', [SuperAdminController::class, 'impersonate'])->name('superadmin.users.impersonate');
+
     // Reportes y notificaciones
     Route::get('/reports', [SuperAdminController::class, 'reports']);
     Route::get('/notifications', [SuperAdminController::class, 'notifications']);
     Route::post('/notifications/read', [SuperAdminController::class, 'markNotificationRead']);
 });
 
+Route::post('/admin/leave-impersonation', [AdminAuthController::class, 'leaveImpersonation'])->name('admin.leave-impersonation');
+
 // Rutas del Admin de tienda (requieren tenant)
+// Ruta API de pedidos (usada por CartPage.vue)
+Route::post('/api/pedidos', [\App\Http\Controllers\Api\PedidoController::class, 'store']);
+
 Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
@@ -82,6 +100,9 @@ Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::post('/bloques', [AdminController::class, 'updateBloque'])->name('admin.bloques.update');
     Route::post('/bloques/{id}/imagenes', [AdminController::class, 'storeBloqueImagen'])->name('admin.bloques.imagenes.store');
     Route::delete('/bloques/{id}/imagenes/{imgId}', [AdminController::class, 'destroyBloqueImagen'])->name('admin.bloques.imagenes.destroy');
+    Route::post('/visual-assets', [AdminController::class, 'saveVisualAssets'])->name('admin.visual-assets.save');
+    Route::post('/catalog-banners', [AdminController::class, 'upsertCatalogBanner'])->name('admin.catalog-banners.upsert');
+    Route::delete('/catalog-banners/{posicion}', [AdminController::class, 'destroyCatalogBanner'])->name('admin.catalog-banners.destroy');
 
     // Gestión de pedidos del admin de tienda
     Route::put('/pedidos/{pedido}/estado', [AdminController::class, 'updatePedidoEstado'])->name('admin.pedidos.estado');
