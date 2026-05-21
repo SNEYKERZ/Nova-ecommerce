@@ -23,13 +23,13 @@
         <div class="w-full px-1 sm:px-2 lg:px-4">
           <div
             class="grid gap-0.5 grid-flow-row-dense grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-            style="grid-auto-rows: 200px; gap: 0.125rem;"
+            style="grid-auto-rows: 240px; gap: 0.125rem;"
           >
             <div
               v-for="(imagen, idx) in getOptimizedImages(gallery.imagenes)"
               :key="imagen.id"
               :class="getGridClasses(imagen._orientation)"
-              class="group overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer transition-all duration-300 hover:shadow-lg hover:z-10"
+              class="group overflow-hidden rounded-lg border border-slate-200 bg-slate-100 cursor-pointer transition-all duration-300 hover:shadow-lg hover:z-10"
               @click="openModal(gallery, imagen)"
             >
               <img
@@ -104,10 +104,13 @@ const getGridClasses = (orientation) => {
   const baseClasses = 'relative';
 
   switch (orientation) {
+    // Horizontales: ocupan 2 columnas × 2 filas para mejor visibilidad
     case 'horizontal':
-      return `${baseClasses} col-span-2 row-span-1`;
+      return `${baseClasses} col-span-2 row-span-2`;
+    // Verticales: ocupan 1 columna × 2 filas
     case 'vertical':
       return `${baseClasses} col-span-1 row-span-2`;
+    // Cuadradas: ocupan 2 columnas × 2 filas
     case 'square':
       return `${baseClasses} col-span-2 row-span-2`;
     default:
