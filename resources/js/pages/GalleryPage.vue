@@ -29,7 +29,7 @@
               v-for="(imagen, idx) in getOptimizedImages(gallery.imagenes)"
               :key="imagen.id"
               :class="getGridClasses(imagen._orientation)"
-              class="group overflow-hidden rounded-lg border border-slate-200 bg-slate-100 cursor-pointer transition-all duration-300 hover:shadow-lg hover:z-10"
+              class="group overflow-hidden rounded-lg border border-slate-200 bg-slate-100 cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 hover:z-10 origin-center"
               @click="openModal(gallery, imagen)"
             >
               <img
@@ -74,6 +74,14 @@ const props = defineProps({
 
 const selectedGallery = ref(null);
 const selectedImage = ref(null);
+
+/**
+ * Abre el modal con la galería e imagen seleccionadas
+ */
+const openModal = (gallery, imagen) => {
+  selectedGallery.value = gallery;
+  selectedImage.value = imagen;
+};
 
 /**
  * Detecta la orientación de una imagen basada en su aspect_ratio
