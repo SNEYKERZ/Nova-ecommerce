@@ -19,11 +19,11 @@
           <p v-if="gallery.descripcion" class="text-slate-600">{{ gallery.descripcion }}</p>
         </div>
 
-        <!-- Pinterest-style Grid with row-dense flow -->
+        <!-- Pinterest-style Grid with row-dense flow (Max 4 columns) -->
         <div class="w-full px-1 sm:px-2 lg:px-4">
           <div
-            class="grid gap-0.5 grid-flow-row-dense"
-            :style="gridColsStyle"
+            class="grid gap-0.5 grid-flow-row-dense grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+            style="grid-auto-rows: 200px; gap: 0.125rem;"
           >
             <div
               v-for="(imagen, idx) in getOptimizedImages(gallery.imagenes)"
@@ -170,43 +170,9 @@ const getOptimizedImages = (imagenes) => {
   return result;
 };
 
-/**
- * Estilos dinámicos para el grid según el viewport
- * - Móvil: 2 columnas base (grid-cols-2)
- * - Tablet: 4 columnas base (grid-cols-4)
- * - Desktop: 6 columnas base (grid-cols-6)
- * Los items usan col-span y row-span para expandirse
- */
-const gridColsStyle = computed(() => {
-  // Usar CSS custom properties para que grid-flow-row-dense funcione
-  return {
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gridAutoRows: '150px',
-  };
-});
 </script>
 
 <style scoped>
-/* Asegurar que el grid usa row-dense para rellenar espacios */
-.grid {
-  grid-auto-flow: dense;
-}
-
-/* Media queries para ajustar tamaño base de celda y aspect ratio */
-@media (min-width: 640px) {
-  .grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    grid-auto-rows: 180px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    grid-auto-rows: 200px;
-  }
-}
-
 /* Animación suave en hover */
 .group:hover {
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
