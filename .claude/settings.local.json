@@ -16,7 +16,9 @@
       "PowerShell(head *)",
       "Bash(npm run *)",
       "Bash(php *)",
-      "Bash(mysql *)"
+      "Bash(mysql *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\laragon\\\\www\\\\webcaps-laravel\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }
