@@ -22,7 +22,7 @@
         <!-- Pinterest-style Grid with row-dense flow (Max 4 columns) -->
         <div class="w-full px-1 sm:px-2 lg:px-4">
           <div
-            class="grid gap-0.5 grid-flow-row-dense grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+            class="grid gap-0.5 grid-flow-row-dense grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
             style="grid-auto-rows: 240px; gap: 0.125rem;"
           >
             <div
