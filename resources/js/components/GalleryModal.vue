@@ -13,7 +13,7 @@
       <div class="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
         <!-- Image -->
         <div class="flex items-center justify-center bg-slate-100 rounded-lg overflow-hidden">
-          <img :src="imagen.imagen_url" :alt="gallery.nombre" class="h-full w-full object-cover" loading="lazy" />
+          <img :src="imagen.imagen_url" :alt="gallery.nombre" class="h-full w-full object-cover" loading="lazy" decoding="async" />
         </div>
 
         <!-- Products & Cart -->
@@ -126,7 +126,12 @@ const decreaseQty = (productoId) => {
 
 const addToCart = async (producto) => {
   try {
+    feedback.value = '';
     const productId = producto.producto_id || producto.id;
+    if (!productId) {
+      throw new Error('ID de producto inválido');
+    }
+
     const qty = quantities.value[productId] || 1;
     const res = await fetch('/api/carrito/agregar', {
       method: 'POST',
@@ -138,18 +143,23 @@ const addToCart = async (producto) => {
         producto_id: productId,
         cantidad: qty,
         talla: selectedSize.value[productId] || null,
-        color: selectedColor.value[productId] || null,
       }),
     });
 
-    if (!res.ok) throw new Error('Error al agregar al carrito');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al agregar al carrito');
+    }
 
+    const data = await res.json();
     quantities.value[productId] = 1;
-    feedback.value = `${producto.nombre} agregado al carrito`;
+    selectedSize.value[productId] = null;
+    feedback.value = `${producto.nombre} agregado al carrito ✓`;
     window.dispatchEvent(new Event('cart-updated'));
-    setTimeout(() => { feedback.value = ''; }, 2000);
+    setTimeout(() => { feedback.value = ''; }, 3000);
   } catch (e) {
-    feedback.value = e.message;
+    feedback.value = `Error: ${e.message}`;
+    console.error('Add to cart error:', e);
   }
 };
 </script>

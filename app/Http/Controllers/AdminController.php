@@ -838,7 +838,15 @@ class AdminController extends Controller
 
     public function destroyCatalogBanner(int $posicion): JsonResponse
     {
-        $banner = CatalogBanner::query()->where('posicion', $posicion)->firstOrFail();
+        $tenantManager = app(TenantManager::class);
+        $store = $tenantManager->getStore();
+
+        $query = CatalogBanner::query()->where('posicion', $posicion);
+        if ($store) {
+            $query->where('store_id', $store->id);
+        }
+
+        $banner = $query->firstOrFail();
 
         if ($banner->imagen) {
             $this->deleteMediaPath($banner->imagen);
@@ -898,10 +906,15 @@ class AdminController extends Controller
 
     private function getCatalogBanners(): array
     {
-        $items = CatalogBanner::query()
-            ->orderBy('posicion')
-            ->get()
-            ->keyBy('posicion');
+        $tenantManager = app(TenantManager::class);
+        $store = $tenantManager->getStore();
+
+        $query = CatalogBanner::query();
+        if ($store) {
+            $query->where('store_id', $store->id);
+        }
+
+        $items = $query->orderBy('posicion')->get()->keyBy('posicion');
 
         $result = [];
 
@@ -924,15 +937,25 @@ class AdminController extends Controller
 
     private function upsertCatalogBannerRecord(int $posicion, ?string $nombre, ?string $urlDestino, bool $activo, $imageFile = null): void
     {
-        $banner = CatalogBanner::query()->firstOrNew([
-            'posicion' => $posicion,
-        ]);
+        $tenantManager = app(TenantManager::class);
+        $store = $tenantManager->getStore();
+
+        $query = CatalogBanner::query()->where('posicion', $posicion);
+        if ($store) {
+            $query->where('store_id', $store->id);
+        }
+
+        $banner = $query->first() ?: new CatalogBanner(['posicion' => $posicion]);
 
         $identificador = $posicion === 1 ? 'banner-izq' : 'banner-der';
         $banner->nombre = $nombre ?: ($posicion === 1 ? 'Banner izquierdo' : 'Banner derecho');
         $banner->identificador = $identificador;
         $banner->url_destino = $urlDestino;
         $banner->activo = $activo;
+
+        if ($store) {
+            $banner->store_id = $store->id;
+        }
 
         if ($imageFile) {
             if ($banner->exists && $banner->imagen) {

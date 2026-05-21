@@ -105,7 +105,11 @@ class StorefrontController extends Controller
 
     private function getCatalogBanners(): array
     {
+        $tenantManager = app(TenantManager::class);
+        $store = $tenantManager->getStore();
+
         return CatalogBanner::query()
+            ->when($store, fn($q) => $q->where('store_id', $store->id))
             ->where('activo', true)
             ->orderBy('posicion')
             ->get()
@@ -158,9 +162,14 @@ class StorefrontController extends Controller
     public function galleries(): Response
     {
         $galleries = \App\Models\Gallery::where('activo', true)
-            ->with(['imagenes' => function ($query) {
-                $query->orderBy('orden');
-            }])
+            ->with([
+                'imagenes' => function ($query) {
+                    $query->orderBy('orden');
+                },
+                'imagenes.productos' => function ($query) {
+                    $query->with('producto.variantes')->orderBy('orden');
+                }
+            ])
             ->orderBy('orden')
             ->get()
             ->map(function ($gallery) {
@@ -173,19 +182,15 @@ class StorefrontController extends Controller
                             'id' => $imagen->id,
                             'imagen_url' => $this->mediaUrl($imagen->imagen),
                             'aspect_ratio' => $imagen->aspect_ratio,
-                            'productos' => $imagen->productos()
-                                ->with('producto.variantes')
-                                ->orderBy('orden')
-                                ->get()
-                                ->map(fn($gip) => [
-                                    'id' => $gip->id,
-                                    'producto_id' => $gip->producto_id,
-                                    'referencia' => $gip->producto->referencia,
-                                    'nombre' => $gip->producto->nombre,
-                                    'precio' => (float) $gip->producto->precio,
-                                    'tallas' => $gip->producto->tallas_array,
-                                    'colores' => $gip->producto->colores,
-                                ])->values(),
+                            'productos' => $imagen->productos->map(fn($gip) => [
+                                'id' => $gip->id,
+                                'producto_id' => $gip->producto_id,
+                                'referencia' => $gip->producto->referencia,
+                                'nombre' => $gip->producto->nombre,
+                                'precio' => (float) $gip->producto->precio,
+                                'tallas' => $gip->producto->tallas_array,
+                                'colores' => $gip->producto->colores,
+                            ])->values(),
                         ];
                     })->values(),
                 ];
