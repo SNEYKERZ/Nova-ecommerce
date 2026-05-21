@@ -76,7 +76,19 @@ class TenantManager
     {
         $host = $request->getHost();
         $domainSuffix = $this->getDomainSuffix();
-        
+
+        // 0. Localhost: ?store= query param → session → env
+        $isLocal = in_array($host, ['localhost', '127.0.0.1']) ||
+                   str_starts_with($host, 'localhost:');
+        if ($isLocal) {
+            $slug = $request->query('store')
+                 ?: session('tenant_store')
+                 ?: env('LOCAL_STORE_SLUG', 'demo');
+            return $slug
+                ? Store::where('slug', $slug)->where('activo', true)->first()
+                : null;
+        }
+
         // 1. Buscar por subdomain: tienda1.vendex.app
         $subdomain = $this->extractSubdomain($host, $domainSuffix);
         if ($subdomain) {
@@ -102,9 +114,11 @@ class TenantManager
         }
 
         // Excepción: localhost para desarrollo
+        // Usar LOCAL_STORE_SLUG del .env para elegir qué tienda cargar en localhost
+        // Ejemplo: LOCAL_STORE_SLUG=demo o LOCAL_STORE_SLUG=urbanstyle
         if ($host === 'localhost' || str_starts_with($host, 'localhost:')) {
-            // En desarrollo, usar el store demo si existe
-            return 'demo';
+            $localSlug = env('LOCAL_STORE_SLUG', 'demo');
+            return $localSlug ?: 'demo';
         }
 
         return null;

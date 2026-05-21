@@ -10,15 +10,13 @@ class CategoriaSeeder extends Seeder
 {
     public function run(): void
     {
-        // Obtener el store demo
-        $store = Store::where('slug', 'demo')->first();
-        
-        if (!$store) {
-            $this->command->warn('No se encontró el store demo. Ejecuta el StoreSeeder primero.');
+        $stores = Store::all();
+
+        if ($stores->isEmpty()) {
+            $this->command->warn('No hay tiendas. Ejecuta el StoreSeeder primero.');
             return;
         }
 
-        // Ignorar el scope de tenant para el seeder
         Categoria::ignoreTenantScope();
 
         $categorias = [
@@ -29,11 +27,15 @@ class CategoriaSeeder extends Seeder
             ['categoria' => 'ACCESORIOS', 'tipoDePrenda' => 'ACCESORIO'],
         ];
 
-        foreach ($categorias as $categoria) {
-            Categoria::updateOrCreate(
-                ['categoria' => $categoria['categoria'], 'store_id' => $store->id],
-                array_merge($categoria, ['store_id' => $store->id])
-            );
+        foreach ($stores as $store) {
+            foreach ($categorias as $categoria) {
+                Categoria::updateOrCreate(
+                    ['categoria' => $categoria['categoria'], 'store_id' => $store->id],
+                    array_merge($categoria, ['store_id' => $store->id])
+                );
+            }
+
+            $this->command->line("Categorías creadas para: {$store->slug}");
         }
 
         Categoria::restoreTenantScope();

@@ -1,20 +1,37 @@
 <template>
   <AppLayout>
+
     <Head title="Admin" />
     <section class="mx-auto w-full max-w-[96rem] px-4 py-8 sm:px-6 lg:px-10">
       <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Panel Administrativo</h1>
-        <p class="mt-2 text-sm text-slate-600">Vista corporativa para control operativo de tienda, fabrica, inventario y promociones.</p>
+        <p class="mt-2 text-sm text-slate-600">Vista corporativa para control operativo de tienda, fabrica, inventario y
+          promociones.</p>
         <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4"><p class="text-xs text-slate-500">Productos</p><p class="text-2xl font-semibold text-slate-900">{{ stats.productos }}</p></div>
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4"><p class="text-xs text-slate-500">Insumos</p><p class="text-2xl font-semibold text-slate-900">{{ stats.insumos }}</p></div>
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4"><p class="text-xs text-slate-500">Promociones</p><p class="text-2xl font-semibold text-slate-900">{{ stats.ofertas }}</p></div>
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4"><p class="text-xs text-slate-500">Promociones activas</p><p class="text-2xl font-semibold text-slate-900">{{ stats.ofertasActivas }}</p></div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p class="text-xs text-slate-500">Productos</p>
+            <p class="text-2xl font-semibold text-slate-900">{{ stats.productos }}</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p class="text-xs text-slate-500">Insumos</p>
+            <p class="text-2xl font-semibold text-slate-900">{{ stats.insumos }}</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p class="text-xs text-slate-500">Promociones</p>
+            <p class="text-2xl font-semibold text-slate-900">{{ stats.ofertas }}</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p class="text-xs text-slate-500">Promociones activas</p>
+            <p class="text-2xl font-semibold text-slate-900">{{ stats.ofertasActivas }}</p>
+          </div>
         </div>
       </div>
 
       <div class="mb-5 flex flex-wrap gap-2">
-        <button v-for="tab in tabs" :key="tab.key" class="rounded-full border px-4 py-2 text-sm font-semibold cursor-pointer" :class="activeTab === tab.key ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700'" @click="activeTab = tab.key">
+        <button v-for="tab in tabs" :key="tab.key"
+          class="rounded-full border px-4 py-2 text-sm font-semibold cursor-pointer"
+          :class="activeTab === tab.key ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700'"
+          @click="activeTab = tab.key">
           {{ tab.label }}
         </button>
       </div>
@@ -28,7 +45,7 @@
               <p class="mt-1 text-sm text-slate-500">Gestiona y actualiza el estado de los pedidos de tu tienda.</p>
             </div>
             <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-              {{ pedidosList.filter(p => p.estado === 'PENDIENTE').length }} pendientes
+              {{pedidosList.filter(p => p.estado === 'PENDIENTE').length}} pendientes
             </span>
           </div>
         </div>
@@ -36,8 +53,10 @@
         <!-- Detalle del pedido seleccionado -->
         <div v-if="pedidoDetalle" class="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
           <div class="flex items-center justify-between mb-3">
-            <h3 class="font-semibold text-blue-900">Pedido #{{ pedidoDetalle.id }} — {{ pedidoDetalle.cliente?.nombre }} {{ pedidoDetalle.cliente?.apellidos }}</h3>
-            <button class="text-xs text-blue-600 underline cursor-pointer" @click="pedidoDetalle = null">Cerrar detalle</button>
+            <h3 class="font-semibold text-blue-900">Pedido #{{ pedidoDetalle.id }} — {{ pedidoDetalle.cliente?.nombre }}
+              {{ pedidoDetalle.cliente?.apellidos }}</h3>
+            <button class="text-xs text-blue-600 underline cursor-pointer" @click="pedidoDetalle = null">Cerrar
+              detalle</button>
           </div>
           <div class="grid gap-2 text-sm text-blue-900 sm:grid-cols-2">
             <p><span class="font-semibold">Email:</span> {{ pedidoDetalle.cliente?.email }}</p>
@@ -45,7 +64,14 @@
             <p class="sm:col-span-2"><span class="font-semibold">Dirección:</span> {{ pedidoDetalle.direccion }}</p>
           </div>
           <table class="mt-3 min-w-full text-xs">
-            <thead><tr class="text-left text-blue-700"><th class="py-1 pr-3">Producto</th><th class="py-1 pr-3">Talla</th><th class="py-1 pr-3">Cant.</th><th class="py-1">Subtotal</th></tr></thead>
+            <thead>
+              <tr class="text-left text-blue-700">
+                <th class="py-1 pr-3">Producto</th>
+                <th class="py-1 pr-3">Talla</th>
+                <th class="py-1 pr-3">Cant.</th>
+                <th class="py-1">Subtotal</th>
+              </tr>
+            </thead>
             <tbody>
               <tr v-for="(item, i) in pedidoDetalle.items" :key="i" class="border-t border-blue-200">
                 <td class="py-1 pr-3">{{ item.producto_referencia }}</td>
@@ -85,16 +111,20 @@
                 <td class="px-3 py-2 text-slate-500">{{ pedido.items_count }} art.</td>
                 <td class="px-3 py-2 text-slate-500 text-xs">{{ pedido.created_at }}</td>
                 <td class="px-3 py-2">
-                  <span class="rounded-full px-2 py-1 text-xs font-semibold" :class="estadoColors[pedido.estado] || 'bg-slate-100 text-slate-700'">
+                  <span class="rounded-full px-2 py-1 text-xs font-semibold"
+                    :class="estadoColors[pedido.estado] || 'bg-slate-100 text-slate-700'">
                     {{ pedido.estado }}
                   </span>
                 </td>
                 <td class="px-3 py-2">
                   <div class="flex flex-wrap gap-1.5">
-                    <button class="rounded-md border border-slate-300 px-2 py-1 text-xs cursor-pointer hover:bg-slate-50" @click="pedidoDetalle = pedidoDetalle?.id === pedido.id ? null : pedido">
+                    <button
+                      class="rounded-md border border-slate-300 px-2 py-1 text-xs cursor-pointer hover:bg-slate-50"
+                      @click="pedidoDetalle = pedidoDetalle?.id === pedido.id ? null : pedido">
                       {{ pedidoDetalle?.id === pedido.id ? 'Ocultar' : 'Ver' }}
                     </button>
-                    <select class="rounded-md border border-slate-300 px-2 py-1 text-xs cursor-pointer bg-white" :value="pedido.estado" @change="updateEstadoPedido(pedido.id, $event.target.value)">
+                    <select class="rounded-md border border-slate-300 px-2 py-1 text-xs cursor-pointer bg-white"
+                      :value="pedido.estado" @change="updateEstadoPedido(pedido.id, $event.target.value)">
                       <option value="PENDIENTE">Pendiente</option>
                       <option value="CONFIRMADO">Confirmado</option>
                       <option value="ENVIADO">Enviado</option>
@@ -110,9 +140,13 @@
 
         <!-- Paginación pedidos -->
         <div v-if="pedidosMeta" class="flex items-center justify-between">
-          <p class="text-sm text-slate-600">{{ pedidosMeta.from }} - {{ pedidosMeta.to }} de {{ pedidosMeta.total }} pedidos</p>
+          <p class="text-sm text-slate-600">{{ pedidosMeta.from }} - {{ pedidosMeta.to }} de {{ pedidosMeta.total }}
+            pedidos</p>
           <div class="flex gap-1">
-            <Link v-for="link in pedidosLinks" :key="link.label" :href="link.url" class="rounded-md border border-slate-300 px-3 py-1 text-sm" :class="link.active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 cursor-pointer'" :disabled="!link.url" v-html="link.label"></Link>
+            <Link v-for="link in pedidosLinks" :key="link.label" :href="link.url"
+              class="rounded-md border border-slate-300 px-3 py-1 text-sm"
+              :class="link.active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 cursor-pointer'"
+              :disabled="!link.url" v-html="link.label"></Link>
           </div>
         </div>
       </section>
@@ -125,56 +159,69 @@
             <div class="space-y-3">
               <div>
                 <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Nombre de tienda</label>
-                <input v-model="settingsForm.store_name" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" placeholder="Nombre tienda" />
+                <input v-model="settingsForm.store_name" class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                  placeholder="Nombre tienda" />
               </div>
               <div>
                 <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Logo</label>
-                <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" @change="handleSettingsLogo" />
+                <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                  class="w-full rounded-xl border border-slate-300 px-3 py-2.5" @change="handleSettingsLogo" />
               </div>
 
               <!-- Colores de la tienda -->
               <div>
                 <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Color de Fondo</label>
                 <div class="flex gap-2">
-                  <input v-model="settingsForm.bg_color" type="color" class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
-                  <input v-model="settingsForm.bg_color" placeholder="#ffffff" class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+                  <input v-model="settingsForm.bg_color" type="color"
+                    class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                  <input v-model="settingsForm.bg_color" placeholder="#ffffff"
+                    class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
                 </div>
               </div>
               <div>
                 <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Color Navbar</label>
                 <div class="flex gap-2">
-                  <input v-model="settingsForm.navbar_color" type="color" class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
-                  <input v-model="settingsForm.navbar_color" placeholder="#1e293b" class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+                  <input v-model="settingsForm.navbar_color" type="color"
+                    class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                  <input v-model="settingsForm.navbar_color" placeholder="#fff"
+                    class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
                 </div>
               </div>
               <div>
                 <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Color Footer</label>
                 <div class="flex gap-2">
-                  <input v-model="settingsForm.footer_color" type="color" class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
-                  <input v-model="settingsForm.footer_color" placeholder="#1e293b" class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+                  <input v-model="settingsForm.footer_color" type="color"
+                    class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                  <input v-model="settingsForm.footer_color" placeholder="#fff"
+                    class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
                 </div>
               </div>
 
-              <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="saveSettings">Guardar configuracion</button>
+              <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer"
+                @click="saveSettings">Guardar configuracion</button>
             </div>
             <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p class="text-xs font-semibold uppercase text-slate-500">Vista previa</p>
               <div class="mt-3 flex items-center gap-3">
-                <img v-if="settingsLogoPreview" :src="settingsLogoPreview" class="h-14 w-14 rounded-full object-cover" alt="Logo" />
+                <img v-if="settingsLogoPreview" :src="settingsLogoPreview" class="h-14 w-14 rounded-full object-cover"
+                  alt="Logo" />
                 <div class="text-lg font-semibold text-slate-900">{{ settingsForm.store_name || 'Nombre Tienda' }}</div>
               </div>
               <!-- Previsualización de colores -->
               <div class="mt-4 space-y-2">
                 <div class="flex items-center gap-2">
-                  <span class="inline-block h-4 w-4 rounded border border-slate-300" :style="{ background: settingsForm.bg_color }"></span>
+                  <span class="inline-block h-4 w-4 rounded border border-slate-300"
+                    :style="{ background: settingsForm.bg_color }"></span>
                   <span class="text-xs text-slate-500">Fondo</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="inline-block h-4 w-4 rounded border border-slate-300" :style="{ background: settingsForm.navbar_color }"></span>
+                  <span class="inline-block h-4 w-4 rounded border border-slate-300"
+                    :style="{ background: settingsForm.navbar_color }"></span>
                   <span class="text-xs text-slate-500">Navbar</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="inline-block h-4 w-4 rounded border border-slate-300" :style="{ background: settingsForm.footer_color }"></span>
+                  <span class="inline-block h-4 w-4 rounded border border-slate-300"
+                    :style="{ background: settingsForm.footer_color }"></span>
                   <span class="text-xs text-slate-500">Footer</span>
                 </div>
               </div>
@@ -186,46 +233,64 @@
       <section v-if="activeTab === 'productos'" class="space-y-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Crear / Editar Producto</h2>
-<div class="mt-4 grid gap-3 lg:grid-cols-2">
+          <div class="mt-4 grid gap-3 lg:grid-cols-2">
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Nombre del producto <span class="normal-case font-normal text-slate-400">(visible en tienda)</span></label>
-              <input v-model="productForm.nombre" placeholder="Ej: Camiseta Polo Azul Manga Corta" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Nombre del producto <span
+                  class="normal-case font-normal text-slate-400">(visible en tienda)</span></label>
+              <input v-model="productForm.nombre" placeholder="Ej: Camiseta Polo Azul Manga Corta"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Referencia / SKU <span class="normal-case font-normal text-slate-400">(código interno)</span></label>
-              <input v-model="productForm.referencia" placeholder="Ej: CAMISETA-001" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Referencia / SKU <span
+                  class="normal-case font-normal text-slate-400">(código interno)</span></label>
+              <input v-model="productForm.referencia" placeholder="Ej: CAMISETA-001"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div class="lg:col-span-2">
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Descripción</label>
-              <textarea v-model="productForm.descripcion" rows="2" placeholder="Descripción del producto para el catálogo..." class="rounded-xl border border-slate-300 px-3 py-2.5 w-full resize-none"></textarea>
+              <textarea v-model="productForm.descripcion" rows="2"
+                placeholder="Descripción del producto para el catálogo..."
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full resize-none"></textarea>
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Precio (COP)</label>
-              <input v-model.number="productForm.precio" type="number" min="0" placeholder="Ej: 50000" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <input v-model.number="productForm.precio" type="number" min="0" placeholder="Ej: 50000"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Categoría</label>
-              <select v-model.number="productForm.categoria_id" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full"><option :value="null">Selecciona una categoría</option><option v-for="cat in categorias" :key="cat.id" :value="cat.id">{{ cat.categoria }}</option></select>
+              <select v-model.number="productForm.categoria_id"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full">
+                <option :value="null">Selecciona una categoría</option>
+                <option v-for="cat in categorias" :key="cat.id" :value="cat.id">{{ cat.categoria }}</option>
+              </select>
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Estado del producto</label>
-              <select v-model="productForm.estado" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full"><option value="DISPONIBLE">Disponible</option><option value="NO_DISPONIBLE">No disponible</option></select>
+              <select v-model="productForm.estado" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full">
+                <option value="DISPONIBLE">Disponible</option>
+                <option value="NO_DISPONIBLE">No disponible</option>
+              </select>
             </div>
             <div class="lg:col-span-2">
-              <label class="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 cursor-pointer">
+              <label
+                class="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 cursor-pointer">
                 <input type="checkbox" v-model="productForm.nueva_coleccion" class="rounded" />
                 <span class="text-sm font-semibold text-slate-700">Marcar como Nueva Colección</span>
               </label>
             </div>
 
-<div class="lg:col-span-2">
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Imágenes del producto (máximo 4)</label>
-              <input type="file" multiple accept="image/png,image/jpeg,image/jpg,image/webp" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" @change="handleProductImages" />
+            <div class="lg:col-span-2">
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Imágenes del producto (máximo
+                4)</label>
+              <input type="file" multiple accept="image/png,image/jpeg,image/jpg,image/webp"
+                class="w-full rounded-xl border border-slate-300 px-3 py-2.5" @change="handleProductImages" />
             </div>
 
             <div v-if="productForm.existingImages.length" class="lg:col-span-2">
               <p class="mb-1 text-xs font-semibold uppercase text-slate-500">Imágenes actuales</p>
-              <div class="grid grid-cols-2 gap-2 sm:grid-cols-4"> <img v-for="image in productForm.existingImages" :key="image.id" :src="image.url" class="h-20 w-full rounded-lg object-cover" alt="Imagen" /> </div>
+              <div class="grid grid-cols-2 gap-2 sm:grid-cols-4"> <img v-for="image in productForm.existingImages"
+                  :key="image.id" :src="image.url" class="h-20 w-full rounded-lg object-cover" alt="Imagen" /> </div>
             </div>
 
             <div v-if="productForm.newImageNames.length" class="lg:col-span-2 text-sm text-slate-600">
@@ -235,137 +300,236 @@
             <div class="lg:col-span-2">
               <p class="mb-2 text-xs font-semibold uppercase text-slate-500">Tallas disponibles y stock por talla</p>
               <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                <label v-for="size in sizeOptions" :key="size" class="flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 cursor-pointer">
+                <label v-for="size in sizeOptions" :key="size"
+                  class="flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 cursor-pointer">
                   <input v-model="productForm.sizeStock[size].enabled" type="checkbox" />
                   <span class="w-10 text-sm font-semibold text-slate-700">{{ size }}</span>
-                  <input v-model.number="productForm.sizeStock[size].stock" type="number" min="0" :disabled="!productForm.sizeStock[size].enabled" placeholder="Stock" class="w-full rounded-md border border-slate-300 px-2 py-1 text-sm" />
+                  <input v-model.number="productForm.sizeStock[size].stock" type="number" min="0"
+                    :disabled="!productForm.sizeStock[size].enabled" placeholder="Stock"
+                    class="w-full rounded-md border border-slate-300 px-2 py-1 text-sm" />
                 </label>
               </div>
             </div>
           </div>
 
           <div class="mt-4 flex flex-wrap gap-2">
-<button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="saveProduct">{{ productForm.id ? 'Actualizar' : 'Crear' }}</button>
-            <button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 cursor-pointer" @click="resetProductForm">Limpiar</button>
+            <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer"
+              @click="saveProduct">{{ productForm.id ? 'Actualizar' : 'Crear' }}</button>
+            <button
+              class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 cursor-pointer"
+              @click="resetProductForm">Limpiar</button>
           </div>
-</div>
+        </div>
 
         <!-- Buscador y tabla de productos -->
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div class="mb-4 flex items-center gap-3">
-            <input v-model="search" type="text" placeholder="Buscar por referencia, SKU, código o categoría..." class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5" />
+            <input v-model="search" type="text" placeholder="Buscar por referencia, SKU, código o categoría..."
+              class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5" />
           </div>
           <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-full text-sm">
-              <thead class="bg-slate-100 text-left text-slate-600"><tr><th class="px-3 py-2">Nueva</th><th class="px-3 py-2">Ref</th><th class="px-3 py-2">Categoria</th><th class="px-3 py-2">Precio</th><th class="px-3 py-2">Tallas</th><th class="px-3 py-2">Stock</th><th class="px-3 py-2">Img</th><th class="px-3 py-2">Acciones</th></tr></thead>
+              <thead class="bg-slate-100 text-left text-slate-600">
+                <tr>
+                  <th class="px-3 py-2">Nueva</th>
+                  <th class="px-3 py-2">Ref</th>
+                  <th class="px-3 py-2">Categoria</th>
+                  <th class="px-3 py-2">Precio</th>
+                  <th class="px-3 py-2">Tallas</th>
+                  <th class="px-3 py-2">Stock</th>
+                  <th class="px-3 py-2">Img</th>
+                  <th class="px-3 py-2">Acciones</th>
+                </tr>
+              </thead>
               <tbody>
                 <tr v-for="item in productosList" :key="item.id" class="border-t border-slate-200">
-                  <td class="px-3 py-2"><button @click="toggleNuevaColeccion(item.id)" class="rounded-full px-2 py-1 text-xs font-semibold cursor-pointer" :class="item.nueva_coleccion ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'">{{ item.nueva_coleccion ? 'NUEVA' : '--' }}</button></td>
-                  <td class="px-3 py-2">{{ item.referencia }}</td><td class="px-3 py-2">{{ item.categoria }}</td><td class="px-3 py-2">{{ money(item.precio) }}</td><td class="px-3 py-2">{{ item.tallas }}</td><td class="px-3 py-2">{{ item.stock_total }}</td><td class="px-3 py-2">{{ item.imagenes?.length || 0 }}</td>
-                  <td class="px-3 py-2"><div class="flex gap-2"><button class="rounded-md border border-slate-300 px-2 py-1 cursor-pointer" @click="editProduct(item)">Editar</button><button class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer" @click="deleteProduct(item.id)">Eliminar</button></div></td>
+                  <td class="px-3 py-2"><button @click="toggleNuevaColeccion(item.id)"
+                      class="rounded-full px-2 py-1 text-xs font-semibold cursor-pointer"
+                      :class="item.nueva_coleccion ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'">{{
+                        item.nueva_coleccion ? 'NUEVA' : '--' }}</button></td>
+                  <td class="px-3 py-2">{{ item.referencia }}</td>
+                  <td class="px-3 py-2">{{ item.categoria }}</td>
+                  <td class="px-3 py-2">{{ money(item.precio) }}</td>
+                  <td class="px-3 py-2">{{ item.tallas }}</td>
+                  <td class="px-3 py-2">{{ item.stock_total }}</td>
+                  <td class="px-3 py-2">{{ item.imagenes?.length || 0 }}</td>
+                  <td class="px-3 py-2">
+                    <div class="flex gap-2"><button class="rounded-md border border-slate-300 px-2 py-1 cursor-pointer"
+                        @click="editProduct(item)">Editar</button><button
+                        class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer"
+                        @click="deleteProduct(item.id)">Eliminar</button></div>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
           <!-- Paginación productos -->
           <div v-if="productosMeta" class="mt-4 flex items-center justify-between">
-            <p class="text-sm text-slate-600">Mostrando {{ productosMeta.from }} - {{ productosMeta.to }} de {{ productosMeta.total }}</p>
+            <p class="text-sm text-slate-600">Mostrando {{ productosMeta.from }} - {{ productosMeta.to }} de {{
+              productosMeta.total }}</p>
             <div class="flex gap-1">
-              <Link v-for="link in productosLinks" :key="link.label" :href="link.url" class="rounded-md border border-slate-300 px-3 py-1 text-sm cursor-pointer" :class="link.active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'" :disabled="!link.url" v-html="link.label"></Link>
+              <Link v-for="link in productosLinks" :key="link.label" :href="link.url"
+                class="rounded-md border border-slate-300 px-3 py-1 text-sm cursor-pointer"
+                :class="link.active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'" :disabled="!link.url"
+                v-html="link.label"></Link>
             </div>
           </div>
         </div>
       </section>
 
-<section v-if="activeTab === 'promociones'" class="space-y-4">
+      <!-- Galerías Tab -->
+      <section v-if="activeTab === 'galerias'" class="space-y-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-semibold text-slate-900">Gestión de Galerías</h2>
+              <p class="mt-1 text-sm text-slate-600">Crea y organiza galerías de productos con imágenes masonry.</p>
+            </div>
+            <Link href="/admin/galleries"
+              class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer hover:bg-slate-800">
+              Ir a Galerías
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="activeTab === 'promociones'" class="space-y-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Crear / Editar Promoción</h2>
           <div class="mt-4 grid gap-3 md:grid-cols-2">
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Título de la promoción</label>
-              <input v-model="offerForm.titulo" placeholder="Ej: Promo Verano 50%" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <input v-model="offerForm.titulo" placeholder="Ej: Promo Verano 50%"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Descripción (opcional)</label>
-              <input v-model="offerForm.descripcion" placeholder="Ej: Descuento especial en camisas" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <input v-model="offerForm.descripcion" placeholder="Ej: Descuento especial en camisas"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Aplicar a producto específico (opcional)</label>
-              <select v-model.number="offerForm.producto_id" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full"><option :value="null">Selecciona un producto</option><option v-for="p in productosList" :key="p.id" :value="p.id">{{ p.referencia }}</option></select>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Aplicar a producto específico
+                (opcional)</label>
+              <select v-model.number="offerForm.producto_id"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full">
+                <option :value="null">Selecciona un producto</option>
+                <option v-for="p in productosList" :key="p.id" :value="p.id">{{ p.referencia }}</option>
+              </select>
             </div>
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Aplicar a categoría (opcional)</label>
-              <select v-model.number="offerForm.categoria_id" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full"><option :value="null">Selecciona una categoría</option><option v-for="cat in categorias" :key="cat.id" :value="cat.id">{{ cat.categoria }}</option></select>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Aplicar a categoría
+                (opcional)</label>
+              <select v-model.number="offerForm.categoria_id"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full">
+                <option :value="null">Selecciona una categoría</option>
+                <option v-for="cat in categorias" :key="cat.id" :value="cat.id">{{ cat.categoria }}</option>
+              </select>
             </div>
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Porcentaje de descuento (%)</label>
-              <input v-model.number="offerForm.descuento_porcentaje" type="number" min="0" max="100" placeholder="Ej: 20" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Porcentaje de descuento
+                (%)</label>
+              <input v-model.number="offerForm.descuento_porcentaje" type="number" min="0" max="100"
+                placeholder="Ej: 20" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Descuento fijo en COP (opcional)</label>
-              <input v-model.number="offerForm.descuento_fijo" type="number" min="0" placeholder="Ej: 10000" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Descuento fijo en COP
+                (opcional)</label>
+              <input v-model.number="offerForm.descuento_fijo" type="number" min="0" placeholder="Ej: 10000"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Precio especial oferta (opcional)</label>
-              <input v-model.number="offerForm.precio_oferta" type="number" min="0" placeholder="Ej: 35000" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Precio especial oferta
+                (opcional)</label>
+              <input v-model.number="offerForm.precio_oferta" type="number" min="0" placeholder="Ej: 35000"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Estado de la promoción</label>
-              <select v-model="offerForm.esta_activa" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full"><option :value="true">Activa</option><option :value="false">Inactiva</option></select>
+              <select v-model="offerForm.esta_activa" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full">
+                <option :value="true">Activa</option>
+                <option :value="false">Inactiva</option>
+              </select>
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Fecha de inicio</label>
-              <input v-model="offerForm.fecha_inicio" type="datetime-local" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <input v-model="offerForm.fecha_inicio" type="datetime-local"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Fecha de fin</label>
-              <input v-model="offerForm.fecha_fin" type="datetime-local" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <input v-model="offerForm.fecha_fin" type="datetime-local"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
           </div>
-<div class="mt-4 flex gap-2"><button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="saveOffer">{{ offerForm.id ? 'Actualizar' : 'Crear' }}</button><button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold cursor-pointer" @click="resetOfferForm">Limpiar</button></div>
+          <div class="mt-4 flex gap-2"><button
+              class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer"
+              @click="saveOffer">{{ offerForm.id ? 'Actualizar' : 'Crear' }}</button><button
+              class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold cursor-pointer"
+              @click="resetOfferForm">Limpiar</button></div>
         </div>
 
         <!-- Buscador y tabla de ofertas -->
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div class="mb-4 flex items-center gap-3">
-            <input v-model="search" type="text" placeholder="Buscar por título, descripción, producto o categoría..." class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5" />
+            <input v-model="search" type="text" placeholder="Buscar por título, descripción, producto o categoría..."
+              class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5" />
           </div>
           <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-full text-sm">
-              <thead class="bg-slate-100 text-left text-slate-600"><tr><th class="px-3 py-2">Titulo</th><th class="px-3 py-2">Aplica a</th><th class="px-3 py-2">Vigencia</th><th class="px-3 py-2">Estado</th><th class="px-3 py-2">Acciones</th></tr></thead>
+              <thead class="bg-slate-100 text-left text-slate-600">
+                <tr>
+                  <th class="px-3 py-2">Titulo</th>
+                  <th class="px-3 py-2">Aplica a</th>
+                  <th class="px-3 py-2">Vigencia</th>
+                  <th class="px-3 py-2">Estado</th>
+                  <th class="px-3 py-2">Acciones</th>
+                </tr>
+              </thead>
               <tbody>
                 <tr v-for="item in ofertasList" :key="item.id" class="border-t border-slate-200">
                   <td class="px-3 py-2">{{ item.titulo }}</td>
                   <td class="px-3 py-2">{{ item.producto || item.categoria }}</td>
                   <td class="px-3 py-2">{{ item.fecha_inicio?.slice(0, 10) }} - {{ item.fecha_fin?.slice(0, 10) }}</td>
                   <td class="px-3 py-2">{{ item.esta_activa ? 'Activa' : 'Inactiva' }}</td>
-                  <td class="px-3 py-2"><div class="flex gap-2"><button class="rounded-md border border-slate-300 px-2 py-1 cursor-pointer" @click="editOffer(item)">Editar</button><button class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer" @click="deleteOffer(item.id)">Eliminar</button></div></td>
+                  <td class="px-3 py-2">
+                    <div class="flex gap-2"><button class="rounded-md border border-slate-300 px-2 py-1 cursor-pointer"
+                        @click="editOffer(item)">Editar</button><button
+                        class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer"
+                        @click="deleteOffer(item.id)">Eliminar</button></div>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
           <!-- Paginación ofertas -->
           <div v-if="ofertasMeta" class="mt-4 flex items-center justify-between">
-            <p class="text-sm text-slate-600">Mostrando {{ ofertasMeta.from }} - {{ ofertasMeta.to }} de {{ ofertasMeta.total }}</p>
+            <p class="text-sm text-slate-600">Mostrando {{ ofertasMeta.from }} - {{ ofertasMeta.to }} de {{
+              ofertasMeta.total }}</p>
             <div class="flex gap-1">
-              <Link v-for="link in ofertasLinks" :key="link.label" :href="link.url" class="rounded-md border border-slate-300 px-3 py-1 text-sm cursor-pointer" :class="link.active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'" :disabled="!link.url" v-html="link.label"></Link>
+              <Link v-for="link in ofertasLinks" :key="link.label" :href="link.url"
+                class="rounded-md border border-slate-300 px-3 py-1 text-sm cursor-pointer"
+                :class="link.active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'" :disabled="!link.url"
+                v-html="link.label"></Link>
             </div>
           </div>
         </div>
       </section>
 
-<section v-if="activeTab === 'noticias'" class="space-y-4">
+      <section v-if="activeTab === 'noticias'" class="space-y-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Noticias / Promociones Activas</h2>
-          <textarea v-model="newsText" rows="5" class="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2.5"></textarea>
-          <button class="mt-3 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="saveNews">Guardar noticias</button>
+          <textarea v-model="newsText" rows="5"
+            class="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2.5"></textarea>
+          <button class="mt-3 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer"
+            @click="saveNews">Guardar noticias</button>
         </div>
       </section>
 
       <section v-if="activeTab === 'bloques'" class="space-y-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Carrusel del Home</h2>
-          <p class="mt-1 text-sm text-slate-600">Este carrusel reemplaza por completo los dos bloques anteriores. Puedes subir varias imágenes y el frontend las rota automáticamente cada 2 segundos.</p>
+          <p class="mt-1 text-sm text-slate-600">Este carrusel reemplaza por completo los dos bloques anteriores. Puedes
+            subir varias imágenes y el frontend las rota automáticamente cada 2 segundos.</p>
 
           <div class="mt-4 grid gap-4">
             <div class="flex items-center gap-2">
@@ -375,14 +539,16 @@
 
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Imagenes del carrusel</label>
-              <input type="file" multiple accept="image/*" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" @change="handleBloqueImagenes" />
+              <input type="file" multiple accept="image/*" class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                @change="handleBloqueImagenes" />
               <p class="mt-1 text-xs text-slate-400">Puedes cargar varias imágenes. Se mostrarán en ancho completo.</p>
             </div>
 
             <div v-if="bloqueForm.nuevasImagenes?.length" class="space-y-2">
               <p class="text-xs font-semibold uppercase text-slate-500">Nuevas imagenes por guardar</p>
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div v-for="(img, index) in bloqueForm.nuevasImagenes" :key="`${img.name}-${index}`" class="rounded-xl border border-dashed border-slate-300 p-3">
+                <div v-for="(img, index) in bloqueForm.nuevasImagenes" :key="`${img.name}-${index}`"
+                  class="rounded-xl border border-dashed border-slate-300 p-3">
                   <img :src="img.preview" class="h-28 w-full rounded-lg object-cover" />
                   <p class="mt-2 truncate text-xs text-slate-500">{{ img.name }}</p>
                 </div>
@@ -394,10 +560,15 @@
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <div v-for="img in bloqueForm.imagenes" :key="img.id" class="rounded-xl border border-slate-200 p-3">
                   <img :src="img.imagen" class="h-28 w-full rounded-lg object-cover" />
-                  <input v-model="img.nombre" placeholder="Nombre del slide" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs" />
-                  <input :value="img.identificador || 'carrusel'" readonly class="mt-2 w-full rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-500" />
-                  <input v-model="img.url_destino" placeholder="Link del slide (opcional)" class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs" />
-                  <button @click="deleteBloqueImagen(img.id)" class="mt-2 w-full rounded bg-red-100 px-2 py-1.5 text-xs font-semibold text-red-600 cursor-pointer">Eliminar slide</button>
+                  <input v-model="img.nombre" placeholder="Nombre del slide"
+                    class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs" />
+                  <input :value="img.identificador || 'carrusel'" readonly
+                    class="mt-2 w-full rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-500" />
+                  <input v-model="img.url_destino" placeholder="Link del slide (opcional)"
+                    class="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs" />
+                  <button @click="deleteBloqueImagen(img.id)"
+                    class="mt-2 w-full rounded bg-red-100 px-2 py-1.5 text-xs font-semibold text-red-600 cursor-pointer">Eliminar
+                    slide</button>
                 </div>
               </div>
             </div>
@@ -407,12 +578,14 @@
 
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Banners del Catalogo</h2>
-          <p class="mt-1 text-sm text-slate-600">Estos dos banners aparecen debajo del bloque paginado de productos y cada uno puede llevar a una categoria, coleccion o filtro del catalogo.</p>
+          <p class="mt-1 text-sm text-slate-600">Estos dos banners aparecen debajo del bloque paginado de productos y
+            cada uno puede llevar a una categoria, coleccion o filtro del catalogo.</p>
 
           <div class="mt-4 grid gap-4 lg:grid-cols-2">
             <div v-for="banner in [1, 2]" :key="banner" class="rounded-2xl border border-slate-200 p-4">
               <div class="flex items-center justify-between">
-                <h3 class="text-base font-semibold text-slate-900">Banner {{ banner === 1 ? 'Izquierdo' : 'Derecho' }}</h3>
+                <h3 class="text-base font-semibold text-slate-900">Banner {{ banner === 1 ? 'Izquierdo' : 'Derecho' }}
+                </h3>
                 <label class="flex items-center gap-2 text-sm text-slate-600">
                   <input v-model="catalogBannerForms[banner].activo" type="checkbox" class="rounded border-slate-300" />
                   Activo
@@ -420,46 +593,59 @@
               </div>
 
               <div class="mt-3 space-y-3">
-                <div v-if="catalogBannerForms[banner].imagen" class="overflow-hidden rounded-xl border border-slate-200">
+                <div v-if="catalogBannerForms[banner].imagen"
+                  class="overflow-hidden rounded-xl border border-slate-200">
                   <img :src="catalogBannerForms[banner].imagen" class="h-32 w-full object-cover" />
                 </div>
 
-                <input type="file" accept="image/*" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" @change="handleCatalogBannerImage(banner, $event)" />
-                <input v-model="catalogBannerForms[banner].nombre" placeholder="Nombre del banner" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
-                <input :value="catalogBannerForms[banner].identificador" readonly class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500" />
-                <input v-model="catalogBannerForms[banner].url_destino" placeholder="/?categoria=chaquetas o enlace completo" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input type="file" accept="image/*" class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                  @change="handleCatalogBannerImage(banner, $event)" />
+                <input v-model="catalogBannerForms[banner].nombre" placeholder="Nombre del banner"
+                  class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
+                <input :value="catalogBannerForms[banner].identificador" readonly
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500" />
+                <input v-model="catalogBannerForms[banner].url_destino"
+                  placeholder="/?categoria=chaquetas o enlace completo"
+                  class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" />
               </div>
 
               <div class="mt-3 flex gap-2">
-                <button v-if="catalogBannerForms[banner].id" class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 cursor-pointer" @click="deleteCatalogBanner(banner)">Eliminar</button>
+                <button v-if="catalogBannerForms[banner].id"
+                  class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 cursor-pointer"
+                  @click="deleteCatalogBanner(banner)">Eliminar</button>
               </div>
             </div>
           </div>
 
           <div class="mt-5 flex justify-end">
-            <button class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white cursor-pointer" @click="saveVisualAssets">Guardar carrusel y banners</button>
+            <button class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white cursor-pointer"
+              @click="saveVisualAssets">Guardar carrusel y banners</button>
           </div>
         </div>
       </section>
 
-<section v-if="activeTab === 'insumos'" class="space-y-4">
+      <section v-if="activeTab === 'insumos'" class="space-y-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Crear / Editar Insumo</h2>
           <div class="mt-4 grid gap-3 md:grid-cols-2">
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Nombre del insumo</label>
-              <input v-model="supplyForm.nombre" placeholder="Ej: Hilo de algodón" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <input v-model="supplyForm.nombre" placeholder="Ej: Hilo de algodón"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Código SKU</label>
-              <input v-model="supplyForm.sku" placeholder="Ej: HIL-001" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <input v-model="supplyForm.sku" placeholder="Ej: HIL-001"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Unidad de medida</label>
-              <input v-model="supplyForm.unidad" placeholder="Ej: metro, kilo, unidad" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <input v-model="supplyForm.unidad" placeholder="Ej: metro, kilo, unidad"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Tipo de registro de compra</label>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Tipo de registro de
+                compra</label>
               <select v-model="supplyForm.tipo_registro" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full">
                 <option value="UNIDAD">Compra por unidades (cantidad fija)</option>
                 <option value="PAQUETE">Compra por paquete (múltiplos)</option>
@@ -468,16 +654,21 @@
 
             <div v-if="supplyForm.tipo_registro === 'PAQUETE'">
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Unidades por paquete</label>
-              <input v-model.number="supplyForm.unidades_por_paquete" type="number" min="1" placeholder="Ej: 100" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <input v-model.number="supplyForm.unidades_por_paquete" type="number" min="1" placeholder="Ej: 100"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div v-if="supplyForm.tipo_registro === 'UNIDAD'">
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Cantidad comprada usualmente</label>
-              <input v-model.number="supplyForm.cantidad_compra" type="number" min="1" placeholder="Ej: 50" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Cantidad comprada
+                usualmente</label>
+              <input v-model.number="supplyForm.cantidad_compra" type="number" min="1" placeholder="Ej: 50"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
 
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Costo total de la compra (COP)</label>
-              <input v-model.number="supplyForm.costo_total_compra" type="number" min="0" placeholder="Ej: 50000" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Costo total de la compra
+                (COP)</label>
+              <input v-model.number="supplyForm.costo_total_compra" type="number" min="0" placeholder="Ej: 50000"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm">
               <p class="text-slate-500">Costo por unidad calculado</p>
@@ -485,34 +676,57 @@
             </div>
 
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Stock actual en inventario</label>
-              <input v-model.number="supplyForm.stock_actual" type="number" min="0" placeholder="Ej: 100" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Stock actual en
+                inventario</label>
+              <input v-model.number="supplyForm.stock_actual" type="number" min="0" placeholder="Ej: 100"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
-              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Stock mínimo (alerta de reorder)</label>
-              <input v-model.number="supplyForm.stock_minimo" type="number" min="0" placeholder="Ej: 20" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Stock mínimo (alerta de
+                reorder)</label>
+              <input v-model.number="supplyForm.stock_minimo" type="number" min="0" placeholder="Ej: 20"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Nombre del proveedor</label>
-              <input v-model="supplyForm.proveedor" placeholder="Ej: Textilmax S.A.S" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
+              <input v-model="supplyForm.proveedor" placeholder="Ej: Textilmax S.A.S"
+                class="rounded-xl border border-slate-300 px-3 py-2.5 w-full" />
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Estado del insumo</label>
-              <select v-model="supplyForm.activo" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full"><option :value="true">Activo</option><option :value="false">Inactivo</option></select>
+              <select v-model="supplyForm.activo" class="rounded-xl border border-slate-300 px-3 py-2.5 w-full">
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
             </div>
           </div>
 
-<div class="mt-4 flex gap-2"><button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="saveSupply">{{ supplyForm.id ? 'Actualizar' : 'Crear' }}</button><button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold cursor-pointer" @click="resetSupplyForm">Limpiar</button></div>
+          <div class="mt-4 flex gap-2"><button
+              class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer"
+              @click="saveSupply">{{ supplyForm.id ? 'Actualizar' : 'Crear' }}</button><button
+              class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold cursor-pointer"
+              @click="resetSupplyForm">Limpiar</button></div>
         </div>
 
         <!-- Buscador y tabla de insumos -->
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div class="mb-4 flex items-center gap-3">
-            <input v-model="search" type="text" placeholder="Buscar por nombre, SKU, código o referencia..." class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5" />
+            <input v-model="search" type="text" placeholder="Buscar por nombre, SKU, código o referencia..."
+              class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5" />
           </div>
           <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-full text-sm">
-              <thead class="bg-slate-100 text-left text-slate-600"><tr><th class="px-3 py-2">SKU</th><th class="px-3 py-2">Nombre</th><th class="px-3 py-2">Tipo</th><th class="px-3 py-2">Costo total</th><th class="px-3 py-2">Costo unit.</th><th class="px-3 py-2">Stock</th><th class="px-3 py-2">Acciones</th></tr></thead>
+              <thead class="bg-slate-100 text-left text-slate-600">
+                <tr>
+                  <th class="px-3 py-2">SKU</th>
+                  <th class="px-3 py-2">Nombre</th>
+                  <th class="px-3 py-2">Tipo</th>
+                  <th class="px-3 py-2">Costo total</th>
+                  <th class="px-3 py-2">Costo unit.</th>
+                  <th class="px-3 py-2">Stock</th>
+                  <th class="px-3 py-2">Acciones</th>
+                </tr>
+              </thead>
               <tbody>
                 <tr v-for="item in insumosList" :key="item.id" class="border-t border-slate-200">
                   <td class="px-3 py-2">{{ item.sku }}</td>
@@ -520,23 +734,36 @@
                   <td class="px-3 py-2">{{ item.tipo_registro }}</td>
                   <td class="px-3 py-2">{{ money(item.costo_total_compra) }}</td>
                   <td class="px-3 py-2">{{ money(item.costo_unitario) }}</td>
-                  <td class="px-3 py-2" :class="item.stock_actual <= item.stock_minimo ? 'text-red-600 font-semibold' : ''">{{ item.stock_actual }} {{ item.unidad }}</td>
-                  <td class="px-3 py-2"><div class="flex gap-2"><button class="rounded-md border border-slate-300 px-2 py-1 cursor-pointer" @click="editSupply(item)">Editar</button><button class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer" @click="deleteSupply(item.id)">Eliminar</button></div></td>
+                  <td class="px-3 py-2"
+                    :class="item.stock_actual <= item.stock_minimo ? 'text-red-600 font-semibold' : ''">{{
+                      item.stock_actual }} {{ item.unidad }}</td>
+                  <td class="px-3 py-2">
+                    <div class="flex gap-2"><button class="rounded-md border border-slate-300 px-2 py-1 cursor-pointer"
+                        @click="editSupply(item)">Editar</button><button
+                        class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer"
+                        @click="deleteSupply(item.id)">Eliminar</button></div>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
           <!-- Paginación insumos -->
           <div v-if="insumosMeta" class="mt-4 flex items-center justify-between">
-            <p class="text-sm text-slate-600">Mostrando {{ insumosMeta.from }} - {{ insumosMeta.to }} de {{ insumosMeta.total }}</p>
+            <p class="text-sm text-slate-600">Mostrando {{ insumosMeta.from }} - {{ insumosMeta.to }} de {{
+              insumosMeta.total }}</p>
             <div class="flex gap-1">
-              <Link v-for="link in insumosLinks" :key="link.label" :href="link.url" class="rounded-md border border-slate-300 px-3 py-1 text-sm cursor-pointer" :class="link.active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'" :disabled="!link.url" v-html="link.label"></Link>
+              <Link v-for="link in insumosLinks" :key="link.label" :href="link.url"
+                class="rounded-md border border-slate-300 px-3 py-1 text-sm cursor-pointer"
+                :class="link.active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'" :disabled="!link.url"
+                v-html="link.label"></Link>
             </div>
           </div>
         </div>
       </section>
 
-      <p v-if="feedback" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">{{ feedback }}</p>
+      <p v-if="feedback"
+        class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
+        {{ feedback }}</p>
     </section>
   </AppLayout>
 </template>
@@ -563,6 +790,7 @@ const props = defineProps({
 const tabs = [
   { key: 'pedidos', label: 'Pedidos' },
   { key: 'productos', label: 'Productos y Stock' },
+  { key: 'galerias', label: 'Galerías' },
   { key: 'promociones', label: 'Promociones' },
   { key: 'insumos', label: 'Insumos Fabrica' },
   { key: 'bloques', label: 'Bloques Home' },
@@ -576,7 +804,7 @@ const feedback = ref('');
 const newsText = ref(props.noticia || '');
 const search = ref(props.filters.search || '');
 
-const settingsForm = ref({ store_name: props.settings.store_name || import.meta.env.VITE_APP_NAME || 'Vendex', logoFile: null, bg_color: props.settings.bg_color || '#ffffff', navbar_color: props.settings.navbar_color || '#1e293b', footer_color: props.settings.footer_color || '#1e293b' });
+const settingsForm = ref({ store_name: props.settings.store_name || import.meta.env.VITE_APP_NAME || 'Vendex', logoFile: null, bg_color: props.settings.bg_color || '#ffffff', navbar_color: props.settings.navbar_color || '#fff', footer_color: props.settings.footer_color || '#fff' });
 const settingsLogoPreview = ref(props.settings.logo_url || null);
 
 const productForm = ref(emptyProduct());
@@ -720,7 +948,7 @@ const saveBloque = async () => {
   try {
     const res = await fetch('/admin/bloques', {
       method: 'POST',
-      headers: { 
+      headers: {
         'X-CSRF-TOKEN': csrf(),
         'Accept': 'application/json',
       },
@@ -949,8 +1177,8 @@ const saveSettings = async () => {
   formData.append('store_name', settingsForm.value.store_name || import.meta.env.VITE_APP_NAME || 'Vendex');
   if (settingsForm.value.logoFile) formData.append('logo', settingsForm.value.logoFile);
   formData.append('bg_color', settingsForm.value.bg_color || '#ffffff');
-  formData.append('navbar_color', settingsForm.value.navbar_color || '#1e293b');
-  formData.append('footer_color', settingsForm.value.footer_color || '#1e293b');
+  formData.append('navbar_color', settingsForm.value.navbar_color || '#fff');
+  formData.append('footer_color', settingsForm.value.footer_color || '#fff');
   await requestFormData('/admin/settings', 'POST', withMethod(formData, 'POST'));
   refresh();
 };
@@ -1007,7 +1235,7 @@ const editProduct = (item) => {
     }
   });
 
-productForm.value = {
+  productForm.value = {
     id: item.id,
     referencia: item.referencia,
     nombre: item.nombre || '',

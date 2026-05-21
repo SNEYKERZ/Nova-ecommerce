@@ -80,14 +80,6 @@ Route::post('/api/pedidos', [\App\Http\Controllers\Api\PedidoController::class, 
 
 Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-
-    // TEST: Inertia rendering test
-    Route::get('/test-inertia', function () {
-        return \Inertia\Inertia::render('admin/TestPage', [
-            'test_data' => 'Hello from server!',
-        ]);
-    })->name('admin.test-inertia');
-
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
     Route::post('/productos', [AdminController::class, 'storeProduct'])->name('admin.products.store');
@@ -124,20 +116,25 @@ Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::put('/galleries/{gallery}', [GalleryController::class, 'update'])->name('admin.galleries.update');
     Route::delete('/galleries/{gallery}', [GalleryController::class, 'destroy'])->name('admin.galleries.destroy');
     Route::post('/galleries/{gallery}/images', [GalleryController::class, 'addImage'])->name('admin.galleries.images.add');
-    Route::put('/galleries/{gallery}/images/{imagen}', [GalleryController::class, 'updateImage'])->name('admin.galleries.images.update');
     Route::delete('/galleries/{gallery}/images/{imagen}', [GalleryController::class, 'deleteImage'])->name('admin.galleries.images.delete');
     Route::post('/galleries/{gallery}/images/{imagen}/products', [GalleryController::class, 'associateProduct'])->name('admin.galleries.images.products.associate');
     Route::delete('/galleries/{gallery}/images/{imagen}/products/{gip}', [GalleryController::class, 'disassociateProduct'])->name('admin.galleries.images.products.disassociate');
 });
 
-// TEST: simple JSON debug endpoint
-Route::middleware(['auth', 'admin.role'])->prefix('admin')->get('/test-json', function (Illuminate\Http\Request $r) {
-    $user = $r->user();
-    $tm = app(App\Services\TenantManager::class);
-    return response()->json([
-        'ok' => true,
-        'user_role' => $user?->role,
-        'user_store' => $user?->store_id,
-        'store' => $tm->getStore()?->only(['id', 'slug', 'nombre']),
+// TEST ROUTE - REMOVE ME
+Route::middleware(['auth', 'admin.role'])->prefix('admin')->get('/test', function () {
+    return Inertia\Inertia::render('admin/AdminDashboardPage', [
+        'stats' => ['productos' => 0, 'insumos' => 0, 'ofertas' => 0, 'ofertasActivas' => 0],
+        'categorias' => [],
+        'productos' => collect(),
+        'insumos' => collect(),
+        'settings' => ['store_name' => 'Test', 'logo_url' => null, 'bg_color' => '#ffffff', 'navbar_color' => '#ffffff', 'footer_color' => '#5c5c5c'],
+        'ofertas' => collect(),
+        'noticia' => '',
+        'bloques' => [],
+        'catalogBanners' => [],
+        'pedidos' => collect(),
+        'currentStore' => null,
     ]);
 });
+

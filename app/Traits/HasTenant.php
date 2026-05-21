@@ -28,7 +28,8 @@ trait HasTenant
             // Si hay un store activo en el contexto, filtrar por él
             // Pero primero verificar si se deshabilitó temporalmente el scope
             if (!static::shouldIgnoreTenantScope()) {
-                if ($store = app('tenant.store')) {
+                $tenantManager = app(\App\Services\TenantManager::class);
+                if ($store = $tenantManager->getStore()) {
                     $builder->where('store_id', $store->id);
                 }
             }

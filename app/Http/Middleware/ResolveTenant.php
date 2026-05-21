@@ -63,11 +63,21 @@ class ResolveTenant
         }
 
         // En desarrollo local (localhost), permitir acceso aunque no haya tienda
-        // para poder crear la primera tienda
+        // y soportar ?store= query param para testing multi-store
         $isLocal = in_array($request->getHost(), ['localhost', '127.0.0.1']) || 
                   str_starts_with($request->getHost(), 'localhost:');
         
         if ($isLocal) {
+            // Persistir ?store= a la sesión para que sobreviva redirects (login, etc.)
+            if ($request->has('store')) {
+                $storeOverride = $request->query('store');
+                if ($storeOverride) {
+                    session()->put('tenant_store', $storeOverride);
+                } else {
+                    session()->forget('tenant_store');
+                }
+            }
+            
             return $next($request);
         }
 

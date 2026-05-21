@@ -1,5 +1,6 @@
 <template>
   <AppLayout>
+
     <Head title="Super Admin - Vendex" />
     <section class="mx-auto w-full max-w-[96rem] px-4 py-8 sm:px-6 lg:px-10">
       <!-- Header -->
@@ -7,7 +8,8 @@
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-3xl font-semibold tracking-tight text-indigo-900">Panel Super Administrador</h1>
-            <p class="mt-2 text-sm text-indigo-700">Gestiona todas las tiendas, usuarios y configuración global de Vendex.</p>
+            <p class="mt-2 text-sm text-indigo-700">Gestiona todas las tiendas, usuarios y configuración global de
+              Vendex.</p>
           </div>
           <div class="text-right">
             <span class="inline-flex items rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-800">
@@ -15,7 +17,7 @@
             </span>
           </div>
         </div>
-        
+
         <!-- Stats Grid -->
         <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <div class="rounded-xl border border-indigo-200 bg-white p-4">
@@ -43,7 +45,10 @@
 
       <!-- Tabs -->
       <div class="mb-5 flex flex-wrap gap-2">
-        <button v-for="tab in tabs" :key="tab.key" class="rounded-full border px-4 py-2 text-sm font-semibold cursor-pointer" :class="activeTab === tab.key ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white text-slate-700'" @click="activeTab = tab.key">
+        <button v-for="tab in tabs" :key="tab.key"
+          class="rounded-full border px-4 py-2 text-sm font-semibold cursor-pointer"
+          :class="activeTab === tab.key ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white text-slate-700'"
+          @click="activeTab = tab.key">
           {{ tab.label }}
         </button>
       </div>
@@ -56,35 +61,64 @@
             {{ storeForm.id ? 'Editar Tienda' : 'Crear Nueva Tienda' }}
           </h2>
           <div class="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-            <input v-model="storeForm.nombre" placeholder="Nombre de la tienda" class="rounded-xl border border-slate-300 px-3 py-2.5" />
-            <input v-model="storeForm.slug" placeholder="Slug (ej: mitienda)" class="rounded-xl border border-slate-300 px-3 py-2.5" />
-            <input v-model="storeForm.dominio" placeholder="Dominio personalizado (opcional)" class="rounded-xl border border-slate-300 px-3 py-2.5" />
-            <input v-model="storeForm.email" placeholder="Email de contacto" class="rounded-xl border border-slate-300 px-3 py-2.5" />
+            <input v-model="storeForm.nombre" placeholder="Nombre de la tienda"
+              class="rounded-xl border border-slate-300 px-3 py-2.5" />
+            <input v-model="storeForm.slug" placeholder="Slug (ej: mitienda)"
+              class="rounded-xl border border-slate-300 px-3 py-2.5" />
+            <input v-model="storeForm.dominio" placeholder="Dominio personalizado (opcional)"
+              class="rounded-xl border border-slate-300 px-3 py-2.5" />
+            <input v-model="storeForm.email" placeholder="Email de contacto"
+              class="rounded-xl border border-slate-300 px-3 py-2.5" />
           </div>
           <div class="mt-4 border-t border-slate-200 pt-4">
             <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Colores de la Tienda</h3>
-            <p class="mb-3 text-xs text-slate-400">Estos colores se aplican al frontend de la tienda (fondo, navbar y footer).</p>
+            <p class="mb-3 text-xs text-slate-400">Estos colores se aplican al frontend de la tienda (fondo, navbar y
+              footer).</p>
           </div>
           <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Color de Fondo</label>
               <div class="flex gap-2">
-                <input v-model="storeForm.bg_color" type="color" class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
-                <input v-model="storeForm.bg_color" placeholder="#ffffff" class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+                <input v-model="storeForm.bg_color" type="color"
+                  class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                <input v-model="storeForm.bg_color" placeholder="#ffffff"
+                  class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
               </div>
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Color Navbar</label>
               <div class="flex gap-2">
-                <input v-model="storeForm.navbar_color" type="color" class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
-                <input v-model="storeForm.navbar_color" placeholder="#1e293b" class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+                <input v-model="storeForm.navbar_color" type="color"
+                  class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                <input v-model="storeForm.navbar_color" placeholder="#fff"
+                  class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
               </div>
             </div>
             <div>
               <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Color Footer</label>
               <div class="flex gap-2">
-                <input v-model="storeForm.footer_color" type="color" class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
-                <input v-model="storeForm.footer_color" placeholder="#1e293b" class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+                <input v-model="storeForm.footer_color" type="color"
+                  class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                <input v-model="storeForm.footer_color" placeholder="#fff"
+                  class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+              </div>
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Texto Navbar</label>
+              <div class="flex gap-2">
+                <input v-model="storeForm.navbar_text_color" type="color"
+                  class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                <input v-model="storeForm.navbar_text_color" placeholder="#ffffff"
+                  class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
+              </div>
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Texto Footer</label>
+              <div class="flex gap-2">
+                <input v-model="storeForm.footer_text_color" type="color"
+                  class="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 p-0.5" />
+                <input v-model="storeForm.footer_text_color" placeholder="#ffffff"
+                  class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm cursor-pointer" />
               </div>
             </div>
             <div v-if="storeForm.id">
@@ -96,9 +130,14 @@
             </div>
           </div>
           <div class="mt-4 flex gap-2">
-            <button v-if="storeForm.id" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="updateStore">Guardar Cambios</button>
-            <button v-else class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="createStore">Crear Tienda</button>
-            <button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 cursor-pointer" @click="resetStoreForm">{{ storeForm.id ? 'Cancelar' : 'Limpiar' }}</button>
+            <button v-if="storeForm.id"
+              class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer"
+              @click="updateStore">Guardar Cambios</button>
+            <button v-else class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer"
+              @click="createStore">Crear Tienda</button>
+            <button
+              class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 cursor-pointer"
+              @click="resetStoreForm">{{ storeForm.id ? 'Cancelar' : 'Limpiar' }}</button>
           </div>
         </div>
 
@@ -123,21 +162,28 @@
                 <td class="px-3 py-3">{{ store.dominio || '-' }}</td>
                 <td class="px-3 py-3">{{ store.email || '-' }}</td>
                 <td class="px-3 py-3">
-                  <span class="inline-flex items rounded-full px-2 py-1 text-xs font-semibold" :class="store.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'">
+                  <span class="inline-flex items rounded-full px-2 py-1 text-xs font-semibold"
+                    :class="store.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'">
                     {{ store.activo ? 'Activa' : 'Inactiva' }}
                   </span>
                 </td>
                 <td class="px-3 py-3">
-                  <div class="flex items-center gap-2" :title="`Fondo: ${store.bg_color} · Navbar: ${store.navbar_color} · Footer: ${store.footer_color}`">
-                    <span class="inline-block h-5 w-5 rounded-full border border-slate-300" :style="{ background: store.bg_color }"></span>
-                    <span class="inline-block h-5 w-5 rounded border border-slate-300" :style="{ background: store.navbar_color }"></span>
-                    <span class="inline-block h-5 w-5 rounded border border-slate-300" :style="{ background: store.footer_color }"></span>
+                  <div class="flex items-center gap-2"
+                    :title="`Fondo: ${store.bg_color} · Navbar: ${store.navbar_color} · Footer: ${store.footer_color}`">
+                    <span class="inline-block h-5 w-5 rounded-full border border-slate-300"
+                      :style="{ background: store.bg_color }"></span>
+                    <span class="inline-block h-5 w-5 rounded border border-slate-300"
+                      :style="{ background: store.navbar_color }"></span>
+                    <span class="inline-block h-5 w-5 rounded border border-slate-300"
+                      :style="{ background: store.footer_color }"></span>
                   </div>
                 </td>
                 <td class="px-3 py-3">
                   <div class="flex gap-2">
-                    <button class="rounded-md border border-indigo-300 px-2 py-1 text-indigo-600 cursor-pointer" @click="editStore(store)">Editar</button>
-                    <button class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer" @click="deleteStore(store.id)">Eliminar</button>
+                    <button class="rounded-md border border-indigo-300 px-2 py-1 text-indigo-600 cursor-pointer"
+                      @click="editStore(store)">Editar</button>
+                    <button class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer"
+                      @click="deleteStore(store.id)">Eliminar</button>
                   </div>
                 </td>
               </tr>
@@ -152,9 +198,12 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Crear Nuevo Usuario</h2>
           <div class="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-            <input v-model="userForm.name" placeholder="Nombre" class="rounded-xl border border-slate-300 px-3 py-2.5" />
-            <input v-model="userForm.email" type="email" placeholder="Email" class="rounded-xl border border-slate-300 px-3 py-2.5" />
-            <input v-model="userForm.password" type="password" placeholder="Contraseña" class="rounded-xl border border-slate-300 px-3 py-2.5" />
+            <input v-model="userForm.name" placeholder="Nombre"
+              class="rounded-xl border border-slate-300 px-3 py-2.5" />
+            <input v-model="userForm.email" type="email" placeholder="Email"
+              class="rounded-xl border border-slate-300 px-3 py-2.5" />
+            <input v-model="userForm.password" type="password" placeholder="Contraseña"
+              class="rounded-xl border border-slate-300 px-3 py-2.5" />
             <select v-model="userForm.role" class="rounded-xl border border-slate-300 px-3 py-2.5">
               <option value="super_admin">Super Admin</option>
               <option value="admin">Admin de Tienda</option>
@@ -167,8 +216,11 @@
             </select>
           </div>
           <div class="mt-4 flex gap-2">
-            <button class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="createUser">Crear Usuario</button>
-            <button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 cursor-pointer" @click="resetUserForm">Limpiar</button>
+            <button class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer"
+              @click="createUser">Crear Usuario</button>
+            <button
+              class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 cursor-pointer"
+              @click="resetUserForm">Limpiar</button>
           </div>
         </div>
 
@@ -189,16 +241,21 @@
                 <td class="px-3 py-3 font-medium text-slate-900">{{ user.name }}</td>
                 <td class="px-3 py-3">{{ user.email }}</td>
                 <td class="px-3 py-3">
-                  <span class="inline-flex items rounded-full px-2 py-1 text-xs font-semibold" :class="user.role === 'super_admin' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'">
+                  <span class="inline-flex items rounded-full px-2 py-1 text-xs font-semibold"
+                    :class="user.role === 'super_admin' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'">
                     {{ user.role === 'super_admin' ? 'Super Admin' : 'Admin Tienda' }}
                   </span>
                 </td>
                 <td class="px-3 py-3">{{ user.store_nombre || '-' }}</td>
                 <td class="px-3 py-3">
                   <div class="flex gap-2">
-                    <button class="rounded-md border border-indigo-300 px-2 py-1 text-indigo-600 cursor-pointer" @click="editUser(user)">Editar</button>
-                    <button v-if="user.role !== 'super_admin'" class="rounded-md border border-amber-300 px-2 py-1 text-amber-600 cursor-pointer" @click="impersonate(user.id)">Entrar como</button>
-                    <button class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer" @click="deleteUser(user.id)">Eliminar</button>
+                    <button class="rounded-md border border-indigo-300 px-2 py-1 text-indigo-600 cursor-pointer"
+                      @click="editUser(user)">Editar</button>
+                    <button v-if="user.role !== 'super_admin'"
+                      class="rounded-md border border-amber-300 px-2 py-1 text-amber-600 cursor-pointer"
+                      @click="impersonate(user.id)">Entrar como</button>
+                    <button class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer"
+                      @click="deleteUser(user.id)">Eliminar</button>
                   </div>
                 </td>
               </tr>
@@ -212,18 +269,21 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-900">Configuración Global de Vendex</h2>
           <p class="mt-1 text-sm text-slate-600">Configuración que aplica a todas las tiendas.</p>
-          
+
           <div class="mt-4 grid gap-4 lg:grid-cols-2">
             <div class="space-y-3">
               <div>
                 <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Dominio base</label>
-                <input v-model="configForm.domain" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" placeholder="vendex.app" />
+                <input v-model="configForm.domain" class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                  placeholder="vendex.app" />
               </div>
               <div>
                 <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Email de soporte</label>
-                <input v-model="configForm.support_email" class="w-full rounded-xl border border-slate-300 px-3 py-2.5" placeholder="soporte@vendex.com" />
+                <input v-model="configForm.support_email" class="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                  placeholder="soporte@vendex.com" />
               </div>
-              <button class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="saveConfig">Guardar Configuración</button>
+              <button class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer"
+                @click="saveConfig">Guardar Configuración</button>
             </div>
             <div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
               <h3 class="font-semibold text-indigo-900">Información del Sistema</h3>
@@ -238,7 +298,9 @@
       </section>
 
       <!-- Feedback -->
-      <p v-if="feedback" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">{{ feedback }}</p>
+      <p v-if="feedback"
+        class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
+        {{ feedback }}</p>
     </section>
   </AppLayout>
 </template>
@@ -263,7 +325,7 @@ const tabs = [
 const activeTab = ref('tiendas');
 const feedback = ref('');
 
-const storeForm = ref({ nombre: '', slug: '', dominio: '', email: '', telefono: '', bg_color: '#ffffff', navbar_color: '#1e293b', footer_color: '#1e293b' });
+const storeForm = ref({ nombre: '', slug: '', dominio: '', email: '', telefono: '', bg_color: '#ffffff', navbar_color: '#ffffff', footer_color: '#ffffff', navbar_text_color: '#111111', footer_text_color: '#111111' });
 const userForm = ref({ name: '', email: '', password: '', role: 'admin', store_id: null });
 const configForm = ref({ domain: 'vendex.app', support_email: '' });
 
@@ -311,7 +373,7 @@ const deleteStore = async (id) => {
   window.location.reload();
 };
 
-const resetStoreForm = () => { storeForm.value = { nombre: '', slug: '', dominio: '', email: '', telefono: '', bg_color: '#ffffff', navbar_color: '#1e293b', footer_color: '#1e293b' }; };
+const resetStoreForm = () => { storeForm.value = { nombre: '', slug: '', dominio: '', email: '', telefono: '', bg_color: '#ffffff', navbar_color: '#ffffff', footer_color: '#ffffff', navbar_text_color: '#111111', footer_text_color: '#111111' }; };
 
 // User functions
 const createUser = async () => {
@@ -321,12 +383,12 @@ const createUser = async () => {
 };
 
 const editUser = (user) => {
-  userForm.value = { 
-    name: user.name, 
-    email: user.email, 
-    password: '', 
-    role: user.role, 
-    store_id: user.store_id 
+  userForm.value = {
+    name: user.name,
+    email: user.email,
+    password: '',
+    role: user.role,
+    store_id: user.store_id
   };
   activeTab.value = 'usuarios';
 };

@@ -27,11 +27,11 @@ class StorefrontController extends Controller
             ->orderBy('id', 'desc')
             ->limit(200)
             ->get()
-            ->map(fn (Producto $producto) => $this->mapProducto($producto));
+            ->map(fn(Producto $producto) => $this->mapProducto($producto));
 
         $categorias = Categoria::orderBy('categoria')
             ->get()
-            ->map(fn (Categoria $categoria) => [
+            ->map(fn(Categoria $categoria) => [
                 'id' => $categoria->id,
                 'nombre' => $categoria->categoria,
             ]);
@@ -51,12 +51,12 @@ class StorefrontController extends Controller
             'catalogBanners' => $this->getCatalogBanners(),
             'store' => $store ? [
                 'nombre'    => $store->nombre,
-                'logo'      => $store->logo_path ? asset('storage/'.$store->logo_path) : null,
+                'logo'      => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
                 'telefono'  => $store->telefono,
                 'email'     => $store->email,
                 'bg_color'  => $store->bg_color ?? '#ffffff',
-                'navbar_color' => $store->navbar_color ?? '#1e293b',
-                'footer_color' => $store->footer_color ?? '#1e293b',
+                'navbar_color' => $store->navbar_color ?? '#ffffff',
+                'footer_color' => $store->footer_color ?? '#ffffff',
             ] : null,
         ]);
     }
@@ -67,10 +67,10 @@ class StorefrontController extends Controller
     private function getBloquesHome(): array
     {
         $result = [];
-        
-        for ($posicion = 1; $posicion <= 1; $posicion++) {
+
+        for ($posicion = 1; $posicion <= 2; $posicion++) {
             $bloque = BloqueHome::getPorPosicion($posicion);
-            
+
             if (!$bloque) {
                 $result[$posicion] = null;
                 continue;
@@ -109,7 +109,7 @@ class StorefrontController extends Controller
             ->where('activo', true)
             ->orderBy('posicion')
             ->get()
-            ->map(fn (CatalogBanner $banner) => [
+            ->map(fn(CatalogBanner $banner) => [
                 'id' => $banner->id,
                 'nombre' => $banner->nombre,
                 'identificador' => $banner->identificador,
@@ -155,6 +155,47 @@ class StorefrontController extends Controller
         ]);
     }
 
+    public function galleries(): Response
+    {
+        $galleries = \App\Models\Gallery::where('activo', true)
+            ->with(['imagenes' => function ($query) {
+                $query->orderBy('orden');
+            }])
+            ->orderBy('orden')
+            ->get()
+            ->map(function ($gallery) {
+                return [
+                    'id' => $gallery->id,
+                    'nombre' => $gallery->nombre,
+                    'descripcion' => $gallery->descripcion,
+                    'imagenes' => $gallery->imagenes->map(function ($imagen) {
+                        return [
+                            'id' => $imagen->id,
+                            'imagen_url' => $this->mediaUrl($imagen->imagen),
+                            'aspect_ratio' => $imagen->aspect_ratio,
+                            'productos' => $imagen->productos()
+                                ->with('producto.variantes')
+                                ->orderBy('orden')
+                                ->get()
+                                ->map(fn($gip) => [
+                                    'id' => $gip->id,
+                                    'producto_id' => $gip->producto_id,
+                                    'referencia' => $gip->producto->referencia,
+                                    'nombre' => $gip->producto->nombre,
+                                    'precio' => (float) $gip->producto->precio,
+                                    'tallas' => $gip->producto->tallas_array,
+                                    'colores' => $gip->producto->colores,
+                                ])->values(),
+                        ];
+                    })->values(),
+                ];
+            });
+
+        return Inertia::render('GalleryPage', [
+            'galleries' => $galleries,
+        ]);
+    }
+
     public function thankYou(int $id): Response
     {
         return Inertia::render('ThankYouPage', [
@@ -164,7 +205,7 @@ class StorefrontController extends Controller
 
     private function mapProducto(Producto $producto, bool $detalle = false): array
     {
-        $imagenPrincipal = $producto->foto ? asset('storage/'.$producto->foto) : asset('images/sinfoto.jpg');
+        $imagenPrincipal = $producto->foto ? asset('storage/' . $producto->foto) : asset('images/sinfoto.jpg');
         $galeria = collect();
         $isNewByDate = $producto->created_at instanceof Carbon
             ? $producto->created_at->greaterThanOrEqualTo(now()->subDays(30))
@@ -178,7 +219,7 @@ class StorefrontController extends Controller
                     return null;
                 }
 
-                return str_starts_with($ruta, 'http') ? $ruta : asset('storage/'.$ruta);
+                return str_starts_with($ruta, 'http') ? $ruta : asset('storage/' . $ruta);
             })->filter()->values();
         }
 
@@ -200,5 +241,4 @@ class StorefrontController extends Controller
             'tieneStock'    => $producto->tiene_stock,
         ];
     }
-
 }

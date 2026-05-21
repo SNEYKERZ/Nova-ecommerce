@@ -13,37 +13,59 @@ class UserSeeder extends Seeder
     {
         // Sin global scopes para el seeder
         User::withoutGlobalScopes();
-        
-        $store = Store::withoutGlobalScopes()->where('slug', 'demo')->first();
-        
-        if (!$store) {
-            $this->command->warn('No se encontró el store demo. Ejecuta StoreSeeder primero.');
-            return;
-        }
+        Store::withoutGlobalScopes();
+
+        $stores = Store::all()->keyBy('slug');
+
+        $demo = $stores->get('demo');
+        $urban = $stores->get('urbanstyle');
 
         $users = [
+            // Super Admin (sin store)
             [
                 'name' => 'Super Admin Vendex',
                 'email' => 'superadmin@vendez.app',
                 'role' => 'super_admin',
                 'password' => bcrypt('123456'),
-                'store_id' => null, // Super admin no tiene store
-            ],
-            [
-                'name' => 'Admin Demo Store',
-                'email' => 'admin@demo.vendez.app',
-                'role' => 'admin',
-                'password' => bcrypt('123456'),
-                'store_id' => $store->id,
-            ],
-            [
-                'name' => 'Cliente Demo',
-                'email' => 'cliente@demo.vendez.app',
-                'role' => 'cliente',
-                'password' => bcrypt('123456'),
-                'store_id' => $store->id,
+                'store_id' => null,
             ],
         ];
+
+        // Admin para tienda demo
+        if ($demo) {
+            $users[] = [
+                'name' => 'Admin WebCaps',
+                'email' => 'admin@webcaps.demo',
+                'role' => 'admin',
+                'password' => bcrypt('123456'),
+                'store_id' => $demo->id,
+            ];
+            $users[] = [
+                'name' => 'Cliente Demo',
+                'email' => 'cliente@webcaps.demo',
+                'role' => 'cliente',
+                'password' => bcrypt('123456'),
+                'store_id' => $demo->id,
+            ];
+        }
+
+        // Admin para tienda urbanstyle
+        if ($urban) {
+            $users[] = [
+                'name' => 'Admin Urban Style',
+                'email' => 'admin@urbanstyle.store',
+                'role' => 'admin',
+                'password' => bcrypt('123456'),
+                'store_id' => $urban->id,
+            ];
+            $users[] = [
+                'name' => 'Cliente Urban',
+                'email' => 'cliente@urbanstyle.store',
+                'role' => 'cliente',
+                'password' => bcrypt('123456'),
+                'store_id' => $urban->id,
+            ];
+        }
 
         foreach ($users as $user) {
             User::updateOrCreate(

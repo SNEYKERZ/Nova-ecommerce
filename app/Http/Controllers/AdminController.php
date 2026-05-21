@@ -12,6 +12,7 @@ use App\Models\Producto;
 use App\Models\ProductoImagen;
 use App\Models\ProductoVariante;
 use App\Models\Store;
+use App\Services\StylingService;
 use App\Services\TenantManager;
 use App\Traits\HasMediaUrls;
 use Illuminate\Http\JsonResponse;
@@ -34,7 +35,7 @@ class AdminController extends Controller
 
         // Si es super admin y no hay store específico, mostrar dashboard diferente
         // o redirigir a la gestión de stores
-        
+
         $settings = $store ? $store : null;
 
         $search = $request->input('search', '');
@@ -45,9 +46,9 @@ class AdminController extends Controller
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('referencia', 'like', "%{$search}%")
-                      ->orWhere('nombre', 'like', "%{$search}%")
-                      ->orWhere('descripcion', 'like', "%{$search}%")
-                      ->orWhereHas('categoria', fn ($cq) => $cq->where('categoria', 'like', "%{$search}%"));
+                        ->orWhere('nombre', 'like', "%{$search}%")
+                        ->orWhere('descripcion', 'like', "%{$search}%")
+                        ->orWhereHas('categoria', fn($cq) => $cq->where('categoria', 'like', "%{$search}%"));
                 });
             })
             ->orderByDesc('id')
@@ -67,7 +68,7 @@ class AdminController extends Controller
                 'estado' => $producto->estado,
                 'nueva_coleccion' => (bool) $producto->nueva_coleccion,
                 'stock_total' => (int) $producto->variantes->sum('stock'),
-                'stock_por_talla' => $producto->variantes->map(fn ($variante) => [
+                'stock_por_talla' => $producto->variantes->map(fn($variante) => [
                     'id' => $variante->id,
                     'talla' => $variante->talla,
                     'stock' => (int) $variante->stock,
@@ -93,16 +94,16 @@ class AdminController extends Controller
             'productos' => $productos,
             'insumos' => $this->paginateAndMap(Insumo::class, $search, [
                 'sku' => 'sku',
-                'nombre' => 'nombre', 
+                'nombre' => 'nombre',
                 'codigo' => 'codigo',
                 'referencia' => 'referencia',
             ], $perPage),
             'settings' => [
                 'store_name' => $settings?->nombre ?? 'Mi Tienda',
-                'logo_url' => $settings?->logo_path ? asset('storage/'.$settings->logo_path) : null,
+                'logo_url' => $settings?->logo_path ? asset('storage/' . $settings->logo_path) : null,
                 'bg_color' => $settings?->bg_color ?? '#ffffff',
-                'navbar_color' => $settings?->navbar_color ?? '#1e293b',
-                'footer_color' => $settings?->footer_color ?? '#1e293b',
+                'navbar_color' => $settings?->navbar_color ?? '#f5f5f5',
+                'footer_color' => $settings?->footer_color ?? '#5c5c5c',
             ],
             'ofertas' => $this->paginateAndMapOfertas($search, $perPage),
             'noticia' => Noticia::first()?->campos_adicionales ?? '',
@@ -315,7 +316,7 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:80', 'unique:insumos,sku,'.$insumo->id],
+            'sku' => ['required', 'string', 'max:80', 'unique:insumos,sku,' . $insumo->id],
             'unidad' => ['required', 'string', 'max:50'],
             'tipo_registro' => ['required', 'in:PAQUETE,UNIDAD'],
             'unidades_por_paquete' => ['nullable', 'integer', 'min:1'],
@@ -346,9 +347,13 @@ class AdminController extends Controller
         $validated = $request->validate([
             'store_name' => ['required', 'string', 'max:255'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:10240'],
-            'bg_color' => ['nullable', 'string', 'max:20'],
-            'navbar_color' => ['nullable', 'string', 'max:20'],
-            'footer_color' => ['nullable', 'string', 'max:20'],
+            'bg_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'navbar_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'footer_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+        ], [
+            'bg_color.regex' => 'El color de fondo debe ser un color hex válido (ej: #ffffff)',
+            'navbar_color.regex' => 'El color navbar debe ser un color hex válido (ej: #fff)',
+            'footer_color.regex' => 'El color footer debe ser un color hex válido (ej: #c9c9c9)',
         ]);
 
         $tenantManager = app(TenantManager::class);
@@ -359,9 +364,9 @@ class AdminController extends Controller
         }
 
         $store->nombre = $validated['store_name'];
-        $store->bg_color = $validated['bg_color'] ?? $store->bg_color;
-        $store->navbar_color = $validated['navbar_color'] ?? $store->navbar_color;
-        $store->footer_color = $validated['footer_color'] ?? $store->footer_color;
+        $store->bg_color = StylingService::validateColor($validated['bg_color'] ?? null, $store->bg_color);
+        $store->navbar_color = StylingService::validateColor($validated['navbar_color'] ?? null, $store->navbar_color);
+        $store->footer_color = StylingService::validateColor($validated['footer_color'] ?? null, $store->footer_color);
 
         if ($request->hasFile('logo')) {
             if ($store->logo_path) {
@@ -393,7 +398,7 @@ class AdminController extends Controller
             ->orderByDesc('id')
             ->paginate($perPage)
             ->withQueryString()
-            ->through(fn (Pedido $p) => [
+            ->through(fn(Pedido $p) => [
                 'id'          => $p->id,
                 'total'       => (float) $p->total,
                 'estado'      => $p->estado,
@@ -405,7 +410,7 @@ class AdminController extends Controller
                     'telefono'  => $p->cliente?->telefono,
                 ],
                 'items_count' => $p->items->count(),
-                'items'       => $p->items->map(fn ($i) => [
+                'items'       => $p->items->map(fn($i) => [
                     'producto_referencia' => $i->producto?->referencia ?? '—',
                     'cantidad'            => $i->cantidad,
                     'talla'               => $i->talla,
@@ -439,7 +444,7 @@ class AdminController extends Controller
                     'color' => 'STD',
                 ],
                 [
-                    'sku' => $producto->referencia.'-'.$item['talla'],
+                    'sku' => $producto->referencia . '-' . $item['talla'],
                     'stock' => $item['stock'],
                     'precio_adicional' => 0,
                     'esta_activa' => true,
@@ -520,10 +525,10 @@ class AdminController extends Controller
     public function getBloques(): array
     {
         $result = [];
-        
+
         for ($posicion = 1; $posicion <= 2; $posicion++) {
             $bloque = \App\Models\BloqueHome::getAllPorPosicion($posicion);
-            
+
             if (!$bloque) {
                 $result[$posicion] = [
                     'posicion' => $posicion,
@@ -583,11 +588,13 @@ class AdminController extends Controller
             'image_names' => 'nullable|array',
             'image_names.*' => 'nullable|string|max:255',
             'image_links' => 'nullable|array',
-            'image_links.*' => 'nullable|string|max:2048',
+            'image_links.*' => ['nullable', 'string', 'max:2048', 'regex:/^(https?:\/\/.+|\/[a-z0-9\/_-]*|#[a-z0-9-]*)$/i'],
+        ], [
+            'image_links.*.regex' => 'Las URLs deben ser válidas (http://, https://, ruta relativa o #ancla)',
         ]);
 
         $bloque = \App\Models\BloqueHome::getAllPorPosicion($validated['posicion']);
-        
+
         if ($bloque) {
             $bloque->update([
                 'tipo' => $validated['tipo'],
@@ -617,7 +624,7 @@ class AdminController extends Controller
                 \App\Models\BloqueHomeImagen::create([
                     'bloque_home_id' => $bloque->id,
                     'imagen' => $path,
-                    'nombre' => 'Slide '.$nextOrder,
+                    'nombre' => 'Slide ' . $nextOrder,
                     'identificador' => 'carrusel',
                     'url_destino' => null,
                     'orden' => $nextOrder,
@@ -629,7 +636,7 @@ class AdminController extends Controller
             \App\Models\BloqueHomeImagen::where('bloque_home_id', $bloque->id)
                 ->where('id', $imageId)
                 ->update([
-                    'nombre' => $nombre ?: 'Slide '.$imageId,
+                    'nombre' => $nombre ?: 'Slide ' . $imageId,
                     'identificador' => 'carrusel',
                 ]);
         }
@@ -677,7 +684,7 @@ class AdminController extends Controller
         $bloqueImg = \App\Models\BloqueHomeImagen::create([
             'bloque_home_id' => $bloque->id,
             'imagen' => $imagen,
-            'nombre' => 'Slide '.(((int) $bloque->imagenes()->max('orden')) + 1),
+            'nombre' => 'Slide ' . (((int) $bloque->imagenes()->max('orden')) + 1),
             'identificador' => 'carrusel',
             'url_destino' => $validated['url_destino'] ?? null,
             'orden' => $bloque->imagenes()->max('orden') + 1,
@@ -702,7 +709,7 @@ class AdminController extends Controller
     public function destroyBloqueImagen(int $id, int $imgId): \Illuminate\Http\JsonResponse
     {
         $imagen = \App\Models\BloqueHomeImagen::where('bloque_home_id', $id)->findOrFail($imgId);
-        
+
         $this->deleteMediaPath($imagen->imagen);
         $imagen->delete();
 
@@ -721,15 +728,19 @@ class AdminController extends Controller
             'carousel_existing_names' => ['nullable', 'array'],
             'carousel_existing_names.*' => ['nullable', 'string', 'max:255'],
             'carousel_existing_links' => ['nullable', 'array'],
-            'carousel_existing_links.*' => ['nullable', 'string', 'max:2048'],
+            'carousel_existing_links.*' => ['nullable', 'string', 'max:2048', 'regex:/^(https?:\/\/.+|\/[a-z0-9\/_-]*|#[a-z0-9-]*)$/i'],
             'left_nombre' => ['nullable', 'string', 'max:255'],
-            'left_url_destino' => ['nullable', 'string', 'max:2048'],
+            'left_url_destino' => ['nullable', 'string', 'max:2048', 'regex:/^(https?:\/\/.+|\/[a-z0-9\/_-]*|#[a-z0-9-]*)$/i'],
             'left_activo' => ['nullable', 'boolean'],
             'left_imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'right_nombre' => ['nullable', 'string', 'max:255'],
-            'right_url_destino' => ['nullable', 'string', 'max:2048'],
+            'right_url_destino' => ['nullable', 'string', 'max:2048', 'regex:/^(https?:\/\/.+|\/[a-z0-9\/_-]*|#[a-z0-9-]*)$/i'],
             'right_activo' => ['nullable', 'boolean'],
             'right_imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ], [
+            'carousel_existing_links.*.regex' => 'Las URLs de carousel deben ser válidas',
+            'left_url_destino.regex' => 'La URL del banner izquierdo debe ser válida',
+            'right_url_destino.regex' => 'La URL del banner derecho debe ser válida',
         ]);
 
         DB::transaction(function () use ($validated, $request) {
@@ -752,7 +763,7 @@ class AdminController extends Controller
                 \App\Models\BloqueHomeImagen::where('bloque_home_id', $bloque->id)
                     ->where('id', $imageId)
                     ->update([
-                        'nombre' => $nombre ?: 'Slide '.$imageId,
+                        'nombre' => $nombre ?: 'Slide ' . $imageId,
                         'identificador' => 'carrusel',
                     ]);
             }
@@ -769,7 +780,7 @@ class AdminController extends Controller
                 \App\Models\BloqueHomeImagen::create([
                     'bloque_home_id' => $bloque->id,
                     'imagen' => $this->storeVisualImage($file),
-                    'nombre' => 'Slide '.$nextOrder,
+                    'nombre' => 'Slide ' . $nextOrder,
                     'identificador' => 'carrusel',
                     'url_destino' => null,
                     'orden' => $nextOrder,
@@ -804,9 +815,11 @@ class AdminController extends Controller
         $validated = $request->validate([
             'posicion' => ['required', 'integer', 'min:1', 'max:2'],
             'nombre' => ['nullable', 'string', 'max:255'],
-            'url_destino' => ['nullable', 'string', 'max:2048'],
+            'url_destino' => ['nullable', 'string', 'max:2048', 'regex:/^(https?:\/\/.+|\/[a-z0-9\/_-]*|#[a-z0-9-]*)$/i'],
             'activo' => ['nullable', 'boolean'],
             'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ], [
+            'url_destino.regex' => 'La URL debe ser válida (http://, https://, ruta relativa o #ancla)',
         ]);
 
         $this->upsertCatalogBannerRecord(
@@ -845,7 +858,7 @@ class AdminController extends Controller
     private function paginateAndMap(string $modelClass, string $search, array $searchFields, int $perPage = 10)
     {
         $query = $modelClass::query();
-        
+
         if ($search) {
             $query->where(function ($q) use ($search, $searchFields) {
                 foreach ($searchFields as $column => $label) {
@@ -855,7 +868,7 @@ class AdminController extends Controller
         }
 
         $query->orderBy('id', 'desc');
-        
+
         // Si es Insumo, ordenamos por nombre
         if ($modelClass === Insumo::class) {
             $query->orderBy('nombre');
@@ -874,9 +887,9 @@ class AdminController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('titulo', 'like', "%{$search}%")
-                  ->orWhere('descripcion', 'like', "%{$search}%")
-                  ->orWhereHas('producto', fn ($pq) => $pq->where('referencia', 'like', "%{$search}%"))
-                  ->orWhereHas('categoria', fn ($cq) => $cq->where('categoria', 'like', "%{$search}%"));
+                    ->orWhere('descripcion', 'like', "%{$search}%")
+                    ->orWhereHas('producto', fn($pq) => $pq->where('referencia', 'like', "%{$search}%"))
+                    ->orWhereHas('categoria', fn($cq) => $cq->where('categoria', 'like', "%{$search}%"));
             });
         }
 

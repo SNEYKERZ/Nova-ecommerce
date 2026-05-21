@@ -2,39 +2,44 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\StylingService;
 use App\Services\TenantManager;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that's loaded on the first page visit.
-     *
-     * @see https://inertiajs.com/serve-files#root-template
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determine the current asset version.
-     *
-     * @see https://inertiajs.com/asset-versioning
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @see https://inertiajs.com/shared-data
-     */
     public function share(Request $request): array
     {
         $store = app(TenantManager::class)->getStore();
+        $defaults = StylingService::getDefaultColors();
+
+        $bgColor = StylingService::validateColor($store?->bg_color, $defaults['bg_color']);
+        $navbarColor = StylingService::validateColor($store?->navbar_color, '#ffffff');
+        $footerColor = StylingService::validateColor($store?->footer_color, '#e8e6e3');
+
+        // Use explicit text colors if set, otherwise use defaults (black text on white background)
+        $navbarTextColor = $store?->navbar_text_color
+            ? StylingService::validateColor($store->navbar_text_color, '#111111')
+            : '#111111';
+
+        $footerTextColor = $store?->footer_text_color
+            ? StylingService::validateColor($store->footer_text_color, '#111111')
+            : '#111111';
+
+        // Social links from store configuracion JSON
+        $config = $store?->configuracion ?? [];
+        $social = $config['social'] ?? [];
 
         return array_merge(parent::share($request), [
+            'csrf_token' => csrf_token(),
             'auth' => [
                 'user' => $request->user()
                     ? [
@@ -51,9 +56,17 @@ class HandleInertiaRequests extends Middleware
                 'logo' => $store?->logo_path ? asset('storage/'.$store->logo_path) : null,
                 'env' => config('app.env'),
                 'whatsapp' => $store?->telefono,
-                'bg_color' => $store?->bg_color ?? '#ffffff',
-                'navbar_color' => $store?->navbar_color ?? '#1e293b',
-                'footer_color' => $store?->footer_color ?? '#1e293b',
+                'bg_color' => $bgColor,
+                'navbar_color' => $navbarColor,
+                'footer_color' => $footerColor,
+                'navbar_text_color' => $navbarTextColor,
+                'footer_text_color' => $footerTextColor,
+                'social' => [
+                    'facebook' => $social['facebook'] ?? null,
+                    'instagram' => $social['instagram'] ?? null,
+                    'tiktok' => $social['tiktok'] ?? null,
+                ],
+                'empresas_url' => $config['empresas_url'] ?? null,
             ],
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),

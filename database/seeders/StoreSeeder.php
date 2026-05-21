@@ -12,18 +12,53 @@ class StoreSeeder extends Seeder
         // Sin global scopes para el seeder
         Store::withoutGlobalScopes();
 
-        // Tienda demo para desarrollo
+        // ─── Tienda 1: Demo ───────────────────────────────
         Store::updateOrCreate(
             ['slug' => 'demo'],
             [
-                'nombre' => 'Mi Tienda Demo',
+                'nombre' => 'WebCaps Demo',
                 'dominio' => null,
-                'email' => 'admin@mitienda.com',
-                'telefono' => '+51 999 999 999',
-                'descripcion' => 'Tienda demo de Vendex',
+                'email' => 'admin@webcaps.demo',
+                'telefono' => '+51 999 888 777',
+                'descripcion' => 'Tienda demo de WebCaps — gorras y accesorios urbanos',
+                'bg_color' => '#ffffff',
+                'navbar_color' => '#ffffff',
+                'footer_color' => '#e8e6e3',
+                'navbar_text_color' => '#111111',
+                'footer_text_color' => '#111111',
                 'configuracion' => [
-                    'color_primary' => '#0c6e09',
-                    'color_secondary' => '#343a40',
+                    'social' => [
+                        'facebook' => 'https://facebook.com/webcaps',
+                        'instagram' => 'https://instagram.com/webcaps',
+                        'tiktok' => 'https://tiktok.com/@webcaps',
+                    ],
+                    'empresas_url' => 'https://webcaps.com/empresas',
+                ],
+                'activo' => true,
+            ]
+        );
+
+        // ─── Tienda 2: Urban Style ─────────────────────────
+        Store::updateOrCreate(
+            ['slug' => 'urbanstyle'],
+            [
+                'nombre' => 'Urban Style Store',
+                'dominio' => null,
+                'email' => 'admin@urbanstyle.store',
+                'telefono' => '+51 999 111 222',
+                'descripcion' => 'Moda urbana y estilo de vida — ropa, accesorios y más',
+                'bg_color' => '#f8f6f3',
+                'navbar_color' => '#1a1a2e',
+                'footer_color' => '#1a1a2e',
+                'navbar_text_color' => '#ffffff',
+                'footer_text_color' => '#ffffff',
+                'configuracion' => [
+                    'social' => [
+                        'facebook' => 'https://facebook.com/urbanstyle',
+                        'instagram' => 'https://instagram.com/urbanstyle',
+                        'tiktok' => 'https://tiktok.com/@urbanstyle',
+                    ],
+                    'empresas_url' => 'https://urbanstyle.store/corporate',
                 ],
                 'activo' => true,
             ]

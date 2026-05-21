@@ -9,16 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('stores', function (Blueprint $table) {
-            $table->string('bg_color', 20)->nullable()->default('#ffffff')->after('activo');
-            $table->string('navbar_color', 20)->nullable()->default('#fff')->after('bg_color');
-            $table->string('footer_color', 20)->nullable()->default('#fff')->after('navbar_color');
+            $table->string('navbar_text_color', 20)->nullable()->default('#ffffff')->after('navbar_color');
+            $table->string('footer_text_color', 20)->nullable()->default('#ffffff')->after('footer_color');
         });
     }
 
     public function down(): void
     {
         Schema::table('stores', function (Blueprint $table) {
-            $table->dropColumn(['bg_color', 'navbar_color', 'footer_color']);
+            $table->dropColumn(['navbar_text_color', 'footer_text_color']);
         });
     }
 };

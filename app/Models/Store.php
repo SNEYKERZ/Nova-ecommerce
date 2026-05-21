@@ -23,6 +23,8 @@ class Store extends Model
         'bg_color',
         'navbar_color',
         'footer_color',
+        'navbar_text_color',
+        'footer_text_color',
     ];
 
     protected $casts = [
@@ -76,6 +78,11 @@ class Store extends Model
         return $this->hasMany(User::class);
     }
 
+    public function galerias(): HasMany
+    {
+        return $this->hasMany(Gallery::class);
+    }
+
     // Accessors
     public function getDominioActivoAttribute(): ?string
     {
@@ -93,5 +100,54 @@ class Store extends Model
 
         // Por dominio personalizado
         return $this->dominio && $this->dominio === $host;
+    }
+
+    /**
+     * Obtiene el color de texto recomendado para el navbar basado en contraste.
+     * @return string Color hex (#ffffff o #111111)
+     */
+    public function getNavbarTextColor(): string
+    {
+        return app('App\Services\StylingService')::getTextColorHex($this->navbar_color ?? '#fff');
+    }
+
+    /**
+     * Obtiene el color de texto recomendado para el footer basado en contraste.
+     * @return string Color hex (#ffffff o #111111)
+     */
+    public function getFooterTextColor(): string
+    {
+        return app('App\Services\StylingService')::getTextColorHex($this->footer_color ?? '#fff');
+    }
+
+    /**
+     * Obtiene todos los colores normalizados de la tienda.
+     * @return array Array con todos los colores normalizados
+     */
+    public function getNormalizedColors(): array
+    {
+        $service = app('App\Services\StylingService');
+        $defaults = $service::getDefaultColors();
+
+        $bgColor = $service::validateColor($this->bg_color, $defaults['bg_color']);
+        $navbarColor = $service::validateColor($this->navbar_color, $defaults['navbar_color']);
+        $footerColor = $service::validateColor($this->footer_color, $defaults['footer_color']);
+
+        // Si existen colores de texto explícitos, usar esos; si no, calcular automáticamente
+        $navbarTextColor = $this->navbar_text_color
+            ? $service::validateColor($this->navbar_text_color, '#ffffff')
+            : $service::getTextColorHex($navbarColor);
+
+        $footerTextColor = $this->footer_text_color
+            ? $service::validateColor($this->footer_text_color, '#ffffff')
+            : $service::getTextColorHex($footerColor);
+
+        return [
+            'bg_color' => $bgColor,
+            'navbar_color' => $navbarColor,
+            'footer_color' => $footerColor,
+            'navbar_text_color' => $navbarTextColor,
+            'footer_text_color' => $footerTextColor,
+        ];
     }
 }

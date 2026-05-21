@@ -40,4 +40,25 @@ class BloqueHomeImagen extends Model
             ->orderBy('orden')
             ->get();
     }
+
+    /**
+     * Valida que una URL de destino sea válida
+     * Acepta: URLs absolutas (http/https), rutas relativas, hashes
+     */
+    public static function isValidUrl(?string $url): bool
+    {
+        if (empty($url)) {
+            return true; // URL opcional
+        }
+
+        return (bool) preg_match('/^(https?:\/\/.+|\/[a-z0-9\/_-]*|#[a-z0-9-]*)$/i', $url);
+    }
+
+    /**
+     * Scope para obtener imágenes de un bloque ordenadas
+     */
+    public function scopeDelBloque($query, int $bloqueId)
+    {
+        return $query->where('bloque_home_id', $bloqueId)->orderBy('orden');
+    }
 }

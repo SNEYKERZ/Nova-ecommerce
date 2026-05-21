@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Producto;
 use App\Models\Pedido;
 use App\Models\Categoria;
+use App\Services\StylingService;
 use App\Services\TenantManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,8 +36,10 @@ class SuperAdminController extends Controller
                 'telefono' => $store->telefono,
                 'activo' => $store->activo,
                 'bg_color' => $store->bg_color ?? '#ffffff',
-                'navbar_color' => $store->navbar_color ?? '#1e293b',
-                'footer_color' => $store->footer_color ?? '#1e293b',
+                'navbar_color' => $store->navbar_color ?? '#fff',
+                'footer_color' => $store->footer_color ?? '#000000',
+                'navbar_text_color' => $store->navbar_text_color ?? '',
+                'footer_text_color' => $store->footer_text_color ?? '',
                 'created_at' => $store->created_at?->toIso8601String(),
                 // Stats por tienda
                 'stats' => [
@@ -117,13 +120,33 @@ class SuperAdminController extends Controller
             'email' => ['nullable', 'email'],
             'telefono' => ['nullable', 'string', 'max:50'],
             'descripcion' => ['nullable', 'string'],
-            'bg_color' => ['nullable', 'string', 'max:20'],
-            'navbar_color' => ['nullable', 'string', 'max:20'],
-            'footer_color' => ['nullable', 'string', 'max:20'],
+            'bg_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'navbar_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'footer_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'navbar_text_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'footer_text_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+        ], [
+            'bg_color.regex' => 'El color de fondo debe ser un color hex válido',
+            'navbar_color.regex' => 'El color navbar debe ser un color hex válido',
+            'footer_color.regex' => 'El color footer debe ser un color hex válido',
+            'navbar_text_color.regex' => 'El color de texto navbar debe ser un color hex válido',
+            'footer_text_color.regex' => 'El color de texto footer debe ser un color hex válido',
         ]);
 
+        $defaults = StylingService::getDefaultColors();
+
         $store = Store::create([
-            ...$validated,
+            'nombre' => $validated['nombre'],
+            'slug' => $validated['slug'],
+            'dominio' => $validated['dominio'] ?? null,
+            'email' => $validated['email'] ?? null,
+            'telefono' => $validated['telefono'] ?? null,
+            'descripcion' => $validated['descripcion'] ?? null,
+            'bg_color' => StylingService::validateColor($validated['bg_color'] ?? null, '#ffffff'),
+            'navbar_color' => StylingService::validateColor($validated['navbar_color'] ?? null, '#ffffff'),
+            'footer_color' => StylingService::validateColor($validated['footer_color'] ?? null, '#ffffff'),
+            'navbar_text_color' => StylingService::validateColor($validated['navbar_text_color'] ?? null, '#111111'),
+            'footer_text_color' => StylingService::validateColor($validated['footer_text_color'] ?? null, '#111111'),
             'activo' => true,
         ]);
 
@@ -147,12 +170,33 @@ class SuperAdminController extends Controller
             'telefono' => ['nullable', 'string', 'max:50'],
             'descripcion' => ['nullable', 'string'],
             'activo' => ['required', 'boolean'],
-            'bg_color' => ['nullable', 'string', 'max:20'],
-            'navbar_color' => ['nullable', 'string', 'max:20'],
-            'footer_color' => ['nullable', 'string', 'max:20'],
+            'bg_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'navbar_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'footer_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'navbar_text_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+            'footer_text_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+        ], [
+            'bg_color.regex' => 'El color de fondo debe ser un color hex válido',
+            'navbar_color.regex' => 'El color navbar debe ser un color hex válido',
+            'footer_color.regex' => 'El color footer debe ser un color hex válido',
+            'navbar_text_color.regex' => 'El color de texto navbar debe ser un color hex válido',
+            'footer_text_color.regex' => 'El color de texto footer debe ser un color hex válido',
         ]);
 
-        $store->update($validated);
+        $store->update([
+            'nombre' => $validated['nombre'],
+            'slug' => $validated['slug'],
+            'dominio' => $validated['dominio'] ?? null,
+            'email' => $validated['email'] ?? null,
+            'telefono' => $validated['telefono'] ?? null,
+            'descripcion' => $validated['descripcion'] ?? null,
+            'activo' => $validated['activo'],
+            'bg_color' => StylingService::validateColor($validated['bg_color'] ?? null, $store->bg_color),
+            'navbar_color' => StylingService::validateColor($validated['navbar_color'] ?? null, $store->navbar_color),
+            'footer_color' => StylingService::validateColor($validated['footer_color'] ?? null, $store->footer_color),
+            'navbar_text_color' => StylingService::validateColor($validated['navbar_text_color'] ?? null, $store->navbar_text_color),
+            'footer_text_color' => StylingService::validateColor($validated['footer_text_color'] ?? null, $store->footer_text_color),
+        ]);
 
         return response()->json([
             'success' => true,
@@ -309,7 +353,7 @@ class SuperAdminController extends Controller
     }
 
     /**
-     * Impersonar a otro usuario admin
+     * Impersonar a otro usuario
      */
     public function impersonate(Request $request, User $user): \Illuminate\Http\RedirectResponse
     {
@@ -326,7 +370,12 @@ class SuperAdminController extends Controller
 
         Auth::login($user);
 
-        return redirect('/admin');
+        // Redirigir según el rol del usuario impersonado
+        return match ($user->role) {
+            'admin' => redirect()->intended('/admin'),
+            'cliente' => redirect('/'),
+            default => redirect('/'),
+        };
     }
 
     /**
@@ -356,7 +405,7 @@ class SuperAdminController extends Controller
     {
         $period = $request->get('period', 'month'); // day, week, month, year
 
-        $startDate = match($period) {
+        $startDate = match ($period) {
             'day' => now()->subDay(),
             'week' => now()->subWeek(),
             'month' => now()->subMonth(),

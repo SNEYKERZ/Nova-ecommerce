@@ -77,7 +77,7 @@
         </div>
       </transition>
 
-      <div class="grid grid-cols-2 gap-x-2 gap-y-6 sm:gap-x-3 sm:gap-y-8 md:grid-cols-3 md:gap-x-4 xl:grid-cols-5">
+      <div class="grid grid-cols-2 gap-x-1.5 gap-y-5 sm:grid-cols-3 sm:gap-x-3 sm:gap-y-7 md:grid-cols-4 md:gap-x-4 md:gap-y-8 lg:grid-cols-5 xl:gap-x-5">
         <article v-for="item in paginatedProducts" :key="item.id" class="group">
           <Link :href="`/productos/${item.id}`" class="relative block overflow-hidden bg-[#efefee]">
             <img :src="item.foto" :alt="item.sku" loading="lazy" class="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.03]" />

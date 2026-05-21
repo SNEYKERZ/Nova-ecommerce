@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Narrow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Archivo:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Narrow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Archivo:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -29,7 +29,15 @@
     --accent: #c8102e;
     --success: #1a7a4a;
     --sand: #f0ede8;
-    --r: 2px; /* border-radius base */
+    --r: 6px; /* border-radius base — estandarizado */
+    --r-lg: 12px; /* border-radius large */
+    --r-xl: 16px; /* border-radius extra large */
+    --transition: 150ms ease; /* transición estándar */
+    /* Store colors defaults */
+    --navbar-color: #ffffff;
+    --navbar-text-color: #111111;
+    --footer-color: #ffffff;
+    --footer-text-color: #111111;
 }
 
 /* ─── Reset & Base ───────────────────────────────────── */
@@ -74,7 +82,7 @@ body {
     letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+    transition: background var(--transition), color var(--transition), opacity var(--transition);
     user-select: none;
     white-space: nowrap;
 }
@@ -96,7 +104,7 @@ body {
     letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: background var(--transition), color var(--transition);
     user-select: none;
     white-space: nowrap;
 }
@@ -116,7 +124,7 @@ body {
     font-weight: 600;
     letter-spacing: 0.06em;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color var(--transition), background var(--transition);
     user-select: none;
     white-space: nowrap;
 }
@@ -216,7 +224,7 @@ select {
     font-size: 1rem;
     font-weight: 500;
     color: var(--ink);
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color var(--transition), background var(--transition);
     user-select: none;
     flex-shrink: 0;
 }
@@ -291,7 +299,7 @@ select {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: transform 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
     display: block;
 }
 .product-card:hover .product-card-img img { transform: scale(1.04); }
@@ -308,7 +316,7 @@ select {
     text-align: center;
     padding: 0.75rem;
     transform: translateY(100%);
-    transition: transform 0.25s ease;
+    transition: transform var(--transition);
     cursor: pointer;
     border: none;
     width: 100%;
@@ -402,6 +410,12 @@ select {
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+/* Consistent Border Radius */
+.rounded-base { border-radius: var(--r); }
+.rounded-lg-custom { border-radius: var(--r-lg); }
+.rounded-xl-custom { border-radius: var(--r-xl); }
+.rounded-pill { border-radius: 9999px; }
 
 /* ─── Interactive elements ──────────────────────────── */
 button:not(:disabled),

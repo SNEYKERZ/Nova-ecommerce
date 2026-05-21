@@ -10,7 +10,13 @@
       "Bash(php -l routes/web.php)",
       "Bash(php -l routes/api.php)",
       "Bash(php -l database/migrations/2026_04_30_000001_add_nombre_to_productos_table.php)",
-      "Bash(php -l app/Http/Controllers/StorefrontController.php)"
+      "Bash(php -l app/Http/Controllers/StorefrontController.php)",
+      "Bash(Get-ChildItem -Path \"C:\\\\laragon\\\\www\\\\webcaps-laravel\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "PowerShell(head *)",
+      "Bash(npm run *)",
+      "Bash(php *)",
+      "Bash(mysql *)"
     ]
   }
 }
