@@ -297,18 +297,25 @@
               {{ productForm.newImageNames.join(', ') }}
             </div>
 
-            <div class="lg:col-span-2">
-              <p class="mb-2 text-xs font-semibold uppercase text-slate-500">Tallas disponibles y stock por talla</p>
-              <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="lg:col-span-2 rounded-xl border-2 border-blue-300 bg-blue-50 p-4">
+              <p class="mb-3 text-sm font-bold uppercase text-blue-900">📦 Stock por talla</p>
+              <p class="mb-3 text-xs text-blue-700">Selecciona las tallas disponibles e ingresa la cantidad en stock para cada una</p>
+              <div class="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 <label v-for="size in sizeOptions" :key="size"
-                  class="flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 cursor-pointer">
-                  <input v-model="productForm.sizeStock[size].enabled" type="checkbox" />
-                  <span class="w-10 text-sm font-semibold text-slate-700">{{ size }}</span>
+                  class="flex flex-col gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2.5 cursor-pointer hover:bg-blue-50 transition">
+                  <div class="flex items-center gap-2">
+                    <input v-model="productForm.sizeStock[size].enabled" type="checkbox" class="w-4 h-4 rounded" />
+                    <span class="font-semibold text-slate-900">{{ size }}</span>
+                  </div>
                   <input v-model.number="productForm.sizeStock[size].stock" type="number" min="0"
                     :disabled="!productForm.sizeStock[size].enabled" placeholder="Stock"
-                    class="w-full rounded-md border border-slate-300 px-2 py-1 text-sm" />
+                    class="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-100 disabled:text-slate-400" />
                 </label>
               </div>
+              <p class="mt-3 text-xs text-blue-600">
+                ℹ️ Marcadas: {{ Object.values(productForm.sizeStock).filter(s => s.enabled).length }} |
+                Stock total: {{ Object.values(productForm.sizeStock).reduce((sum, s) => sum + (s.enabled ? s.stock : 0), 0) }}
+              </p>
             </div>
           </div>
 
