@@ -18,7 +18,12 @@
       "Bash(php *)",
       "Bash(mysql *)",
       "Bash(Get-ChildItem -Path \"c:\\\\laragon\\\\www\\\\webcaps-laravel\" -Directory)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(curl -s http://localhost:8000)",
+      "Bash(curl -s \"http://localhost:8000/api/admin/test\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"http://localhost:8000/api/productos\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"http://localhost:8000\")",
+      "Bash(curl -s -X POST http://localhost:8000/api/carrito/agregar -H 'Content-Type: application/json' -H 'X-CSRF-TOKEN: __CMDSUB_OUTPUT__')"
     ]
   }
 }
