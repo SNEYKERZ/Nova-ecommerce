@@ -1,82 +1,53 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="$emit('close')">
+    <!-- Main Modal -->
     <div class="relative max-h-[90vh] max-w-4xl w-full overflow-y-auto rounded-lg bg-white shadow-xl">
       <!-- Close Button -->
       <button
-        class="absolute right-4 top-4 z-10 rounded-full bg-white p-2 text-slate-500 hover:text-slate-700"
+        class="absolute right-4 top-4 z-10 rounded-full bg-white p-2 text-slate-500 hover:text-slate-700 transition-colors"
         @click="$emit('close')"
       >
         ✕
       </button>
 
       <!-- Content -->
-      <div class="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
-        <!-- Image -->
-        <div class="flex items-center justify-center bg-slate-100 rounded-lg overflow-hidden">
-          <img :src="imagen.imagen_url" :alt="gallery.nombre" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+      <div class="grid grid-cols-1 gap-8 p-6 md:grid-cols-2">
+        <!-- Image - Large -->
+        <div class="flex items-center justify-center bg-slate-100 rounded-lg overflow-hidden h-96 md:h-auto">
+          <img
+            :src="imagen.imagen_url"
+            :alt="gallery.nombre"
+            class="h-full w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         </div>
 
-        <!-- Products & Cart -->
-        <div class="flex flex-col">
-          <h3 class="mb-4 text-2xl font-bold text-slate-900">{{ gallery.nombre }}</h3>
+        <!-- Products Section - Clean & Simple -->
+        <div class="flex flex-col justify-center">
+          <h3 class="mb-6 text-3xl font-bold text-slate-900">{{ gallery.nombre }}</h3>
 
           <!-- Products List -->
-          <div v-if="imagen.productos?.length > 0" class="mb-6 flex-1 space-y-4">
-            <div v-for="producto in imagen.productos" :key="producto.id" class="rounded-lg border border-slate-200 p-4">
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <h4 class="font-semibold text-slate-900">{{ producto.nombre }}</h4>
-                  <p v-if="producto.referencia" class="text-xs text-slate-500">{{ producto.referencia }}</p>
-                  <p class="mt-2 text-lg font-bold text-slate-900">${{ formatPrice(producto.precio) }}</p>
-                </div>
+          <div v-if="imagen.productos?.length > 0" class="space-y-6">
+            <div
+              v-for="producto in imagen.productos"
+              :key="producto.id"
+              class="border-t border-slate-200 pt-6 first:border-t-0 first:pt-0"
+            >
+              <!-- Producto Info -->
+              <div class="mb-4">
+                <h4 class="text-lg font-semibold text-slate-900">{{ producto.nombre }}</h4>
+                <p v-if="producto.referencia" class="text-sm text-slate-500 mt-1">Ref: {{ producto.referencia }}</p>
+                <p class="text-2xl font-bold text-slate-900 mt-3">${{ formatPrice(producto.precio) }}</p>
               </div>
 
-              <!-- Size Selector (if applicable) -->
-              <div v-if="producto.tallas?.length > 0" class="mt-3 mb-3">
-                <label class="mb-2 block text-xs font-semibold uppercase text-slate-500">Talla</label>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="talla in producto.tallas"
-                    :key="talla"
-                    class="min-w-[2.8rem] h-[2.8rem] flex items-center justify-center border border-slate-300 rounded-lg text-xs font-bold uppercase cursor-pointer bg-white text-slate-900 transition-colors"
-                    :class="{ 'bg-slate-900 text-white border-slate-900': selectedSize[producto.id] === talla }"
-                    @click="selectedSize[producto.id] = talla"
-                  >
-                    {{ talla }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Color Selector (if applicable) -->
-              <div v-if="producto.colores?.length > 0" class="mb-3">
-                <label class="mb-2 block text-xs font-semibold uppercase text-slate-500">Color</label>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="color in producto.colores"
-                    :key="color"
-                    class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold transition-colors"
-                    :class="selectedColor[producto.id] === color ? 'border-slate-900 bg-slate-900 text-white' : 'bg-white text-slate-700 hover:border-slate-900'"
-                    @click="selectedColor[producto.id] = color"
-                  >
-                    {{ color }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Quantity & Add to Cart -->
-              <div class="mt-4 flex items-center gap-2">
-                <div class="flex items-center border border-slate-300 rounded-lg">
-                  <button class="flex h-8 w-8 items-center justify-center border-r border-slate-300 bg-white cursor-pointer text-slate-900 font-semibold transition-colors hover:bg-slate-100" @click="decreaseQty(producto.id)">−</button>
-                  <div class="w-8 text-center text-sm font-semibold text-slate-900">{{ quantities[producto.id] || 1 }}</div>
-                  <button class="flex h-8 w-8 items-center justify-center border-l border-slate-300 bg-white cursor-pointer text-slate-900 font-semibold transition-colors hover:bg-slate-100" @click="increaseQty(producto.id)">+</button>
-                </div>
-                <button
-                  class="btn-main flex-1"
-                  @click="addToCart(producto)"
-                >
-                  Agregar al Carrito
-                </button>
-              </div>
+              <!-- Simple Add Button -->
+              <button
+                class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold transition-all hover:bg-slate-800 active:scale-95"
+                @click="initiateAddToCart(producto)"
+              >
+                Añadir
+              </button>
             </div>
           </div>
 
@@ -85,11 +56,73 @@
             No hay productos asociados a esta imagen.
           </div>
 
-          <!-- Feedback -->
-          <p v-if="feedback" class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
-            {{ feedback }}
-          </p>
+          <!-- Feedback Message -->
+          <div
+            v-if="feedback.message"
+            :class="{
+              'mt-4 p-3 rounded-lg text-sm font-semibold': true,
+              'border border-emerald-200 bg-emerald-50 text-emerald-800': feedback.type === 'success',
+              'border border-red-200 bg-red-50 text-red-800': feedback.type === 'error',
+              'border border-blue-200 bg-blue-50 text-blue-800': feedback.type === 'warning',
+            }"
+          >
+            {{ feedback.message }}
+          </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Size Selection Modal (Overlay) -->
+    <div
+      v-if="showSizeModal && currentProductForSize"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      @click.self="closeSizeModal"
+    >
+      <div class="relative w-full max-w-sm rounded-lg bg-white shadow-2xl p-6 animate-scale-in">
+        <!-- Close Button -->
+        <button
+          class="absolute right-3 top-3 text-slate-500 hover:text-slate-700 transition-colors"
+          @click="closeSizeModal"
+        >
+          ✕
+        </button>
+
+        <!-- Modal Content -->
+        <h3 class="text-xl font-bold text-slate-900 mb-6">Selecciona la talla</h3>
+
+        <!-- Size Grid -->
+        <div class="grid grid-cols-3 gap-3 mb-6">
+          <button
+            v-for="talla in currentProductForSize.tallas"
+            :key="talla"
+            class="py-3 px-2 border border-slate-300 rounded-lg font-semibold text-sm transition-all hover:border-slate-900"
+            :class="{
+              'bg-slate-900 text-white border-slate-900': selectedSizeForModal === talla,
+              'bg-white text-slate-900': selectedSizeForModal !== talla,
+            }"
+            @click="selectedSizeForModal = talla"
+          >
+            {{ talla }}
+          </button>
+        </div>
+
+        <!-- Error Message if no size selected -->
+        <div
+          v-if="sizeModalAttempted && !selectedSizeForModal"
+          class="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-sm font-semibold text-red-800"
+        >
+          ⚠️ Por favor selecciona una talla
+        </div>
+
+        <!-- Confirm Button -->
+        <button
+          class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold transition-all hover:bg-slate-800 active:scale-95"
+          :class="{ 'opacity-50 cursor-not-allowed': !selectedSizeForModal }"
+          :disabled="!selectedSizeForModal"
+          @click="confirmAndAddToCart"
+        >
+          Confirmar y Agregar
+        </button>
       </div>
     </div>
   </div>
@@ -105,34 +138,85 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
-const quantities = ref({});
-const selectedSize = ref({});
-const selectedColor = ref({});
-const feedback = ref('');
+// Estados del modal de talla
+const showSizeModal = ref(false);
+const selectedSizeForModal = ref('');
+const currentProductForSize = ref(null);
+const sizeModalAttempted = ref(false);
 
+// Estados de feedback
+const feedback = ref({ message: '', type: '' });
+
+/**
+ * Formatea el precio con separador de miles
+ */
 const formatPrice = (price) => {
   return parseFloat(price).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const increaseQty = (productoId) => {
-  quantities.value[productoId] = (quantities.value[productoId] || 1) + 1;
-};
+/**
+ * Inicia el flujo de agregar al carrito
+ * Si el producto tiene tallas, muestra el modal de selección
+ * Si no tiene tallas, agrega directo al carrito
+ */
+const initiateAddToCart = (producto) => {
+  feedback.value = { message: '', type: '' };
 
-const decreaseQty = (productoId) => {
-  if ((quantities.value[productoId] || 1) > 1) {
-    quantities.value[productoId]--;
+  // Si no tiene tallas, agregar directo
+  if (!producto.tallas || producto.tallas.length === 0) {
+    addToCart(producto, null);
+    return;
   }
+
+  // Si tiene tallas, mostrar modal de selección
+  currentProductForSize.value = producto;
+  showSizeModal.value = true;
+  selectedSizeForModal.value = '';
+  sizeModalAttempted.value = false;
 };
 
-const addToCart = async (producto) => {
+/**
+ * Cierra el modal de selección de talla
+ */
+const closeSizeModal = () => {
+  showSizeModal.value = false;
+  selectedSizeForModal.value = '';
+  currentProductForSize.value = null;
+  sizeModalAttempted.value = false;
+};
+
+/**
+ * Valida y confirma la selección de talla, luego agrega al carrito
+ */
+const confirmAndAddToCart = () => {
+  // Validar que se seleccionó una talla
+  if (!selectedSizeForModal.value) {
+    sizeModalAttempted.value = true;
+    return;
+  }
+
+  // Agregar al carrito con talla seleccionada
+  addToCart(currentProductForSize.value, selectedSizeForModal.value);
+  closeSizeModal();
+};
+
+/**
+ * Agrega el producto al carrito en la API
+ */
+const addToCart = async (producto, talla) => {
   try {
-    feedback.value = '';
     const productId = producto.producto_id || producto.id;
     if (!productId) {
       throw new Error('ID de producto inválido');
     }
 
-    const qty = quantities.value[productId] || 1;
+    // Si requiere talla y no se proporcionó, validar
+    if (producto.tallas && producto.tallas.length > 0 && !talla) {
+      feedback.value = { message: '⚠️ Selecciona la talla', type: 'warning' };
+      return;
+    }
+
+    // Realizar petición al carrito
     const res = await fetch('/api/carrito/agregar', {
       method: 'POST',
       headers: {
@@ -141,8 +225,8 @@ const addToCart = async (producto) => {
       },
       body: JSON.stringify({
         producto_id: productId,
-        cantidad: qty,
-        talla: selectedSize.value[productId] || null,
+        cantidad: 1,
+        talla: talla || null,
       }),
     });
 
@@ -151,15 +235,40 @@ const addToCart = async (producto) => {
       throw new Error(errData.message || 'Error al agregar al carrito');
     }
 
-    const data = await res.json();
-    quantities.value[productId] = 1;
-    selectedSize.value[productId] = null;
-    feedback.value = `${producto.nombre} agregado al carrito ✓`;
+    // Éxito
+    feedback.value = {
+      message: `✓ ${producto.nombre} agregado al carrito`,
+      type: 'success',
+    };
     window.dispatchEvent(new Event('cart-updated'));
-    setTimeout(() => { feedback.value = ''; }, 3000);
+
+    // Limpiar mensaje después de 3 segundos
+    setTimeout(() => {
+      feedback.value = { message: '', type: '' };
+    }, 3000);
   } catch (e) {
-    feedback.value = `Error: ${e.message}`;
+    feedback.value = {
+      message: `❌ ${e.message}`,
+      type: 'error',
+    };
     console.error('Add to cart error:', e);
   }
 };
 </script>
+
+<style scoped>
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+</style>
