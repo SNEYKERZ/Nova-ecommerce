@@ -112,13 +112,15 @@ const getGridClasses = (orientation) => {
   const baseClasses = 'relative';
 
   switch (orientation) {
-    // Horizontales: ocupan 2 columnas × 2 filas para mejor visibilidad
+    // Horizontales: ocupan 3 columnas × 2 filas (50% del ancho con 6 cols)
+    // Mejor proporción visual, no tan pequeñas
     case 'horizontal':
-      return `${baseClasses} col-span-2 row-span-2`;
-    // Verticales: ocupan 1 columna × 2 filas
+      return `${baseClasses} col-span-3 row-span-2`;
+    // Verticales: ocupan 2 columnas × 2 filas (33% del ancho con 6 cols)
+    // Menos delgadas, mejor proporción
     case 'vertical':
-      return `${baseClasses} col-span-1 row-span-2`;
-    // Cuadradas: ocupan 2 columnas × 2 filas
+      return `${baseClasses} col-span-2 row-span-2`;
+    // Cuadradas: ocupan 2 columnas × 2 filas (33% del ancho con 6 cols)
     case 'square':
       return `${baseClasses} col-span-2 row-span-2`;
     default:

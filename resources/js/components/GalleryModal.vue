@@ -32,22 +32,39 @@
             <div
               v-for="producto in imagen.productos"
               :key="producto.id"
-              class="border-t border-slate-200 pt-6 first:border-t-0 first:pt-0"
+              class="border-t border-slate-200 pt-6 first:border-t-0 first:pt-0 flex gap-4"
             >
-              <!-- Producto Info -->
-              <div class="mb-4">
-                <h4 class="text-lg font-semibold text-slate-900">{{ producto.nombre }}</h4>
-                <p v-if="producto.referencia" class="text-sm text-slate-500 mt-1">Ref: {{ producto.referencia }}</p>
-                <p class="text-2xl font-bold text-slate-900 mt-3">${{ formatPrice(producto.precio) }}</p>
+              <!-- Producto Thumbnail -->
+              <div class="flex-shrink-0 w-24 h-24 bg-slate-100 rounded-lg overflow-hidden">
+                <img
+                  v-if="producto.foto"
+                  :src="producto.foto"
+                  :alt="producto.nombre"
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div v-else class="w-full h-full flex items-center justify-center text-slate-400 text-sm">
+                  Sin foto
+                </div>
               </div>
 
-              <!-- Simple Add Button -->
-              <button
-                class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold transition-all hover:bg-slate-800 active:scale-95"
-                @click="initiateAddToCart(producto)"
-              >
-                Añadir
-              </button>
+              <!-- Producto Info & Button -->
+              <div class="flex-1 flex flex-col justify-between">
+                <div>
+                  <h4 class="text-lg font-semibold text-slate-900">{{ producto.nombre }}</h4>
+                  <p v-if="producto.referencia" class="text-sm text-slate-500 mt-1">Ref: {{ producto.referencia }}</p>
+                  <p class="text-2xl font-bold text-slate-900 mt-3">${{ formatPrice(producto.precio) }}</p>
+                </div>
+
+                <!-- Simple Add Button -->
+                <button
+                  class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold transition-all hover:bg-slate-800 active:scale-95 mt-4"
+                  @click="initiateAddToCart(producto)"
+                >
+                  Añadir
+                </button>
+              </div>
             </div>
           </div>
 
