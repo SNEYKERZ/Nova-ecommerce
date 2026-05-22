@@ -39,9 +39,14 @@
       </div>
     </section>
 
-    <section v-if="promociones.length" class="mx-auto mt-8 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="overflow-hidden rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)]">
-        <div class="animate-pulse px-5 py-3 text-sm font-semibold text-[color:var(--ink)]/90 sm:text-base">{{ promociones.join(' • ') }}</div>
+    <section v-if="promociones.length" class="w-full mt-8 px-0">
+      <div class="overflow-hidden rounded-xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 shadow-md">
+        <div class="px-6 py-4 sm:px-8 sm:py-5">
+          <p class="text-xs font-bold text-amber-700 uppercase tracking-widest mb-2">📢 Promociones Activas</p>
+          <div class="animate-pulse text-sm sm:text-base md:text-lg font-bold text-amber-900 leading-relaxed">
+            {{ promociones.join(' • ') }}
+          </div>
+        </div>
       </div>
     </section>
 
