@@ -10,7 +10,7 @@ class Carrito extends Model
 {
     use HasFactory, HasTenant;
 
-    protected $fillable = ['cliente_id', 'sesion_id', 'estado'];
+    protected $fillable = ['cliente_id', 'sesion_id', 'estado', 'cupon_id', 'descuento_cupon'];
 
     public function cliente()
     {
@@ -20,6 +20,11 @@ class Carrito extends Model
     public function items()
     {
         return $this->hasMany(CarritoItem::class);
+    }
+
+    public function cupon()
+    {
+        return $this->belongsTo(Cupon::class);
     }
 
     public function getTotalAttribute()

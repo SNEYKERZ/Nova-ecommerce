@@ -29,6 +29,9 @@ Route::prefix('api')->group(function () {
     Route::put('/carrito/actualizar/{id}', [CarritoController::class, 'actualizar']);
     Route::delete('/carrito/eliminar/{id}', [CarritoController::class, 'eliminar']);
     Route::delete('/carrito/vaciar', [CarritoController::class, 'vaciar']);
+    Route::post('/carrito/aplicar-cupon', [CarritoController::class, 'aplicarCupon']);
+    Route::delete('/carrito/quitar-cupon', [CarritoController::class, 'quitarCupon']);
+    Route::post('/carrito/pedir-whatsapp', [CarritoController::class, 'pedirWhatsapp']);
 
     Route::get('/user/me', function (\Illuminate\Http\Request $request) {
         $user = $request->user();
@@ -114,8 +117,17 @@ Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::post('/catalog-banners', [AdminController::class, 'upsertCatalogBanner'])->name('admin.catalog-banners.upsert');
     Route::delete('/catalog-banners/{posicion}', [AdminController::class, 'destroyCatalogBanner'])->name('admin.catalog-banners.destroy');
 
+    // Cupones de descuento
+    Route::post('/cupones', [AdminController::class, 'storeCupon'])->name('admin.cupones.store');
+    Route::put('/cupones/{cupon}', [AdminController::class, 'updateCupon'])->name('admin.cupones.update');
+    Route::delete('/cupones/{cupon}', [AdminController::class, 'deleteCupon'])->name('admin.cupones.delete');
+
     // Gestión de pedidos del admin de tienda
     Route::put('/pedidos/{pedido}/estado', [AdminController::class, 'updatePedidoEstado'])->name('admin.pedidos.estado');
+    Route::put('/pedidos/{pedido}', [AdminController::class, 'updatePedido'])->name('admin.pedidos.update');
+    Route::put('/pedidos/{pedido}/items/{item}', [AdminController::class, 'updatePedidoItem'])->name('admin.pedidos.items.update');
+    Route::delete('/pedidos/{pedido}/items/{item}', [AdminController::class, 'deletePedidoItem'])->name('admin.pedidos.items.delete');
+    Route::post('/pedidos/{pedido}/items', [AdminController::class, 'storePedidoItem'])->name('admin.pedidos.items.store');
 
     // Galerías
     Route::get('/galleries', [GalleryController::class, 'index'])->name('admin.galleries.index');

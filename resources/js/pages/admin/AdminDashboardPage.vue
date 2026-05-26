@@ -42,7 +42,7 @@
           <div class="flex items-center justify-between">
             <div>
               <h2 class="text-xl font-semibold text-slate-900">Pedidos recibidos</h2>
-              <p class="mt-1 text-sm text-slate-500">Gestiona y actualiza el estado de los pedidos de tu tienda.</p>
+              <p class="mt-1 text-sm text-slate-500">Gestiona, edita y confirma pedidos de tu tienda.</p>
             </div>
             <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
               {{pedidosList.filter(p => p.estado === 'PENDIENTE').length}} pendientes
@@ -50,46 +50,104 @@
           </div>
         </div>
 
-        <!-- Detalle del pedido seleccionado -->
+        <!-- Detalle del pedido seleccionado (EDITABLE) -->
         <div v-if="pedidoDetalle" class="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
           <div class="flex items-center justify-between mb-3">
-            <h3 class="font-semibold text-blue-900">Pedido #{{ pedidoDetalle.id }} — {{ pedidoDetalle.cliente?.nombre }}
-              {{ pedidoDetalle.cliente?.apellidos }}</h3>
-            <button class="text-xs text-blue-600 underline cursor-pointer" @click="pedidoDetalle = null">Cerrar
-              detalle</button>
+            <h3 class="font-semibold text-blue-900">Pedido #{{ editForm.id }} — {{ editForm.nombre }} {{ editForm.apellidos }}</h3>
+            <div class="flex gap-2">
+              <button class="rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white cursor-pointer"
+                @click="confirmarPedido(editForm.id)" v-if="editForm.estado === 'PENDIENTE'">
+                ✓ Confirmar
+              </button>
+              <button class="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs cursor-pointer"
+                @click="savePedidoEdits">
+                Guardar cambios
+              </button>
+              <button class="text-xs text-blue-600 underline cursor-pointer" @click="pedidoDetalle = null">Cerrar</button>
+            </div>
           </div>
-          <div class="grid gap-2 text-sm text-blue-900 sm:grid-cols-2">
-            <p><span class="font-semibold">Email:</span> {{ pedidoDetalle.cliente?.email }}</p>
-            <p><span class="font-semibold">Teléfono:</span> {{ pedidoDetalle.cliente?.telefono || '—' }}</p>
-            <p class="sm:col-span-2"><span class="font-semibold">Dirección:</span> {{ pedidoDetalle.direccion }}</p>
+
+          <!-- Datos de contacto editables -->
+          <div class="grid gap-2 text-sm sm:grid-cols-3 mb-4">
+            <div>
+              <label class="text-[10px] font-semibold uppercase text-blue-700">Nombre</label>
+              <input v-model="editForm.nombre" class="w-full rounded-lg border border-blue-200 px-2 py-1 text-xs bg-white" />
+            </div>
+            <div>
+              <label class="text-[10px] font-semibold uppercase text-blue-700">Apellidos</label>
+              <input v-model="editForm.apellidos" class="w-full rounded-lg border border-blue-200 px-2 py-1 text-xs bg-white" />
+            </div>
+            <div>
+              <label class="text-[10px] font-semibold uppercase text-blue-700">Teléfono</label>
+              <input v-model="editForm.telefono" class="w-full rounded-lg border border-blue-200 px-2 py-1 text-xs bg-white" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="text-[10px] font-semibold uppercase text-blue-700">Dirección</label>
+              <input v-model="editForm.direccion" class="w-full rounded-lg border border-blue-200 px-2 py-1 text-xs bg-white" />
+            </div>
           </div>
-          <table class="mt-3 min-w-full text-xs">
+
+          <!-- Items editables -->
+          <table class="mt-2 min-w-full text-xs">
             <thead>
               <tr class="text-left text-blue-700">
                 <th class="py-1 pr-3">Producto</th>
                 <th class="py-1 pr-3">Talla</th>
+                <th class="py-1 pr-3">Precio</th>
                 <th class="py-1 pr-3">Cant.</th>
-                <th class="py-1">Subtotal</th>
+                <th class="py-1 pr-3">Subtotal</th>
+                <th class="py-1"></th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, i) in pedidoDetalle.items" :key="i" class="border-t border-blue-200">
+              <tr v-for="(item, i) in editForm.items" :key="item._key || i" class="border-t border-blue-200">
                 <td class="py-1 pr-3">{{ item.producto_referencia }}</td>
-                <td class="py-1 pr-3">{{ item.talla || '—' }}</td>
-                <td class="py-1 pr-3">{{ item.cantidad }}</td>
-                <td class="py-1">{{ money(item.subtotal) }}</td>
+                <td class="py-1 pr-3">
+                  <input v-model="item.talla" class="w-16 rounded border border-blue-200 px-1 py-0.5 bg-white" />
+                </td>
+                <td class="py-1 pr-3">{{ money(item.precio_unitario) }}</td>
+                <td class="py-1 pr-3">
+                  <input v-model.number="item.cantidad" type="number" min="1"
+                    class="w-14 rounded border border-blue-200 px-1 py-0.5 bg-white"
+                    @input="recalcItemSubtotal(item)" />
+                </td>
+                <td class="py-1 pr-3">{{ money(item.subtotal) }}</td>
+                <td class="py-1">
+                  <button class="text-red-600 underline cursor-pointer bg-transparent border-none p-0" @click="deleteEditItem(i)">Eliminar</button>
+                </td>
               </tr>
             </tbody>
           </table>
-          <p class="mt-2 font-bold text-blue-900">Total: {{ money(pedidoDetalle.total) }}</p>
+
+          <!-- Agregar item -->
+          <div class="mt-2 flex gap-2 items-center">
+            <select v-model="addItemProductoId" class="rounded-lg border border-blue-200 px-2 py-1 text-xs bg-white">
+              <option :value="null">+ Agregar producto...</option>
+              <option v-for="p in allProductos" :key="p.id" :value="p.id">{{ p.referencia }} — {{ money(p.precio) }}</option>
+            </select>
+            <input v-model.number="addItemCantidad" type="number" min="1" placeholder="Cant" class="w-16 rounded-lg border border-blue-200 px-2 py-1 text-xs bg-white" />
+            <button class="rounded-md bg-blue-600 px-2 py-1 text-xs font-semibold text-white cursor-pointer" @click="addItemToEdit">Agregar</button>
+          </div>
+
+          <!-- Total editable -->
+          <div class="mt-3 flex items-center gap-2 font-bold text-blue-900">
+            <span>Total:</span>
+            <input v-model.number="editForm.total" type="number" step="0.01" min="0"
+              class="w-28 rounded-lg border border-blue-200 px-2 py-1 text-xs font-bold bg-white text-right" />
+          </div>
+          <div v-if="editForm.descuento_cupon > 0" class="mt-1 text-xs text-blue-700">
+            Cupón aplicado: −{{ money(editForm.descuento_cupon) }}
+          </div>
         </div>
 
+        <!-- Tabla de pedidos -->
         <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table class="min-w-full text-sm">
             <thead class="bg-slate-100 text-left text-slate-600">
               <tr>
                 <th class="px-3 py-3">#</th>
                 <th class="px-3 py-3">Cliente</th>
+                <th class="px-3 py-3">Origen</th>
                 <th class="px-3 py-3">Total</th>
                 <th class="px-3 py-3">Items</th>
                 <th class="px-3 py-3">Fecha</th>
@@ -99,13 +157,19 @@
             </thead>
             <tbody>
               <tr v-if="!pedidosList.length">
-                <td colspan="7" class="px-4 py-6 text-center text-slate-400">No hay pedidos todavía.</td>
+                <td colspan="8" class="px-4 py-6 text-center text-slate-400">No hay pedidos todavía.</td>
               </tr>
               <tr v-for="pedido in pedidosList" :key="pedido.id" class="border-t border-slate-200 hover:bg-slate-50">
                 <td class="px-3 py-2 font-semibold text-slate-700">#{{ pedido.id }}</td>
                 <td class="px-3 py-2">
                   <p class="font-semibold">{{ pedido.cliente?.nombre }} {{ pedido.cliente?.apellidos }}</p>
                   <p class="text-xs text-slate-400">{{ pedido.cliente?.email }}</p>
+                </td>
+                <td class="px-3 py-2">
+                  <span class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                    :class="pedido.origen === 'whatsapp' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'">
+                    {{ pedido.origen === 'whatsapp' ? 'WhatsApp' : 'Web' }}
+                  </span>
                 </td>
                 <td class="px-3 py-2 font-bold">{{ money(pedido.total) }}</td>
                 <td class="px-3 py-2 text-slate-500">{{ pedido.items_count }} art.</td>
@@ -120,8 +184,8 @@
                   <div class="flex flex-wrap gap-1.5">
                     <button
                       class="rounded-md border border-slate-300 px-2 py-1 text-xs cursor-pointer hover:bg-slate-50"
-                      @click="pedidoDetalle = pedidoDetalle?.id === pedido.id ? null : pedido">
-                      {{ pedidoDetalle?.id === pedido.id ? 'Ocultar' : 'Ver' }}
+                      @click="openPedidoEdit(pedido)">
+                      Editar
                     </button>
                     <select class="rounded-md border border-slate-300 px-2 py-1 text-xs cursor-pointer bg-white"
                       :value="pedido.estado" @change="updateEstadoPedido(pedido.id, $event.target.value)">
@@ -768,6 +832,136 @@
         </div>
       </section>
 
+      <!-- ==================== CUPONES TAB ==================== -->
+      <section v-if="activeTab === 'cupones'" class="space-y-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-semibold text-slate-900">Cupones de descuento</h2>
+              <p class="mt-1 text-sm text-slate-500">Crea y gestiona cupones de descuento para tu tienda.</p>
+            </div>
+            <span class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-800">
+              {{ cuponesMeta?.total || 0 }} cupones
+            </span>
+          </div>
+        </div>
+
+        <!-- Formulario de cupón -->
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="mb-3 text-lg font-semibold text-slate-800">{{ cuponForm.id ? 'Editar cupón' : 'Nuevo cupón' }}</h3>
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Código</label>
+              <input v-model="cuponForm.codigo" type="text" placeholder="ej: BIENVENIDO10"
+                class="w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Tipo</label>
+              <select v-model="cuponForm.tipo" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
+                <option value="porcentaje">Porcentaje (%)</option>
+                <option value="fijo">Fijo ($)</option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Valor descuento</label>
+              <input v-model="cuponForm.valor_descuento" type="number" step="0.01" min="0"
+                class="w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Monto mínimo (opcional)</label>
+              <input v-model="cuponForm.monto_minimo" type="number" step="0.01" min="0" placeholder="Sin mínimo"
+                class="w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Usos máximos (opcional)</label>
+              <input v-model="cuponForm.max_usos" type="number" min="1" placeholder="Ilimitado"
+                class="w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Fecha expiración (opcional)</label>
+              <input v-model="cuponForm.fecha_expiracion" type="date"
+                class="w-full rounded-xl border border-slate-300 px-3 py-2.5" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Activo</label>
+              <select v-model="cuponForm.esta_activo" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
+                <option :value="true">Sí</option>
+                <option :value="false">No</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white cursor-pointer"
+              @click="saveCupon">{{ cuponForm.id ? 'Actualizar' : 'Crear' }}</button>
+            <button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold cursor-pointer"
+              @click="resetCuponForm">Limpiar</button>
+          </div>
+        </div>
+
+        <!-- Tabla de cupones -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-100 text-left text-slate-600">
+              <tr>
+                <th class="px-3 py-3">Código</th>
+                <th class="px-3 py-3">Tipo</th>
+                <th class="px-3 py-3">Valor</th>
+                <th class="px-3 py-3">Monto mínimo</th>
+                <th class="px-3 py-3">Usos</th>
+                <th class="px-3 py-3">Expira</th>
+                <th class="px-3 py-3">Estado</th>
+                <th class="px-3 py-3">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="cupon in cuponesList" :key="cupon.id" class="border-t border-slate-200">
+                <td class="px-3 py-3 font-semibold text-slate-900">{{ cupon.codigo }}</td>
+                <td class="px-3 py-3">
+                  <span class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                    :class="cupon.tipo === 'porcentaje' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
+                    {{ cupon.tipo === 'porcentaje' ? '%' : '$' }}
+                  </span>
+                </td>
+                <td class="px-3 py-3">{{ cupon.tipo === 'porcentaje' ? cupon.valor_descuento + '%' : money(cupon.valor_descuento) }}</td>
+                <td class="px-3 py-3">{{ cupon.monto_minimo ? money(cupon.monto_minimo) : '—' }}</td>
+                <td class="px-3 py-3">{{ cupon.usos_actuales }}{{ cupon.max_usos ? '/' + cupon.max_usos : '' }}</td>
+                <td class="px-3 py-3">{{ cupon.fecha_expiracion ? formatDate(cupon.fecha_expiracion) : '—' }}</td>
+                <td class="px-3 py-3">
+                  <span class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                    :class="cupon.esta_activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                    {{ cupon.esta_activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="px-3 py-3">
+                  <div class="flex gap-2">
+                    <button class="rounded-md border border-slate-300 px-2 py-1 cursor-pointer"
+                      @click="editCupon(cupon)">Editar</button>
+                    <button class="rounded-md border border-red-300 px-2 py-1 text-red-600 cursor-pointer"
+                      @click="deleteCupon(cupon.id)">Eliminar</button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="!cuponesList.length">
+                <td colspan="8" class="px-3 py-8 text-center text-sm text-slate-400">
+                  No hay cupones creados aún.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación cupones -->
+        <div v-if="cuponesMeta" class="flex items-center justify-between">
+          <p class="text-sm text-slate-600">Mostrando {{ cuponesMeta.from }} - {{ cuponesMeta.to }} de {{ cuponesMeta.total }}</p>
+          <div class="flex gap-1">
+            <Link v-for="link in cuponesLinks" :key="link.label" :href="link.url"
+              class="rounded-md border border-slate-300 px-3 py-1 text-sm cursor-pointer"
+              :class="link.active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'" :disabled="!link.url"
+              v-html="link.label"></Link>
+          </div>
+        </div>
+      </section>
+
       <p v-if="feedback"
         class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
         {{ feedback }}</p>
@@ -787,6 +981,8 @@ const props = defineProps({
   insumos: { type: [Object, Array], default: () => [] },
   ofertas: { type: [Object, Array], default: () => [] },
   pedidos: { type: [Object, Array], default: () => [] },
+  cupones: { type: [Object, Array], default: () => [] },
+  cupones: { type: [Object, Array], default: () => [] },
   noticia: { type: String, default: '' },
   bloques: { type: Object, default: () => ({}) },
   catalogBanners: { type: Object, default: () => ({}) },
@@ -802,6 +998,7 @@ const tabs = [
   { key: 'insumos', label: 'Insumos Fabrica' },
   { key: 'bloques', label: 'Bloques Home' },
   { key: 'noticias', label: 'Noticias Activas' },
+  { key: 'cupones', label: 'Cupones' },
   { key: 'configuracion', label: 'Config Tienda' },
 ];
 
@@ -863,6 +1060,69 @@ const insumosLinks = computed(() => {
   return meta?.links || [];
 });
 
+// Cupones
+const cuponesList = computed(() => resolvePagedData(props.cupones));
+const cuponesMeta = computed(() => resolveMeta(props.cupones));
+const cuponesLinks = computed(() => {
+  const meta = resolveMeta(props.cupones);
+  return meta?.links || [];
+});
+
+const cuponForm = ref(emptyCupon());
+
+function emptyCupon() {
+  return {
+    id: null,
+    codigo: '',
+    tipo: 'porcentaje',
+    valor_descuento: null,
+    monto_minimo: null,
+    max_usos: null,
+    fecha_expiracion: null,
+    esta_activo: true,
+  };
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+const saveCupon = async () => {
+  await requestJson(
+    cuponForm.value.id ? `/admin/cupones/${cuponForm.value.id}` : '/admin/cupones',
+    cuponForm.value.id ? 'PUT' : 'POST',
+    cuponForm.value
+  );
+  resetCuponForm();
+  refresh();
+};
+
+const editCupon = (cupon) => {
+  cuponForm.value = {
+    id: cupon.id,
+    codigo: cupon.codigo,
+    tipo: cupon.tipo,
+    valor_descuento: cupon.valor_descuento,
+    monto_minimo: cupon.monto_minimo,
+    max_usos: cupon.max_usos,
+    fecha_expiracion: cupon.fecha_expiracion ? cupon.fecha_expiracion.slice(0, 10) : null,
+    esta_activo: cupon.esta_activo,
+  };
+  activeTab.value = 'cupones';
+};
+
+const resetCuponForm = () => {
+  cuponForm.value = emptyCupon();
+};
+
+const deleteCupon = async (id) => {
+  if (!confirm('Eliminar cupón?')) return;
+  await requestJson(`/admin/cupones/${id}`, 'DELETE');
+  refresh();
+};
+
 // Pedidos
 const pedidosList = computed(() => resolvePagedData(props.pedidos));
 const pedidosMeta = computed(() => resolveMeta(props.pedidos));
@@ -877,6 +1137,121 @@ const estadoColors = {
 };
 
 const pedidoDetalle = ref(null);
+
+// Edición de pedidos
+const editForm = ref({
+  id: null, nombre: '', apellidos: '', telefono: '', direccion: '',
+  total: 0, descuento_cupon: 0, estado: '', items: [],
+});
+const addItemProductoId = ref(null);
+const addItemCantidad = ref(1);
+
+const allProductos = computed(() => {
+  const data = props.productos;
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  return data.data || [];
+});
+
+const openPedidoEdit = (pedido) => {
+  editForm.value = {
+    id: pedido.id,
+    nombre: pedido.cliente?.nombre || '',
+    apellidos: pedido.cliente?.apellidos || '',
+    telefono: pedido.cliente?.telefono || '',
+    direccion: pedido.direccion || '',
+    total: pedido.total,
+    descuento_cupon: pedido.descuento_cupon || 0,
+    estado: pedido.estado,
+    items: (pedido.items || []).map(item => ({ ...item, _key: Date.now() + Math.random() })),
+  };
+  pedidoDetalle.value = pedido;
+};
+
+const recalcItemSubtotal = (item) => {
+  item.subtotal = (item.precio_unitario || 0) * (item.cantidad || 1);
+  editForm.value.total = editForm.value.items.reduce((s, i) => s + i.subtotal, 0);
+  if (editForm.value.descuento_cupon > 0) {
+    editForm.value.total = Math.max(0, editForm.value.total - editForm.value.descuento_cupon);
+  }
+};
+
+const deleteEditItem = (index) => {
+  editForm.value.items.splice(index, 1);
+  recalcItemSubtotal(null);
+};
+
+const addItemToEdit = async () => {
+  const prodId = addItemProductoId.value;
+  const cant = addItemCantidad.value || 1;
+  if (!prodId) return;
+
+  // Buscar producto en allProductos
+  const prod = allProductos.value.find(p => p.id === prodId);
+  if (!prod) return;
+
+  const subtotal = prod.precio * cant;
+  editForm.value.items.push({
+    id: null,
+    producto_id: prod.id,
+    producto_referencia: prod.referencia,
+    precio_unitario: prod.precio,
+    cantidad: cant,
+    talla: '',
+    subtotal: subtotal,
+    _key: Date.now() + Math.random(),
+  });
+
+  recalcItemSubtotal(null);
+  addItemProductoId.value = null;
+  addItemCantidad.value = 1;
+};
+
+const savePedidoEdits = async () => {
+  const form = editForm.value;
+  try {
+    // Guardar datos del pedido (total, direccion, nombre, telefono)
+    await requestJson(`/admin/pedidos/${form.id}`, 'PUT', {
+      total: form.total,
+      direccion: form.direccion,
+      nombre: form.nombre,
+      telefono: form.telefono,
+    });
+
+    // Sincronizar items: los existentes se actualizan, nuevos se crean, eliminados se borran
+    for (const item of form.items) {
+      if (item.id) {
+        await requestJson(`/admin/pedidos/${form.id}/items/${item.id}`, 'PUT', {
+          cantidad: item.cantidad,
+          talla: item.talla || '',
+        });
+      } else {
+        await requestJson(`/admin/pedidos/${form.id}/items`, 'POST', {
+          producto_id: item.producto_id,
+          cantidad: item.cantidad,
+          talla: item.talla || null,
+        });
+      }
+    }
+
+    notify('Pedido actualizado correctamente');
+    refresh();
+  } catch (e) {
+    notify(e.message);
+  }
+};
+
+const confirmarPedido = async (id) => {
+  if (!confirm('¿Confirmar este pedido? Se descontará el stock de los productos.')) return;
+  try {
+    await requestJson(`/admin/pedidos/${id}/estado`, 'PUT', { estado: 'CONFIRMADO' });
+    notify('Pedido confirmado — stock descontado');
+    pedidoDetalle.value = null;
+    refresh();
+  } catch (e) {
+    notify(e.message);
+  }
+};
 
 const updateEstadoPedido = async (pedidoId, estado) => {
   try {
@@ -1134,7 +1509,7 @@ const calculatedSupplyUnitCost = computed(() => {
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 const money = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(value || 0);
 const refresh = () => router.reload({
-  only: ['stats', 'productos', 'categorias', 'insumos', 'ofertas', 'pedidos', 'noticia', 'settings', 'bloques', 'catalogBanners'],
+  only: ['stats', 'productos', 'categorias', 'insumos', 'ofertas', 'pedidos', 'cupones', 'noticia', 'settings', 'bloques', 'catalogBanners'],
   data: search.value ? { search: search.value } : {},
 });
 

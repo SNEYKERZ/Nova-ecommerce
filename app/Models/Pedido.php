@@ -14,11 +14,15 @@ class Pedido extends Model
         'cliente_id',
         'total',
         'estado',
-        'direccion_envio'
+        'origen',
+        'direccion_envio',
+        'cupon_id',
+        'descuento_cupon',
     ];
 
     protected $casts = [
         'total' => 'decimal:2',
+        'descuento_cupon' => 'decimal:2',
     ];
 
     public function cliente()

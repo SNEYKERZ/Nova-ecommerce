@@ -115,15 +115,59 @@
                 <span>Envío</span>
                 <span>A coordinar</span>
               </div>
+
+              <!-- Cupón de descuento -->
+              <div class="pt-3 mt-3" style="border-top:1px dashed var(--border-light)">
+                <template v-if="!appliedCupon">
+                  <div class="flex gap-2">
+                    <input v-model="cuponCode" type="text" placeholder="¿Tienes un cupón?"
+                      class="flex-1 text-xs" style="padding:0.4rem 0.6rem;border:1.5px solid var(--border);border-radius:var(--r);background:var(--white);outline:none"
+                      @keyup.enter="applyCupon" />
+                    <button @click="applyCupon" :disabled="couponLoading"
+                      class="text-xs font-semibold px-3 py-1.5 cursor-pointer"
+                      style="border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface-alt);color:var(--ink)">
+                      {{ couponLoading ? '...' : 'Aplicar' }}
+                    </button>
+                  </div>
+                  <p v-if="couponError" class="mt-1 text-xs" style="color:#dc2626">{{ couponError }}</p>
+                </template>
+                <template v-else>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-semibold" style="color:var(--ink)">Cupón: {{ appliedCupon.codigo }}</span>
+                      <span class="text-xs font-semibold" style="color:#059669">−{{ money(descuentoCupon) }}</span>
+                    </div>
+                    <button @click="removeCupon" class="text-xs underline cursor-pointer" style="color:var(--accent);background:none;border:none;padding:0">
+                      Quitar
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <div class="space-y-1 mb-4 pb-4" style="border-bottom:1.5px solid var(--border-light)">
+              <div v-if="descuentoCupon > 0" class="flex justify-between text-xs">
+                <span style="color:#059669">Descuento cupón {{ appliedCupon?.codigo }}</span>
+                <span style="color:#059669">−{{ money(descuentoCupon) }}</span>
+              </div>
             </div>
 
             <div class="flex justify-between items-center mb-5">
               <span class="font-display text-sm font-black uppercase tracking-wide" style="color:var(--ink)">Total</span>
-              <span class="font-display text-xl font-black" style="color:var(--ink)">{{ money(total) }}</span>
+              <span class="font-display text-xl font-black" style="color:var(--ink)">{{ money(finalTotal) }}</span>
             </div>
 
             <button class="btn-main w-full py-3" @click="showCheckout = true">
               Finalizar pedido
+            </button>
+
+            <button
+              v-if="whatsappLink && !whatsappSaving"
+              @click="pedirWhatsapp"
+              class="btn-soft mt-2 w-full py-3 inline-flex items-center justify-center gap-2"
+            >
+              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              {{ whatsappSaving ? 'Creando pedido...' : 'Pedir por WhatsApp' }}
             </button>
           </div>
         </aside>
@@ -167,7 +211,7 @@
 </template>
 
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import AppLayout from '../layouts/AppLayout.vue';
 
@@ -175,13 +219,58 @@ const items       = ref([]);
 const loading     = ref(true);
 const showCheckout = ref(false);
 const saving      = ref(false);
+const whatsappSaving = ref(false);
 const toast       = ref('');
 const toastError  = ref(false);
 
 const form = ref({ nombre: '', apellidos: '', email: '', telefono: '', direccion: '' });
 
+// Cupón state
+const cuponCode = ref('');
+const appliedCupon = ref(null);
+const descuentoCupon = ref(0);
+const couponLoading = ref(false);
+const couponError = ref('');
+
 const total = computed(() => items.value.reduce((s, i) => s + i.producto.precio * i.cantidad, 0));
 const count = computed(() => items.value.reduce((s, i) => s + i.cantidad, 0));
+
+const finalTotal = computed(() => {
+  let t = total.value;
+  t -= descuentoCupon.value;
+  return Math.max(0, t);
+});
+
+const page = usePage();
+const whatsapp = computed(() => page.props.app?.whatsapp || null);
+
+const whatsappLink = computed(() => {
+  const phone = whatsapp.value?.replace(/\D/g, '');
+  if (!phone || !items.value.length) return null;
+
+  const subtotal = total.value;
+  const cuponDesc = descuentoCupon.value;
+  const final = finalTotal.value;
+
+  const lines = items.value.map((item, idx) => {
+    const name = item.producto.nombre || item.producto.referencia;
+    const size = item.talla ? ` (Talla: ${item.talla})` : '';
+    const lineTotal = item.producto.precio * item.cantidad;
+    return `${idx + 1}. ${name}${size} x ${item.cantidad} = ${money(lineTotal)}`;
+  }).join('\n');
+
+  const separator = '\n\n─────────────────────\n';
+  let msg = '¡Hola! Quiero hacer el siguiente pedido:\n\n';
+  msg += lines;
+  msg += separator;
+  msg += `Subtotal: ${money(subtotal)}\n`;
+  if (cuponDesc > 0) {
+    msg += `Descuento cupón (${appliedCupon.value?.codigo}): -${money(cuponDesc)}\n`;
+  }
+  msg += `Total: ${money(final)}`;
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+});
 
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
@@ -211,9 +300,84 @@ const loadCart = async () => {
     const res = await fetch('/api/carrito', { headers: { Accept: 'application/json' } });
     const payload = await res.json();
     items.value = payload?.data?.items || [];
+    if (payload?.data?.cupon) {
+      appliedCupon.value = payload.data.cupon;
+      descuentoCupon.value = payload.data.descuento_cupon || 0;
+    } else {
+      appliedCupon.value = null;
+      descuentoCupon.value = 0;
+    }
     window.dispatchEvent(new Event('cart-updated'));
   } finally {
     loading.value = false;
+  }
+};
+
+const applyCupon = async () => {
+  const code = cuponCode.value?.trim();
+  if (!code) return;
+  couponLoading.value = true;
+  couponError.value = '';
+  try {
+    const res = await fetch('/api/carrito/aplicar-cupon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() },
+      body: JSON.stringify({ codigo: code }),
+    });
+    const payload = await res.json();
+    if (!payload.success) throw new Error(payload.message || 'Cupón inválido');
+    appliedCupon.value = payload.data.cupon;
+    descuentoCupon.value = payload.data.descuento_cupon;
+    cuponCode.value = '';
+    showToast(payload.message || 'Cupón aplicado');
+  } catch (e) {
+    couponError.value = e.message;
+    setTimeout(() => { couponError.value = ''; }, 3000);
+  } finally {
+    couponLoading.value = false;
+  }
+};
+
+const pedirWhatsapp = async () => {
+  whatsappSaving.value = true;
+  try {
+    const res = await fetch('/api/carrito/pedir-whatsapp', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() },
+    });
+    const payload = await res.json();
+    if (!payload.success) throw new Error(payload.message || 'Error al crear pedido');
+
+    // Vaciar frontend
+    items.value = [];
+    appliedCupon.value = null;
+    descuentoCupon.value = 0;
+    window.dispatchEvent(new Event('cart-updated'));
+
+    // Abrir WhatsApp
+    if (whatsappLink.value) {
+      window.open(whatsappLink.value, '_blank');
+    }
+  } catch (e) {
+    showToast(e.message, true);
+  } finally {
+    whatsappSaving.value = false;
+  }
+};
+
+const removeCupon = async () => {
+  try {
+    const res = await fetch('/api/carrito/quitar-cupon', {
+      method: 'DELETE',
+      headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() },
+    });
+    const payload = await res.json();
+    if (!payload.success) throw new Error(payload.message);
+    appliedCupon.value = null;
+    descuentoCupon.value = 0;
+    showToast('Cupón quitado');
+  } catch (e) {
+    showToast(e.message, true);
   }
 };
 
@@ -279,8 +443,10 @@ const removeItem = async (itemId) => {
 };
 
 const clearCart = async () => {
-  const backup = [...items.value];
+  const backup = { items: [...items.value], cupon: appliedCupon.value, descuento: descuentoCupon.value };
   items.value = [];
+  appliedCupon.value = null;
+  descuentoCupon.value = 0;
   window.dispatchEvent(new Event('cart-updated'));
   try {
     const res = await fetch('/api/carrito/vaciar', {
@@ -290,7 +456,9 @@ const clearCart = async () => {
     const payload = await res.json();
     if (!payload.success) throw new Error();
   } catch {
-    items.value = backup;
+    items.value = backup.items;
+    appliedCupon.value = backup.cupon;
+    descuentoCupon.value = backup.descuento;
     window.dispatchEvent(new Event('cart-updated'));
     showToast('No se pudo vaciar el carrito', true);
   }

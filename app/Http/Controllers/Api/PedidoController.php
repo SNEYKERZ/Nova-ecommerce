@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Carrito;
 use App\Models\Cliente;
+use App\Models\Cupon;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
 use App\Models\Producto;
@@ -94,30 +96,36 @@ class PedidoController extends Controller
                 ];
             }
 
-            // Descuentos por cantidad de camisetas (lógica de negocio propia)
-            $contadorCamisetas = 0;
-            foreach ($itemsParaCrear as $item) {
-                $producto = Producto::find($item['producto_id']);
-                if ($producto->categoria && str_starts_with($producto->categoria->categoria, 'CAMISETA')) {
-                    $contadorCamisetas += $item['cantidad'];
+            // Aplicar descuento de cupón si el carrito tiene uno
+            $descuentoCupon = 0;
+            $cuponId = null;
+            try {
+                $carrito = Carrito::getOrCreateCarrito();
+                if ($carrito->cupon_id && $carrito->descuento_cupon > 0) {
+                    $cupon = Cupon::find($carrito->cupon_id);
+                    if ($cupon && $cupon->esValido($total)) {
+                        $descuentoCupon = (float) $carrito->descuento_cupon;
+                        $cuponId = $cupon->id;
+                        $total = max(0, $total - $descuentoCupon);
+                    }
                 }
+            } catch (\Exception $e) {
+                // Si falla la lectura del carrito, continuar sin cupón
             }
-
-            $descuento = match (true) {
-                $contadorCamisetas === 2 => 5000,
-                $contadorCamisetas === 3 => 15000,
-                $contadorCamisetas === 4 => 25000,
-                $contadorCamisetas === 5 => 40000,
-                default                 => 0,
-            };
-            $total = max(0, $total - $descuento);
 
             $pedido = Pedido::create([
                 'cliente_id'    => $cliente->id,
                 'total'         => $total,
                 'estado'        => 'PENDIENTE',
                 'direccion_envio' => $validated['direccion'],
+                'cupon_id'      => $cuponId,
+                'descuento_cupon' => $descuentoCupon,
             ]);
+
+            // Incrementar usos del cupón
+            if ($cuponId) {
+                Cupon::where('id', $cuponId)->increment('usos_actuales');
+            }
 
             foreach ($itemsParaCrear as $item) {
                 PedidoItem::create([

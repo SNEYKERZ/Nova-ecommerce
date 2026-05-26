@@ -73,6 +73,11 @@ class Store extends Model
         return $this->hasMany(Noticia::class);
     }
 
+    public function cupones(): HasMany
+    {
+        return $this->hasMany(Cupon::class);
+    }
+
     public function usuarios(): HasMany
     {
         return $this->hasMany(User::class);

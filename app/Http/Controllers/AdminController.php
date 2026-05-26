@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CatalogBanner;
 use App\Models\Categoria;
+use App\Models\Cupon;
 use App\Models\Insumo;
 use App\Models\Noticia;
 use App\Models\Oferta;
@@ -106,6 +107,7 @@ class AdminController extends Controller
                 'footer_color' => $settings?->footer_color ?? '#5c5c5c',
             ],
             'ofertas' => $this->paginateAndMapOfertas($search, $perPage),
+            'cupones' => Cupon::orderByDesc('id')->paginate($perPage)->withQueryString(),
             'noticia' => Noticia::first()?->campos_adicionales ?? '',
             'bloques' => $this->getBloques(),
             'catalogBanners' => $this->getCatalogBanners(),
@@ -387,10 +389,255 @@ class AdminController extends Controller
             'estado' => ['required', 'in:PENDIENTE,CONFIRMADO,ENVIADO,ENTREGADO,CANCELADO'],
         ]);
 
-        $pedido->update(['estado' => $validated['estado']]);
+        $nuevoEstado = $validated['estado'];
+        $pedido->update(['estado' => $nuevoEstado]);
+
+        // Si se confirma, descontar stock
+        if ($nuevoEstado === 'CONFIRMADO') {
+            $pedido->load('items');
+            foreach ($pedido->items as $item) {
+                if ($item->talla) {
+                    ProductoVariante::where('producto_id', $item->producto_id)
+                        ->where('talla', $item->talla)
+                        ->decrement('stock', $item->cantidad);
+                }
+            }
+        }
 
         return response()->json(['success' => true, 'message' => 'Estado del pedido actualizado.']);
     }
+
+    /**
+     * PUT /admin/pedidos/{pedido} - Actualizar datos del pedido (total, cliente, etc.)
+     */
+    public function updatePedido(Request $request, Pedido $pedido): JsonResponse
+    {
+        $validated = $request->validate([
+            'total' => ['nullable', 'numeric', 'min:0'],
+            'direccion' => ['nullable', 'string'],
+            'nombre' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $pedido->load('cliente');
+
+        if (isset($validated['total'])) {
+            $pedido->total = $validated['total'];
+        }
+        if (isset($validated['direccion'])) {
+            $pedido->direccion_envio = $validated['direccion'];
+        }
+        $pedido->save();
+
+        // Actualizar datos de cliente si existe
+        if ($pedido->cliente && (isset($validated['nombre']) || isset($validated['telefono']))) {
+            $data = [];
+            if (isset($validated['nombre'])) $data['nombre'] = $validated['nombre'];
+            if (isset($validated['telefono'])) $data['telefono'] = $validated['telefono'];
+            $pedido->cliente->update($data);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Pedido actualizado.']);
+    }
+
+    /**
+     * PUT /admin/pedidos/{pedido}/items/{item} - Actualizar item del pedido (cantidad, talla)
+     */
+    public function updatePedidoItem(Request $request, Pedido $pedido, \App\Models\PedidoItem $item): JsonResponse
+    {
+        if ($item->pedido_id !== $pedido->id) {
+            return response()->json(['success' => false, 'message' => 'Item no pertenece al pedido.'], 422);
+        }
+
+        $validated = $request->validate([
+            'cantidad' => ['nullable', 'integer', 'min:1'],
+            'talla' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if (isset($validated['cantidad'])) {
+            $item->cantidad = $validated['cantidad'];
+        }
+        if (array_key_exists('talla', $validated)) {
+            $item->talla = $validated['talla'];
+        }
+
+        // Recalcular subtotal
+        $item->subtotal = $item->precio_unitario * $item->cantidad;
+        $item->save();
+
+        // Recalcular total del pedido
+        $nuevoTotal = $pedido->items()->sum('subtotal');
+        if ($pedido->descuento_cupon > 0) {
+            $nuevoTotal -= $pedido->descuento_cupon;
+        }
+        $pedido->update(['total' => max(0, $nuevoTotal)]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item actualizado.',
+            'total' => (float) $pedido->fresh()->total,
+        ]);
+    }
+
+    /**
+     * DELETE /admin/pedidos/{pedido}/items/{item} - Eliminar item del pedido
+     */
+    public function deletePedidoItem(Pedido $pedido, \App\Models\PedidoItem $item): JsonResponse
+    {
+        if ($item->pedido_id !== $pedido->id) {
+            return response()->json(['success' => false, 'message' => 'Item no pertenece al pedido.'], 422);
+        }
+
+        $item->delete();
+
+        // Recalcular total
+        $nuevoTotal = $pedido->items()->sum('subtotal');
+        if ($pedido->descuento_cupon > 0) {
+            $nuevoTotal -= $pedido->descuento_cupon;
+        }
+        $pedido->update(['total' => max(0, $nuevoTotal)]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item eliminado.',
+            'total' => (float) $pedido->fresh()->total,
+        ]);
+    }
+
+    /**
+     * POST /admin/pedidos/{pedido}/items - Agregar item al pedido
+     */
+    public function storePedidoItem(Request $request, Pedido $pedido): JsonResponse
+    {
+        $validated = $request->validate([
+            'producto_id' => ['required', 'exists:productos,id'],
+            'cantidad' => ['required', 'integer', 'min:1'],
+            'talla' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $producto = \App\Models\Producto::findOrFail($validated['producto_id']);
+        $precio = (float) $producto->precio;
+        $subtotal = $precio * $validated['cantidad'];
+
+        $item = \App\Models\PedidoItem::create([
+            'pedido_id' => $pedido->id,
+            'producto_id' => $validated['producto_id'],
+            'cantidad' => $validated['cantidad'],
+            'precio_unitario' => $precio,
+            'subtotal' => $subtotal,
+            'talla' => $validated['talla'] ?? null,
+        ]);
+
+        // Recalcular total
+        $nuevoTotal = $pedido->items()->sum('subtotal');
+        if ($pedido->descuento_cupon > 0) {
+            $nuevoTotal -= $pedido->descuento_cupon;
+        }
+        $pedido->update(['total' => max(0, $nuevoTotal)]);
+
+        return response()->json([
+            'success' => true,
+            'item' => $item->load('producto'),
+            'total' => (float) $pedido->fresh()->total,
+            'message' => 'Item agregado.',
+        ], 201);
+    }
+
+    // ==================== CUPONES ====================
+
+    public function storeCupon(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'codigo' => ['required', 'string', 'max:50'],
+            'tipo' => ['required', 'in:porcentaje,fijo'],
+            'valor_descuento' => ['required', 'numeric', 'min:0.01'],
+            'monto_minimo' => ['nullable', 'numeric', 'min:0'],
+            'max_usos' => ['nullable', 'integer', 'min:1'],
+            'fecha_expiracion' => ['nullable', 'date'],
+            'esta_activo' => ['nullable', 'boolean'],
+        ]);
+
+        $tenantManager = app(TenantManager::class);
+        $store = $tenantManager->getStore();
+
+        // Verificar unicidad del código en esta tienda
+        $existe = Cupon::where('codigo', $validated['codigo'])->exists();
+        if ($existe) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ya existe un cupón con ese código en esta tienda.'
+            ], 422);
+        }
+
+        $cupon = Cupon::create([
+            'store_id' => $store?->id,
+            'codigo' => strtoupper($validated['codigo']),
+            'tipo' => $validated['tipo'],
+            'valor_descuento' => $validated['valor_descuento'],
+            'monto_minimo' => $validated['monto_minimo'] ?? null,
+            'max_usos' => $validated['max_usos'] ?? null,
+            'fecha_expiracion' => $validated['fecha_expiracion'] ?? null,
+            'esta_activo' => $validated['esta_activo'] ?? true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'cupon' => $cupon,
+            'message' => 'Cupón creado correctamente.'
+        ], 201);
+    }
+
+    public function updateCupon(Request $request, Cupon $cupon): JsonResponse
+    {
+        $validated = $request->validate([
+            'codigo' => ['required', 'string', 'max:50'],
+            'tipo' => ['required', 'in:porcentaje,fijo'],
+            'valor_descuento' => ['required', 'numeric', 'min:0.01'],
+            'monto_minimo' => ['nullable', 'numeric', 'min:0'],
+            'max_usos' => ['nullable', 'integer', 'min:1'],
+            'fecha_expiracion' => ['nullable', 'date'],
+            'esta_activo' => ['nullable', 'boolean'],
+        ]);
+
+        // Verificar unicidad (excluyendo este cupón)
+        $existe = Cupon::where('codigo', $validated['codigo'])
+            ->where('id', '!=', $cupon->id)
+            ->exists();
+        if ($existe) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ya existe otro cupón con ese código en esta tienda.'
+            ], 422);
+        }
+
+        $cupon->update([
+            'codigo' => strtoupper($validated['codigo']),
+            'tipo' => $validated['tipo'],
+            'valor_descuento' => $validated['valor_descuento'],
+            'monto_minimo' => $validated['monto_minimo'] ?? null,
+            'max_usos' => $validated['max_usos'] ?? null,
+            'fecha_expiracion' => $validated['fecha_expiracion'] ?? null,
+            'esta_activo' => $validated['esta_activo'] ?? true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'cupon' => $cupon,
+            'message' => 'Cupón actualizado correctamente.'
+        ]);
+    }
+
+    public function deleteCupon(Cupon $cupon): JsonResponse
+    {
+        $cupon->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cupón eliminado correctamente.'
+        ]);
+    }
+
+    // ==================== PEDIDOS ====================
 
     private function getPedidosList(int $perPage = 15)
     {
@@ -399,10 +646,12 @@ class AdminController extends Controller
             ->paginate($perPage)
             ->withQueryString()
             ->through(fn(Pedido $p) => [
-                'id'          => $p->id,
-                'total'       => (float) $p->total,
-                'estado'      => $p->estado,
-                'direccion'   => $p->direccion_envio,
+                'id'              => $p->id,
+                'total'           => (float) $p->total,
+                'descuento_cupon' => (float) ($p->descuento_cupon ?? 0),
+                'estado'          => $p->estado,
+                'origen'          => $p->origen ?? 'web',
+                'direccion'       => $p->direccion_envio,
                 'cliente'     => [
                     'nombre'    => $p->cliente?->nombre,
                     'apellidos' => $p->cliente?->apellidos,
@@ -411,7 +660,10 @@ class AdminController extends Controller
                 ],
                 'items_count' => $p->items->count(),
                 'items'       => $p->items->map(fn($i) => [
+                    'id'                  => $i->id,
+                    'producto_id'         => $i->producto_id,
                     'producto_referencia' => $i->producto?->referencia ?? '—',
+                    'precio_unitario'     => (float) $i->precio_unitario,
                     'cantidad'            => $i->cantidad,
                     'talla'               => $i->talla,
                     'subtotal'            => (float) $i->subtotal,

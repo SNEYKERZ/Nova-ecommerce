@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Carrito;
 use App\Models\CarritoItem;
+use App\Models\Cupon;
+use App\Models\Pedido;
+use App\Models\PedidoItem;
 use App\Events\CarritoActualizado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CarritoController extends Controller
 {
@@ -18,7 +22,7 @@ class CarritoController extends Controller
     {
         $carrito = Carrito::getOrCreateCarrito();
         
-        $carrito->load(['items.producto.categoria']);
+        $carrito->load(['items.producto.categoria', 'cupon']);
 
         return response()->json([
             'success' => true,
@@ -41,6 +45,13 @@ class CarritoController extends Controller
                     ];
                 }),
                 'total' => $this->calcularTotal($carrito),
+                'descuento_cupon' => (float) ($carrito->descuento_cupon ?? 0),
+                'cupon' => $carrito->cupon ? [
+                    'id' => $carrito->cupon->id,
+                    'codigo' => $carrito->cupon->codigo,
+                    'tipo' => $carrito->cupon->tipo,
+                    'valor_descuento' => (float) $carrito->cupon->valor_descuento,
+                ] : null,
                 'cantidad_total' => $carrito->cantidad_total
             ],
             'message' => 'OK'
@@ -191,31 +202,176 @@ class CarritoController extends Controller
     }
 
     /**
-     * Calcular total con descuentos por cantidad
+     * Calcular total con descuento de cupón
      */
     private function calcularTotal($carrito)
     {
         $total = 0;
-        $contadorCamisetas = 0;
 
         foreach ($carrito->items as $item) {
-            $subtotal = $item->producto->precio * $item->cantidad;
-            $total += $subtotal;
-
-            // Contar camisetas para descuentos
-            if ($item->producto->categoria && str_starts_with($item->producto->categoria->categoria, 'CAMISETA')) {
-                $contadorCamisetas += $item->cantidad;
-            }
+            $total += $item->producto->precio * $item->cantidad;
         }
 
-        // Aplicar descuentos por cantidad
-        if ($contadorCamisetas >= 2 && $contadorCamisetas <= 5) {
-            if ($contadorCamisetas == 2) $total -= 5000;
-            elseif ($contadorCamisetas == 3) $total -= 15000;
-            elseif ($contadorCamisetas == 4) $total -= 25000;
-            elseif ($contadorCamisetas == 5) $total -= 40000;
+        // Aplicar descuento de cupón
+        if ($carrito->descuento_cupon > 0) {
+            $total -= $carrito->descuento_cupon;
         }
 
         return max(0, $total);
+    }
+
+    /**
+     * POST /api/carrito/aplicar-cupon - Aplicar un cupón de descuento
+     */
+    public function aplicarCupon(Request $request)
+    {
+        $validated = $request->validate([
+            'codigo' => 'required|string|max:50',
+        ]);
+
+        $carrito = Carrito::getOrCreateCarrito();
+        $carrito->load('items.producto.categoria');
+
+        $cupon = Cupon::where('codigo', $validated['codigo'])->first();
+
+        if (!$cupon) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El código ingresado no es válido.'
+            ], 422);
+        }
+
+        $subtotal = $carrito->total; // sin descuentos todavía
+
+        if (!$cupon->esValido($subtotal)) {
+            if (!$cupon->esta_activo) {
+                $msg = 'Este cupón no está disponible.';
+            } elseif ($cupon->fecha_expiracion && now()->gt($cupon->fecha_expiracion)) {
+                $msg = 'Este cupón ha expirado.';
+            } elseif ($cupon->max_usos && $cupon->usos_actuales >= $cupon->max_usos) {
+                $msg = 'Este cupón ya no tiene usos disponibles.';
+            } elseif ($cupon->monto_minimo && $subtotal < $cupon->monto_minimo) {
+                $msg = 'El monto mínimo para este cupón es ' . number_format($cupon->monto_minimo, 0) . '.';
+            } else {
+                $msg = 'El cupón no es válido para esta compra.';
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $msg
+            ], 422);
+        }
+
+        $descuento = $cupon->calcularDescuento($subtotal);
+
+        $carrito->update([
+            'cupon_id' => $cupon->id,
+            'descuento_cupon' => $descuento,
+        ]);
+
+        $carrito->load('cupon');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'descuento_cupon' => (float) $descuento,
+                'cupon' => [
+                    'id' => $cupon->id,
+                    'codigo' => $cupon->codigo,
+                    'tipo' => $cupon->tipo,
+                    'valor_descuento' => (float) $cupon->valor_descuento,
+                ],
+                'total' => $this->calcularTotal($carrito),
+            ],
+            'message' => 'Cupón aplicado correctamente.'
+        ], 200);
+    }
+
+    /**
+     * DELETE /api/carrito/quitar-cupon - Quitar el cupón aplicado
+     */
+    public function quitarCupon()
+    {
+        $carrito = Carrito::getOrCreateCarrito();
+        $carrito->update([
+            'cupon_id' => null,
+            'descuento_cupon' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cupón quitado correctamente.'
+        ], 200);
+    }
+
+    /**
+     * POST /api/carrito/pedir-whatsapp - Crear pedido desde carrito y abrir WhatsApp
+     */
+    public function pedirWhatsapp(Request $request)
+    {
+        $carrito = Carrito::getOrCreateCarrito();
+        $carrito->load(['items.producto', 'cupon']);
+
+        if ($carrito->items->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El carrito está vacío.'
+            ], 422);
+        }
+
+        $total = $this->calcularTotal($carrito);
+
+        DB::beginTransaction();
+        try {
+            $pedido = Pedido::create([
+                'total'           => $total,
+                'estado'          => 'PENDIENTE',
+                'origen'          => 'whatsapp',
+                'direccion_envio' => 'Por WhatsApp',
+                'cupon_id'        => $carrito->cupon_id,
+                'descuento_cupon' => $carrito->descuento_cupon ?? 0,
+            ]);
+
+            foreach ($carrito->items as $item) {
+                PedidoItem::create([
+                    'pedido_id'      => $pedido->id,
+                    'producto_id'    => $item->producto_id,
+                    'cantidad'       => $item->cantidad,
+                    'precio_unitario' => $item->producto->precio,
+                    'subtotal'       => $item->subtotal,
+                    'talla'          => $item->talla,
+                ]);
+            }
+
+            // Incrementar usos del cupón si aplica
+            if ($carrito->cupon_id && $carrito->descuento_cupon > 0) {
+                Cupon::where('id', $carrito->cupon_id)->increment('usos_actuales');
+            }
+
+            // Vaciar carrito
+            $carrito->items()->delete();
+            $carrito->update([
+                'cupon_id' => null,
+                'descuento_cupon' => null,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $pedido->id,
+                    'total' => (float) $total,
+                ],
+                'message' => 'Pedido creado. Redirigiendo a WhatsApp...'
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el pedido: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

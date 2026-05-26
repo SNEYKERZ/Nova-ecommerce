@@ -39,11 +39,10 @@
       </div>
     </section>
 
-    <section v-if="promociones.length" class="w-full mt-8 px-0">
-      <div class="overflow-hidden rounded-xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 shadow-md">
-        <div class="px-6 py-4 sm:px-8 sm:py-5">
-          <p class="text-xs font-bold text-amber-700 uppercase tracking-widest mb-2">📢 Promociones Activas</p>
-          <div class="animate-pulse text-sm sm:text-base md:text-lg font-bold text-amber-900 leading-relaxed">
+    <section v-if="promociones.length" class="w-full px-0">
+      <div class="overflow-hidden  border-amber-300 bg-gradient-to-r from-black-50 to-black-100 shadow-md">
+        <div class=" sm:px-4 sm:py-3">
+          <div class="animate-pulse text-sm sm:text-base  font-bold text-black-900 leading-relaxed text-center uppercase tracking-wide">
             {{ promociones.join(' • ') }}
           </div>
         </div>
@@ -88,9 +87,6 @@
             <img :src="item.foto" :alt="item.sku" loading="lazy" class="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
 
             <div class="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-full items-center gap-2 bg-black/90 p-2 text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-              <button v-if="whatsappPhone" :href="whatsappLink(item)" @click.prevent="openWhatsapp(item)" class="pointer-events-auto btn-soft !border-white/20 !bg-white/10 px-3 py-2 text-[10px] font-bold tracking-[0.08em] !text-white uppercase" title="Pedir por WhatsApp">
-                WhatsApp
-              </button>
               <button class="pointer-events-auto btn-main flex-1 px-3 py-2 text-[10px] font-bold tracking-[0.08em] uppercase" @click.prevent="addToCart(item)">Agregar</button>
             </div>
           </Link>
@@ -144,7 +140,7 @@
 </template>
 
 <script setup>
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppLayout from '../layouts/AppLayout.vue';
 import FilterSidebar from '../components/FilterSidebar.vue';
@@ -160,8 +156,6 @@ const props = defineProps({
   store: { type: Object, default: null },
 });
 
-const page = usePage();
-const whatsappPhone = computed(() => page.props.app?.whatsapp || props.store?.telefono || null);
 const selectedCategory = ref('ALL');
 const selectedSize = ref('ALL');
 const selectedRecency = ref('ALL');
@@ -183,18 +177,6 @@ const bottomCatalogBanners = computed(() =>
     .filter((banner) => ['banner-izq', 'banner-der'].includes(banner.identificador))
     .sort((left, right) => (left.posicion || bannerOrder[left.identificador] || 99) - (right.posicion || bannerOrder[right.identificador] || 99)),
 );
-
-const whatsappLink = (item) => {
-  const phone = whatsappPhone.value?.replace(/\D/g, '');
-  if (!phone) return '#';
-  const msg = encodeURIComponent(`Hola! Me interesa el producto: ${item.nombre || item.sku} - ${money(item.precio)}`);
-  return `https://wa.me/${phone}?text=${msg}`;
-};
-
-const openWhatsapp = (item) => {
-  const url = whatsappLink(item);
-  if (url !== '#') window.open(url, '_blank', 'noopener');
-};
 
 const openSlide = (url) => {
   if (url) window.location.href = url;
