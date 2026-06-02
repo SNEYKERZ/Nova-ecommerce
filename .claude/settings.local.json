@@ -33,7 +33,17 @@
       "Bash(cd c:\\\\\\\\laragon\\\\\\\\www\\\\\\\\webcaps-laravel)",
       "Bash(git add *)",
       "Bash(git restore *)",
-      "Bash(git commit -m 'Fix: Auditoría completa - Arreglar errores críticos, inconsistencias y vulnerabilidades *)"
+      "Bash(git commit -m 'Fix: Auditoría completa - Arreglar errores críticos, inconsistencias y vulnerabilidades *)",
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(curl -s \"http://127.0.0.1:8000/\")",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/carrito\")",
+      "Bash(curl -s -I http://localhost/)",
+      "Bash(curl -s http://localhost/)",
+      "Bash(curl -s \"http://webcaps.test/\")",
+      "Bash(cat /c/laragon/etc/apache2/sites-enabled/*.conf 2>/dev/null | grep -i \"documentroot\\\\|servername\" | head -20)",
+      "Read(//c/laragon/etc/apache2/sites-enabled/**)",
+      "Bash(curl -s \"http://localhost/webcaps-laravel/public/\")",
+      "Bash(git commit -m 'Fix: HomePage prop type - handle paginated productos object *)"
     ]
   }
 }

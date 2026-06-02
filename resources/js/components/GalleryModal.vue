@@ -13,7 +13,7 @@
       <!-- Content -->
       <div class="grid grid-cols-1 gap-8 p-6 md:grid-cols-2">
         <!-- Image - Large -->
-        <div class="flex items-center justify-center bg-slate-100 rounded-lg overflow-hidden h-96 md:h-auto">
+        <div class="flex items-center justify-center bg-slate-100 rounded-lg overflow-hidden h-96 md:h-96">
           <img
             :src="imagen.imagen_url"
             :alt="gallery.nombre"
@@ -24,7 +24,7 @@
         </div>
 
         <!-- Products Section - Clean & Simple -->
-        <div class="flex flex-col justify-center">
+        <div class="flex flex-col justify-start">
           <h3 class="mb-6 text-3xl font-bold text-slate-900">{{ gallery.nombre }}</h3>
 
           <!-- Products List -->
