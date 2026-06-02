@@ -177,7 +177,7 @@ import FilterSidebar from '../components/FilterSidebar.vue';
 const PRODUCTS_PER_PAGE = 12;
 
 const props = defineProps({
-  productos: { type: Array, default: () => [] },
+  productos: { type: Object, default: () => ({ data: [] }) },
   categorias: { type: Array, default: () => [] },
   promociones: { type: Array, default: () => [] },
   carousel: { type: Object, default: null },
@@ -239,12 +239,14 @@ watch(carouselImages, () => {
 
 const availableSizes = computed(() => {
   const sizes = new Set();
-  props.productos.forEach((product) => (product.tallas || []).forEach((size) => sizes.add(size)));
+  const productos = props.productos?.data || [];
+  productos.forEach((product) => (product.tallas || []).forEach((size) => sizes.add(size)));
   return [...sizes];
 });
 
 const filteredProducts = computed(() => {
-  let list = [...props.productos];
+  const productos = props.productos?.data || [];
+  let list = [...productos];
 
   if (selectedCategory.value !== 'ALL') list = list.filter((p) => p.categoria === selectedCategory.value);
   if (selectedSize.value !== 'ALL') list = list.filter((p) => (p.tallas || []).includes(selectedSize.value));
