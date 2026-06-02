@@ -144,6 +144,13 @@ class CarritoController extends Controller
         // Recargar carrito
         $carrito = Carrito::with(['items.producto.categoria'])->find($item->carrito_id);
 
+        if (!$carrito) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Carrito no encontrado'
+            ], 404);
+        }
+
         // Emitir evento de actualización
         event(new CarritoActualizado($carrito));
 

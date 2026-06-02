@@ -55,11 +55,14 @@ class Oferta extends Model
 
     public static function getOfertasActivas()
     {
-        $ahora = now();
+        return static::activas()->get();
+    }
 
-        return static::where('esta_activa', true)
+    public function scopeActivas($query)
+    {
+        $ahora = now();
+        return $query->where('esta_activa', true)
             ->where('fecha_inicio', '<=', $ahora)
-            ->where('fecha_fin', '>=', $ahora)
-            ->get();
+            ->where('fecha_fin', '>=', $ahora);
     }
 }

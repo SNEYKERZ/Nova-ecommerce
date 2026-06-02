@@ -21,13 +21,11 @@ class StorefrontController extends Controller
     public function home(): Response
     {
         // El trait HasTenant filtra automáticamente por el store actual
-        // Límite de 200 para evitar cargar catálogos enormes en memoria del cliente
         $productos = Producto::with('categoria')
             ->where('estado', 'DISPONIBLE')
             ->orderBy('id', 'desc')
-            ->limit(200)
-            ->get()
-            ->map(fn(Producto $producto) => $this->mapProducto($producto));
+            ->paginate(20)
+            ->through(fn(Producto $producto) => $this->mapProducto($producto));
 
         $categorias = Categoria::orderBy('categoria')
             ->get()

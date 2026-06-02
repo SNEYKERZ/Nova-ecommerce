@@ -44,7 +44,10 @@ class Carrito extends Model
     public static function getOrCreateCarrito()
     {
         $sesionId = session()->getId();
-        
+        if (!$sesionId) {
+            $sesionId = md5(microtime(true) . rand(1000, 9999));
+        }
+
         $carrito = static::where('sesion_id', $sesionId)
             ->where('estado', 'ACTIVO')
             ->first();

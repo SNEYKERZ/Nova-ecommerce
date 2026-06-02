@@ -24,6 +24,6 @@ class CarritoItem extends Model
 
     public function getSubtotalAttribute()
     {
-        return $this->producto->precio * $this->cantidad;
+        return ($this->producto?->precio ?? 0) * $this->cantidad;
     }
 }

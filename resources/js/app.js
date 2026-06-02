@@ -5,10 +5,14 @@ import { createInertiaApp } from '@inertiajs/vue3';
 // Global error handler para capturar errores de renderizado
 window.addEventListener('error', (e) => {
     console.error('[GLOBAL ERROR]', e.message, e.filename, e.lineno);
-    document.body.innerHTML = `<pre style="padding:20px;background:#fee;color:#c00;font-size:14px;">
-        <strong>ERROR:</strong> ${e.message}
-        <br><em>${e.filename}:${e.lineno}</em>
-    </pre>`;
+    const errorDiv = document.createElement('div');
+    errorDiv.innerHTML = `<div style="padding:20px;background:#fee;color:#c00;font-size:14px;">
+        <strong>ERROR:</strong> ${e.message}<br>
+        <em>${e.filename}:${e.lineno}</em>
+    </div>`;
+    if (document.body) {
+        document.body.insertBefore(errorDiv, document.body.firstChild);
+    }
 });
 
 window.addEventListener('unhandledrejection', (e) => {

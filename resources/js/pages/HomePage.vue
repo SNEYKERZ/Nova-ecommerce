@@ -114,9 +114,9 @@
       </div>
 
       <div v-if="totalPages > 1" class="mt-8 flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm text-[color:var(--muted)]">Pagina {{ currentPage }} de {{ totalPages }}</p>
+        <p class="text-sm text-[color:var(--muted)]">Pag {{ currentPage }} de {{ totalPages }}</p>
         <div class="flex flex-wrap gap-2">
-          <button class="btn-soft px-4 py-2 text-xs font-bold uppercase" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">Anterior</button>
+          <button class="btn-soft px-4 py-2 text-xs font-bold uppercase" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)"><--</button>
           <button
             v-for="pageNumber in visiblePages"
             :key="pageNumber"
@@ -126,7 +126,7 @@
           >
             {{ pageNumber }}
           </button>
-          <button class="btn-soft px-4 py-2 text-xs font-bold uppercase" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">Siguiente</button>
+          <button class="btn-soft px-4 py-2 text-xs font-bold uppercase" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">--></button>
         </div>
       </div>
 

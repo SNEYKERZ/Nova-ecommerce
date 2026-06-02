@@ -31,6 +31,15 @@ class Cupon extends Model
         'usos_actuales' => 'integer',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function ($cupon) {
+            if ($cupon->valor_descuento < 0) {
+                $cupon->valor_descuento = 0;
+            }
+        });
+    }
+
     /**
      * Verificar si el cupón es válido para un subtotal dado
      */

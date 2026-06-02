@@ -1030,10 +1030,7 @@ const resolveMeta = (data) => {
 };
 
 onMounted(() => {
-  console.log('=== MOUNTED ===');
-  console.log('productos:', props.productos);
-  console.log('ofertas:', props.ofertas);
-  console.log('insumos:', props.insumos);
+  // Initialized
 });
 
 // Productos

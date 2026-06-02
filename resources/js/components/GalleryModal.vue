@@ -110,7 +110,7 @@
         <!-- Size Grid -->
         <div class="grid grid-cols-3 gap-3 mb-6">
           <button
-            v-for="talla in currentProductForSize.tallas"
+            v-for="talla in currentProductForSize?.tallas || []"
             :key="talla"
             class="py-3 px-2 border border-slate-300 rounded-lg font-semibold text-sm transition-all hover:border-slate-900"
             :class="{

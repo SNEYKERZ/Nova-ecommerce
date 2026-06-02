@@ -51,16 +51,30 @@ class PedidoController extends Controller
 
         // Verificar stock disponible antes de crear el pedido
         foreach ($validated['items'] as $item) {
+            $producto = Producto::find($item['producto_id']);
+            if (!$producto) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Producto no encontrado',
+                ], 422);
+            }
+
             if (!empty($item['talla'])) {
                 $variante = ProductoVariante::where('producto_id', $item['producto_id'])
                     ->where('talla', $item['talla'])
                     ->first();
 
                 if ($variante && $variante->stock < $item['cantidad']) {
-                    $producto = Producto::find($item['producto_id']);
                     return response()->json([
                         'success' => false,
-                        'message' => 'Stock insuficiente para "' . ($producto?->nombre ?? $producto?->referencia) . '" talla ' . $item['talla'] . '. Disponible: ' . $variante->stock,
+                        'message' => 'Stock insuficiente para "' . $producto->nombre . '" talla ' . $item['talla'] . '. Disponible: ' . $variante->stock,
+                    ], 422);
+                }
+            } else {
+                if ($producto->stock < $item['cantidad']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Stock insuficiente para "' . $producto->nombre . '". Disponible: ' . $producto->stock,
                     ], 422);
                 }
             }

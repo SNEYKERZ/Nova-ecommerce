@@ -382,7 +382,9 @@ const removeCupon = async () => {
 };
 
 const changeQty = async (item, qty) => {
-  if (qty <= 0) return removeItem(item.id);
+  qty = parseInt(qty) || 1;
+  if (qty < 1) return removeItem(item.id);
+  if (qty > 999) qty = 999;
   const prev = item.cantidad;
   item.cantidad = qty;
   item._syncing = true;
