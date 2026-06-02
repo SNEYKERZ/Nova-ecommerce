@@ -82,19 +82,48 @@
       </transition>
 
       <div class="grid grid-cols-2 gap-x-1.5 gap-y-5 sm:grid-cols-3 sm:gap-x-3 sm:gap-y-7 md:grid-cols-4 md:gap-x-4 md:gap-y-8 lg:grid-cols-5 xl:gap-x-5">
-        <article v-for="item in paginatedProducts" :key="item.id" class="group">
-          <Link :href="`/productos/${item.id}`" class="relative block overflow-hidden bg-[#efefee]">
-            <img :src="item.foto" :alt="item.sku" loading="lazy" class="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+        <article v-for="item in paginatedProducts" :key="item.id" class="product-card group">
+          <!-- Image + Badges + Overlay -->
+          <div class="relative block overflow-hidden product-card-img">
+            <Link :href="`/productos/${item.id}`" class="block">
+              <img :src="item.foto" :alt="item.sku" loading="lazy" class="w-full h-full object-cover" />
+            </Link>
 
-            <div class="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-full items-center gap-2 bg-black/90 p-2 text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-              <button class="pointer-events-auto btn-main flex-1 px-3 py-2 text-[10px] font-bold tracking-[0.08em] uppercase" @click.prevent="addToCart(item)">Agregar</button>
+            <!-- Badges: NUEVO, OFERTA -->
+            <div v-if="item.nuevo || item.nuevaColeccion" class="product-card-badge badge-new">NUEVO</div>
+            <div v-if="item.tieneOferta" class="product-card-badge badge-sale" style="top: 0.75rem; right: 0.75rem; left: auto;">−{{ item.descuentoPct }}%</div>
+
+            <!-- Stock exhausted overlay -->
+            <div v-if="!item.tieneStock" class="stock-exhausted">
+              <div class="stock-exhausted-text">Agotado</div>
             </div>
-          </Link>
 
+            <!-- Hover overlay: tallas o botón directo -->
+            <div v-else class="product-card-overlay">
+              <div v-if="item.tallas.length > 0" class="flex flex-wrap justify-center gap-1">
+                <button
+                  v-for="talla in item.tallas"
+                  :key="talla"
+                  class="size-hover-btn"
+                  @click.prevent="addToCart(item, talla)"
+                >
+                  {{ talla }}
+                </button>
+              </div>
+              <div v-else class="w-full">
+                <button class="btn-main w-full px-3 py-2 text-[10px] font-bold tracking-[0.08em] uppercase" @click.prevent="addToCart(item)">+ Agregar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info -->
           <div class="pt-3">
             <h3 class="truncate text-[15px] font-semibold text-[color:var(--ink)]">{{ item.nombre || item.sku }}</h3>
             <p class="mt-1 text-[11px] tracking-[0.09em] text-[color:var(--muted)] uppercase">{{ item.categoria }} · Ref {{ item.sku }}</p>
-            <p class="mt-2 text-base font-bold">{{ money(item.precio) }}</p>
+            <div class="mt-2 flex items-baseline gap-2">
+              <p v-if="item.tieneOferta" class="product-card-offer-price">{{ money(item.precio) }}</p>
+              <p class="text-base font-bold" :class="item.tieneOferta ? 'product-card-price-sale' : ''">{{ item.tieneOferta ? money(item.precioOferta) : money(item.precio) }}</p>
+            </div>
           </div>
         </article>
       </div>
@@ -145,7 +174,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppLayout from '../layouts/AppLayout.vue';
 import FilterSidebar from '../components/FilterSidebar.vue';
 
-const PRODUCTS_PER_PAGE = 10;
+const PRODUCTS_PER_PAGE = 12;
 
 const props = defineProps({
   productos: { type: Array, default: () => [] },
@@ -285,8 +314,9 @@ const resetFilters = () => {
 const money = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value || 0);
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-const addToCart = async (product) => {
+const addToCart = async (product, talla = null) => {
   try {
+    const tallaSeleccionada = talla ?? product.tallas?.[0] ?? null;
     const res = await fetch('/api/carrito/agregar', {
       method: 'POST',
       headers: {
@@ -297,7 +327,7 @@ const addToCart = async (product) => {
       body: JSON.stringify({
         producto_id: product.id,
         cantidad: 1,
-        talla: product.tallas?.[0] ?? null,
+        talla: tallaSeleccionada,
       }),
     });
 

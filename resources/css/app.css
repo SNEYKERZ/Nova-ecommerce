@@ -294,6 +294,7 @@ select {
     overflow: hidden;
     background: #f0ede8;
     position: relative;
+    border-radius: var(--r-lg);
 }
 .product-card-img img {
     width: 100%;
@@ -303,6 +304,19 @@ select {
     display: block;
 }
 .product-card:hover .product-card-img img { transform: scale(1.04); }
+
+/* ─── Image zoom (product detail) ────────────────────── */
+.product-image-zoom {
+    overflow: hidden;
+}
+.product-image-zoom img {
+    transition: transform 0.3s ease;
+    display: block;
+    width: 100%;
+}
+.product-image-zoom:hover img {
+    transform: scale(1.06);
+}
 
 .product-card-quick-add {
     position: absolute;
@@ -334,6 +348,87 @@ select {
     border-radius: var(--r);
     pointer-events: none;
     z-index: 2;
+    background: var(--ink);
+    color: #fff;
+}
+.product-card-badge.badge-sale {
+    background: var(--accent);
+    color: #fff;
+}
+.product-card-badge.badge-new {
+    background: var(--ink);
+    color: #fff;
+}
+
+.product-card-offer-price {
+    text-decoration: line-through;
+    color: var(--muted);
+    font-size: 0.875rem;
+}
+
+.product-card-price-sale {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.product-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
+    z-index: 10;
+}
+.product-card:hover .product-card-overlay { opacity: 1; pointer-events: auto; }
+
+.size-hover-btn {
+    min-width: 2.4rem;
+    height: 2.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--r);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    background: transparent;
+    color: #fff;
+    transition: background var(--transition), border-color var(--transition);
+    user-select: none;
+}
+.size-hover-btn:hover {
+    background: #fff;
+    color: var(--ink);
+    border-color: #fff;
+}
+
+.stock-exhausted {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: inherit;
+    z-index: 5;
+}
+.stock-exhausted-text {
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
 }
 
 /* ─── Size selector ──────────────────────────────────── */

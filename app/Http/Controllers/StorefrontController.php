@@ -21,7 +21,7 @@ class StorefrontController extends Controller
     public function home(): Response
     {
         // El trait HasTenant filtra automáticamente por el store actual
-        $productos = Producto::with('categoria')
+        $productos = Producto::with(['categoria', 'ofertas'])
             ->where('estado', 'DISPONIBLE')
             ->orderBy('id', 'desc')
             ->paginate(20)
@@ -226,11 +226,20 @@ class StorefrontController extends Controller
             })->filter()->values();
         }
 
+        $precioOferta = (float) $producto->precio_con_oferta;
+        $tieneOferta = $precioOferta < $producto->precio;
+        $descuentoPct = $tieneOferta && $producto->precio > 0
+            ? (int) round((1 - $precioOferta / $producto->precio) * 100)
+            : 0;
+
         return [
             'id'            => $producto->id,
             'sku'           => $producto->referencia,
             'nombre'        => $producto->nombre ?: $producto->referencia,
             'precio'        => (float) $producto->precio,
+            'precioOferta'  => $tieneOferta ? $precioOferta : null,
+            'descuentoPct'  => $descuentoPct,
+            'tieneOferta'   => $tieneOferta,
             'categoria'     => $producto->categoria?->categoria ?? 'General',
             'estado'        => $producto->estado,
             'tallas'        => $producto->tallas ? array_values(array_filter(explode(',', $producto->tallas))) : [],

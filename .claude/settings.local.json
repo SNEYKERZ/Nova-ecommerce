@@ -23,7 +23,17 @@
       "Bash(curl -s \"http://localhost:8000/api/admin/test\" -H \"Accept: application/json\")",
       "Bash(curl -s \"http://localhost:8000/api/productos\" -H \"Accept: application/json\")",
       "Bash(curl -s \"http://localhost:8000\")",
-      "Bash(curl -s -X POST http://localhost:8000/api/carrito/agregar -H 'Content-Type: application/json' -H 'X-CSRF-TOKEN: __CMDSUB_OUTPUT__')"
+      "Bash(curl -s -X POST http://localhost:8000/api/carrito/agregar -H 'Content-Type: application/json' -H 'X-CSRF-TOKEN: __CMDSUB_OUTPUT__')",
+      "Bash(grep -r \"\\\\$\\\\{\" \"/c/laragon/www/webcaps-laravel/app\" --include=\"*.php\")",
+      "Bash(cat /tmp/claude/c--laragon-www-webcaps-laravel/03735d66-1b31-43e3-a42f-4db4c21815b0/tasks/bgpsup6f7.output 2>/dev/null | head -40)",
+      "Read(//tmp/claude/c--laragon-www-webcaps-laravel/03735d66-1b31-43e3-a42f-4db4c21815b0/tasks/**)",
+      "Bash(Remove-Item \"c:\\\\laragon\\\\www\\\\webcaps-laravel\\\\database\\\\migrations\\\\2026_06_02_162741_add_store_id_to_galleries_table.php\" -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item \"c:\\\\laragon\\\\www\\\\webcaps-laravel\\\\database\\\\migrations\\\\2026_06_02_162741_add_store_id_to_carritos_table.php\" -ErrorAction SilentlyContinue)",
+      "Bash(\"Migraciones innecesarias *)",
+      "Bash(cd c:\\\\\\\\laragon\\\\\\\\www\\\\\\\\webcaps-laravel)",
+      "Bash(git add *)",
+      "Bash(git restore *)",
+      "Bash(git commit -m 'Fix: Auditoría completa - Arreglar errores críticos, inconsistencias y vulnerabilidades *)"
     ]
   }
 }
