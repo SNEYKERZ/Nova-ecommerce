@@ -1,82 +1,103 @@
 <template>
-  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-    <div>
-      <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Categoria</label>
-      <select :value="selectedCategory" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:selectedCategory', $event.target.value)">
-        <option value="ALL">Todas</option>
-        <option v-for="cat in categorias" :key="cat.id" :value="cat.nombre || cat.categoria">{{ cat.nombre || cat.categoria }}</option>
-      </select>
-    </div>
+  <div class="space-y-8">
+    <fieldset v-if="availableSizes.length">
+      <legend class="mb-3 text-sm font-semibold text-[var(--sf-mute)]">{{ sizeLabel }}</legend>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="sf-option" :aria-pressed="selectedSize === 'ALL'" @click="$emit('update:selectedSize', 'ALL')">Todas</button>
+        <button
+          v-for="size in availableSizes"
+          :key="size"
+          type="button"
+          class="sf-option"
+          :aria-pressed="selectedSize === size"
+          @click="$emit('update:selectedSize', selectedSize === size ? 'ALL' : size)"
+        >{{ size }}</button>
+      </div>
+    </fieldset>
 
-    <div>
-      <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Talla</label>
-      <select :value="selectedSize" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:selectedSize', $event.target.value)">
-        <option value="ALL">Todas</option>
-        <option v-for="size in availableSizes" :key="size" :value="size">{{ size }}</option>
-      </select>
-    </div>
+    <fieldset class="sf-field">
+      <legend class="mb-3 text-sm font-semibold text-[var(--sf-mute)]">Precio (COP)</legend>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="f-min" class="mb-1 block text-xs font-semibold text-[var(--sf-mute)]">Desde</label>
+          <input id="f-min" :value="minPrice" type="number" inputmode="numeric" min="0" step="1000" placeholder="0" @input="$emit('update:minPrice', $event.target.value)" />
+        </div>
+        <div>
+          <label for="f-max" class="mb-1 block text-xs font-semibold text-[var(--sf-mute)]">Hasta</label>
+          <input id="f-max" :value="maxPrice" type="number" inputmode="numeric" min="0" step="1000" placeholder="Sin límite" @input="$emit('update:maxPrice', $event.target.value)" />
+        </div>
+      </div>
+      <p v-if="priceError" class="mt-2 text-xs font-semibold text-[var(--pencil)]">{{ priceError }}</p>
+    </fieldset>
 
-    <div>
-      <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Ordenar por</label>
-      <select :value="sortBy" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:sortBy', $event.target.value)">
-        <option value="recentes">Recientes</option>
-        <option value="precio_menor">Precio: menor a mayor</option>
-        <option value="precio_mayor">Precio: mayor a menor</option>
-        <option value="alfabetico_asc">Alfabetico A-Z</option>
-        <option value="alfabetico_desc">Alfabetico Z-A</option>
-      </select>
-    </div>
+    <fieldset>
+      <legend class="mb-3 text-sm font-semibold text-[var(--sf-mute)]">Publicados</legend>
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="option in recencyOptions"
+          :key="option.value"
+          type="button"
+          class="sf-option"
+          :aria-pressed="selectedRecency === option.value"
+          @click="$emit('update:selectedRecency', option.value)"
+        >{{ option.label }}</button>
+      </div>
+    </fieldset>
 
-    <div>
-      <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Recientes</label>
-      <select :value="selectedRecency" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" @change="$emit('update:selectedRecency', $event.target.value)">
-        <option value="ALL">Todos</option>
-        <option value="7">Ultimos 7 dias</option>
-        <option value="30">Ultimos 30 dias</option>
-        <option value="90">Ultimos 90 dias</option>
-      </select>
-    </div>
+    <button type="button" class="sf-option w-full !justify-start" :aria-pressed="onlyNewCollection" @click="$emit('update:onlyNewCollection', !onlyNewCollection)">
+      {{ newLabel }}
+    </button>
 
-    <div>
-      <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Precio minimo</label>
-      <input :value="minPrice" type="number" min="0" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" placeholder="0" @input="$emit('update:minPrice', $event.target.value)" />
-    </div>
-
-    <div>
-      <label class="mb-1 block text-xs font-semibold tracking-wide text-[color:var(--muted)] uppercase">Precio maximo</label>
-      <input :value="maxPrice" type="number" min="0" class="w-full border border-[color:var(--line)] bg-white px-3 py-2 text-sm" placeholder="300000" @input="$emit('update:maxPrice', $event.target.value)" />
-    </div>
-
-    <label class="flex items-center gap-2 self-end border border-dashed border-[color:var(--line)] px-3 py-2 text-sm font-semibold text-[color:var(--ink)]">
-      <input :checked="onlyNewCollection" type="checkbox" class="h-4 w-4 rounded border-[color:var(--line)]" @change="$emit('update:onlyNewCollection', $event.target.checked)" />
-      Solo nueva coleccion
-    </label>
-
-    <button class="btn-soft self-end px-4 py-2 text-sm font-semibold" @click="$emit('reset')">Limpiar filtros</button>
+    <fieldset>
+      <legend class="mb-3 text-sm font-semibold text-[var(--sf-mute)]">Ordenar por</legend>
+      <div class="flex flex-col gap-2">
+        <button
+          v-for="option in sortOptions"
+          :key="option.value"
+          type="button"
+          class="sf-option !justify-start"
+          :aria-pressed="sortBy === option.value"
+          @click="$emit('update:sortBy', option.value)"
+        >{{ option.label }}</button>
+      </div>
+    </fieldset>
   </div>
 </template>
 
 <script setup>
-defineProps({
-  categorias: { type: Array, default: () => [] },
+import { computed } from 'vue';
+import { sortOptions } from '../utils/catalog';
+
+const props = defineProps({
   availableSizes: { type: Array, default: () => [] },
-  selectedCategory: { type: String, default: 'ALL' },
   selectedSize: { type: String, default: 'ALL' },
   selectedRecency: { type: String, default: 'ALL' },
   onlyNewCollection: { type: Boolean, default: false },
   sortBy: { type: String, default: 'recentes' },
   minPrice: { type: [String, Number], default: '' },
   maxPrice: { type: [String, Number], default: '' },
+  sizeLabel: { type: String, default: 'Talla' },
+  newLabel: { type: String, default: 'Sólo nueva colección' },
 });
 
 defineEmits([
-  'update:selectedCategory',
   'update:selectedSize',
   'update:selectedRecency',
   'update:onlyNewCollection',
   'update:sortBy',
   'update:minPrice',
   'update:maxPrice',
-  'reset',
 ]);
+
+const recencyOptions = [
+  { value: 'ALL', label: 'Cualquier fecha' },
+  { value: '7', label: 'Últimos 7 días' },
+  { value: '30', label: 'Últimos 30 días' },
+  { value: '90', label: 'Últimos 90 días' },
+];
+
+const priceError = computed(() => {
+  if (props.minPrice === '' || props.maxPrice === '') return '';
+  return Number(props.minPrice) > Number(props.maxPrice) ? 'El precio “desde” es mayor que “hasta”.' : '';
+});
 </script>

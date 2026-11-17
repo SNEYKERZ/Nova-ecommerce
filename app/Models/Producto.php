@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PricingService;
 use App\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -89,6 +90,7 @@ class Producto extends Model
         if ($this->variantes->count() > 0) {
             return $this->variantes->pluck('talla')->unique()->filter()->values()->toArray();
         }
+
         return $this->tallas ? explode(',', $this->tallas) : [];
     }
 
@@ -97,6 +99,7 @@ class Producto extends Model
         if ($this->variantes->count() > 0) {
             return $this->variantes->pluck('color')->unique()->filter()->values()->toArray();
         }
+
         return [];
     }
 
@@ -104,9 +107,10 @@ class Producto extends Model
     public function getImagenPrincipalAttribute()
     {
         $imagen = $this->imagenes()->where('es_principal', true)->first();
-        if (!$imagen) {
+        if (! $imagen) {
             $imagen = $this->imagenes()->first();
         }
+
         return $imagen;
     }
 
@@ -120,29 +124,17 @@ class Producto extends Model
     public function getTieneStockAttribute()
     {
         if ($this->variantes->count() > 0) {
-            return $this->variantes()->where('stock', '>', 0)->exists();
+            return $this->variantes->contains(fn ($variante) => (int) $variante->stock > 0);
         }
+
         return true; // Sin variantes, asume disponible
     }
 
-    // Obtener precio con oferta activa
+    // Obtener precio con oferta activa (por producto o por categoría).
+    // Misma regla que se usa al cobrar: ver App\Services\PricingService.
     public function getPrecioConOfertaAttribute()
     {
-        $oferta = Oferta::getOfertaActiva($this->id);
-        
-        if ($oferta) {
-            if ($oferta->precio_oferta) {
-                return $oferta->precio_oferta;
-            }
-            if ($oferta->descuento_porcentaje) {
-                return $this->precio * (1 - $oferta->descuento_porcentaje / 100);
-            }
-            if ($oferta->descuento_fijo) {
-                return max(0, $this->precio - $oferta->descuento_fijo);
-            }
-        }
-        
-        return $this->precio;
+        return app(PricingService::class)->precioConOferta($this);
     }
 
     // Calificación promedio

@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Api\PedidoController;
 use App\Models\BloqueHome;
-use App\Models\CatalogBanner;
 use App\Models\Carrito;
+use App\Models\CatalogBanner;
 use App\Models\Categoria;
+use App\Models\Gallery;
 use App\Models\Noticia;
+use App\Models\Pedido;
 use App\Models\Producto;
 use App\Services\TenantManager;
 use App\Traits\HasMediaUrls;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,15 +25,15 @@ class StorefrontController extends Controller
     public function home(): Response
     {
         // El trait HasTenant filtra automáticamente por el store actual
-        $productos = Producto::with(['categoria', 'ofertas'])
+        $productos = Producto::with(['categoria', 'variantes', 'imagenes'])
             ->where('estado', 'DISPONIBLE')
             ->orderBy('id', 'desc')
             ->paginate(20)
-            ->through(fn(Producto $producto) => $this->mapProducto($producto));
+            ->through(fn (Producto $producto) => $this->mapProducto($producto));
 
         $categorias = Categoria::orderBy('categoria')
             ->get()
-            ->map(fn(Categoria $categoria) => [
+            ->map(fn (Categoria $categoria) => [
                 'id' => $categoria->id,
                 'nombre' => $categoria->categoria,
             ]);
@@ -48,11 +52,11 @@ class StorefrontController extends Controller
             'carousel' => $bloques[1] ?? null,
             'catalogBanners' => $this->getCatalogBanners(),
             'store' => $store ? [
-                'nombre'    => $store->nombre,
-                'logo'      => $store->logo_path ? asset('storage/' . $store->logo_path) : null,
-                'telefono'  => $store->telefono,
-                'email'     => $store->email,
-                'bg_color'  => $store->bg_color ?? '#ffffff',
+                'nombre' => $store->nombre,
+                'logo' => $store->logo_path ? asset('storage/'.$store->logo_path) : null,
+                'telefono' => $store->telefono,
+                'email' => $store->email,
+                'bg_color' => $store->bg_color ?? '#ffffff',
                 'navbar_color' => $store->navbar_color ?? '#ffffff',
                 'footer_color' => $store->footer_color ?? '#ffffff',
             ] : null,
@@ -69,8 +73,9 @@ class StorefrontController extends Controller
         for ($posicion = 1; $posicion <= 2; $posicion++) {
             $bloque = BloqueHome::getPorPosicion($posicion);
 
-            if (!$bloque) {
+            if (! $bloque) {
                 $result[$posicion] = null;
+
                 continue;
             }
 
@@ -85,7 +90,7 @@ class StorefrontController extends Controller
             ];
 
             if ($bloque->tipo === 'banner') {
-                $data['imagenes'] = $bloque->imagenes->map(fn($img) => [
+                $data['imagenes'] = $bloque->imagenes->map(fn ($img) => [
                     'id' => $img->id,
                     'nombre' => $img->nombre,
                     'identificador' => $img->identificador,
@@ -107,11 +112,11 @@ class StorefrontController extends Controller
         $store = $tenantManager->getStore();
 
         return CatalogBanner::query()
-            ->when($store, fn($q) => $q->where('store_id', $store->id))
+            ->when($store, fn ($q) => $q->where('store_id', $store->id))
             ->where('activo', true)
             ->orderBy('posicion')
             ->get()
-            ->map(fn(CatalogBanner $banner) => [
+            ->map(fn (CatalogBanner $banner) => [
                 'id' => $banner->id,
                 'nombre' => $banner->nombre,
                 'identificador' => $banner->identificador,
@@ -159,14 +164,14 @@ class StorefrontController extends Controller
 
     public function galleries(): Response
     {
-        $galleries = \App\Models\Gallery::where('activo', true)
+        $galleries = Gallery::where('activo', true)
             ->with([
                 'imagenes' => function ($query) {
                     $query->orderBy('orden');
                 },
                 'imagenes.productos' => function ($query) {
                     $query->with('producto.variantes')->orderBy('orden');
-                }
+                },
             ])
             ->orderBy('orden')
             ->get()
@@ -180,7 +185,7 @@ class StorefrontController extends Controller
                             'id' => $imagen->id,
                             'imagen_url' => $this->mediaUrl($imagen->imagen),
                             'aspect_ratio' => $imagen->aspect_ratio,
-                            'productos' => $imagen->productos->map(fn($gip) => [
+                            'productos' => $imagen->productos->map(fn ($gip) => [
                                 'id' => $gip->id,
                                 'producto_id' => $gip->producto_id,
                                 'referencia' => $gip->producto->referencia,
@@ -199,8 +204,16 @@ class StorefrontController extends Controller
         ]);
     }
 
-    public function thankYou(int $id): Response
+    public function thankYou(Request $request, int $id): Response
     {
+        // Sólo quien creó el pedido (misma sesión) puede ver su confirmación,
+        // y el pedido debe pertenecer a la tienda actual (scope HasTenant).
+        $propios = array_map('intval', (array) $request->session()->get(PedidoController::SESSION_KEY, []));
+
+        if (! in_array($id, $propios, true) || ! Pedido::whereKey($id)->exists()) {
+            abort(404);
+        }
+
         return Inertia::render('ThankYouPage', [
             'pedidoId' => $id,
         ]);
@@ -208,7 +221,7 @@ class StorefrontController extends Controller
 
     private function mapProducto(Producto $producto, bool $detalle = false): array
     {
-        $imagenPrincipal = $producto->foto ? asset('storage/' . $producto->foto) : asset('images/sinfoto.jpg');
+        $imagenPrincipal = $producto->foto ? asset('storage/'.$producto->foto) : asset('images/sinfoto.jpg');
         $galeria = collect();
         $isNewByDate = $producto->created_at instanceof Carbon
             ? $producto->created_at->greaterThanOrEqualTo(now()->subDays(30))
@@ -218,12 +231,23 @@ class StorefrontController extends Controller
             $galeria = $producto->imagenes->map(function ($imagen) {
                 $ruta = $imagen->imagen ?? null;
 
-                if (!$ruta) {
+                if (! $ruta) {
                     return null;
                 }
 
-                return str_starts_with($ruta, 'http') ? $ruta : asset('storage/' . $ruta);
+                return str_starts_with($ruta, 'http') ? $ruta : asset('storage/'.$ruta);
             })->filter()->values();
+        }
+
+        // Segunda foto para el cambio al pasar el cursor en el catálogo
+        $fotoAlt = null;
+        if ($producto->relationLoaded('imagenes')) {
+            $fotoAlt = $producto->imagenes
+                ->map(fn ($imagen) => $imagen->imagen
+                    ? (str_starts_with($imagen->imagen, 'http') ? $imagen->imagen : asset('storage/'.$imagen->imagen))
+                    : null)
+                ->filter(fn ($url) => $url && $url !== $imagenPrincipal)
+                ->first();
         }
 
         $precioOferta = (float) $producto->precio_con_oferta;
@@ -233,24 +257,25 @@ class StorefrontController extends Controller
             : 0;
 
         return [
-            'id'            => $producto->id,
-            'sku'           => $producto->referencia,
-            'nombre'        => $producto->nombre ?: $producto->referencia,
-            'precio'        => (float) $producto->precio,
-            'precioOferta'  => $tieneOferta ? $precioOferta : null,
-            'descuentoPct'  => $descuentoPct,
-            'tieneOferta'   => $tieneOferta,
-            'categoria'     => $producto->categoria?->categoria ?? 'General',
-            'estado'        => $producto->estado,
-            'tallas'        => $producto->tallas ? array_values(array_filter(explode(',', $producto->tallas))) : [],
-            'foto'          => $imagenPrincipal,
-            'descripcion'   => $producto->descripcion ?: null,
-            'destacado'     => (bool) ($producto->getAttribute('destacado') ?? false),
-            'nuevo'         => (bool) ($producto->getAttribute('nuevo') ?? false),
+            'id' => $producto->id,
+            'sku' => $producto->referencia,
+            'nombre' => $producto->nombre ?: $producto->referencia,
+            'precio' => (float) $producto->precio,
+            'precioOferta' => $tieneOferta ? $precioOferta : null,
+            'descuentoPct' => $descuentoPct,
+            'tieneOferta' => $tieneOferta,
+            'categoria' => $producto->categoria?->categoria ?? 'General',
+            'estado' => $producto->estado,
+            'tallas' => $producto->tallas ? array_values(array_filter(explode(',', $producto->tallas))) : [],
+            'foto' => $imagenPrincipal,
+            'fotoAlt' => $fotoAlt,
+            'descripcion' => $producto->descripcion ?: null,
+            'destacado' => (bool) ($producto->getAttribute('destacado') ?? false),
+            'nuevo' => (bool) ($producto->getAttribute('nuevo') ?? false),
             'nuevaColeccion' => (bool) ($producto->getAttribute('nueva_coleccion') ?? false) || $isNewByDate,
-            'createdAt'     => $producto->created_at?->toIso8601String(),
-            'galeria'       => $galeria,
-            'tieneStock'    => $producto->tiene_stock,
+            'createdAt' => $producto->created_at?->toIso8601String(),
+            'galeria' => $galeria,
+            'tieneStock' => $producto->tiene_stock,
         ];
     }
 }

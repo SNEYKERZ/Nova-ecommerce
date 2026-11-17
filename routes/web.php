@@ -1,12 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\SuperAdminController;
-use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\Api\CarritoController;
+use App\Http\Controllers\Api\PedidoController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\StorefrontController;
+use App\Http\Controllers\SuperAdminController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,19 +24,26 @@ Route::get('/galerias', [StorefrontController::class, 'galleries'])->name('galle
 Route::get('/conocenos', [StorefrontController::class, 'about'])->name('about');
 Route::get('/pedido/gracias/{id}', [StorefrontController::class, 'thankYou'])->name('order.thankyou');
 
-// API del carrito y utilidades
+// API del carrito y utilidades (grupo 'web': sesión + CSRF; con rate limiting)
 Route::prefix('api')->group(function () {
-    Route::get('/carrito', [CarritoController::class, 'show']);
-    Route::post('/carrito/agregar', [CarritoController::class, 'agregar']);
-    Route::put('/carrito/actualizar/{id}', [CarritoController::class, 'actualizar']);
-    Route::delete('/carrito/eliminar/{id}', [CarritoController::class, 'eliminar']);
-    Route::delete('/carrito/vaciar', [CarritoController::class, 'vaciar']);
-    Route::post('/carrito/aplicar-cupon', [CarritoController::class, 'aplicarCupon']);
-    Route::delete('/carrito/quitar-cupon', [CarritoController::class, 'quitarCupon']);
-    Route::post('/carrito/pedir-whatsapp', [CarritoController::class, 'pedirWhatsapp']);
+    Route::middleware('throttle:carrito')->group(function () {
+        Route::get('/carrito', [CarritoController::class, 'show']);
+        Route::post('/carrito/agregar', [CarritoController::class, 'agregar']);
+        Route::put('/carrito/actualizar/{id}', [CarritoController::class, 'actualizar']);
+        Route::delete('/carrito/eliminar/{id}', [CarritoController::class, 'eliminar']);
+        Route::delete('/carrito/vaciar', [CarritoController::class, 'vaciar']);
+        Route::delete('/carrito/quitar-cupon', [CarritoController::class, 'quitarCupon']);
+    });
 
-    Route::get('/user/me', function (\Illuminate\Http\Request $request) {
+    Route::post('/carrito/aplicar-cupon', [CarritoController::class, 'aplicarCupon'])->middleware('throttle:cupones');
+    Route::post('/carrito/pedir-whatsapp', [CarritoController::class, 'pedirWhatsapp'])->middleware('throttle:pedidos');
+
+    // Crear pedido desde el checkout (usada por CartPage.vue)
+    Route::post('/pedidos', [PedidoController::class, 'store'])->middleware('throttle:pedidos');
+
+    Route::get('/user/me', function (Request $request) {
         $user = $request->user();
+
         return response()->json($user ? [
             'id' => $user->id,
             'name' => $user->name,
@@ -47,19 +56,20 @@ Route::prefix('api')->group(function () {
 // Rutas de autenticación
 Route::middleware('guest')->group(function () {
     Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
-    Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
+    Route::post('/admin/login', [AdminAuthController::class, 'login'])->middleware('throttle:login')->name('admin.login.submit');
 });
 
 // Rutas del Super Admin (sin necesidad de tenant - van al panel central)
+// EnsureAdminRole bloquea a los admins de tienda en /super-admin y /super-admin/*
 Route::middleware(['auth', 'admin.role'])->prefix('super-admin')->group(function () {
     Route::get('/', [SuperAdminController::class, 'dashboard'])->name('superadmin.dashboard');
-    
+
     // Gestión de tiendas
     Route::post('/stores', [SuperAdminController::class, 'store'])->name('superadmin.stores.store');
     Route::put('/stores/{store}', [SuperAdminController::class, 'updateStore'])->name('superadmin.stores.update');
     Route::delete('/stores/{store}', [SuperAdminController::class, 'destroyStore'])->name('superadmin.stores.destroy');
     Route::get('/stores/{store}/stats', [SuperAdminController::class, 'storeStats']);
-    
+
     // Gestión de usuarios
     Route::post('/users', [SuperAdminController::class, 'storeUser'])->name('superadmin.users.store');
     Route::put('/users/{user}', [SuperAdminController::class, 'updateUser'])->name('superadmin.users.update');
@@ -75,23 +85,17 @@ Route::middleware(['auth', 'admin.role'])->prefix('super-admin')->group(function
     Route::post('/notifications/read', [SuperAdminController::class, 'markNotificationRead']);
 });
 
-Route::post('/admin/leave-impersonation', [AdminAuthController::class, 'leaveImpersonation'])->name('admin.leave-impersonation');
+Route::post('/admin/leave-impersonation', [AdminAuthController::class, 'leaveImpersonation'])
+    ->middleware('auth')
+    ->name('admin.leave-impersonation');
+
+// Logout: sólo requiere sesión (vale para admin y super admin, con o sin tienda)
+Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->middleware('auth')->name('admin.logout');
 
 // Rutas del Admin de tienda (requieren tenant)
-// Ruta API de pedidos (usada por CartPage.vue)
-Route::post('/api/pedidos', [\App\Http\Controllers\Api\PedidoController::class, 'store']);
 
 Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-
-    // TEST: Inertia rendering test
-    Route::get('/test-inertia', function () {
-        return \Inertia\Inertia::render('admin/TestPage', [
-            'test_data' => 'Hello from server!',
-        ]);
-    })->name('admin.test-inertia');
-
-    Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
     Route::post('/productos', [AdminController::class, 'storeProduct'])->name('admin.products.store');
     Route::put('/productos/{producto}', [AdminController::class, 'updateProduct'])->name('admin.products.update');
@@ -140,16 +144,4 @@ Route::middleware(['auth', 'admin.role'])->prefix('admin')->group(function () {
     Route::delete('/galleries/{gallery}/images/{imagen}', [GalleryController::class, 'deleteImage'])->name('admin.galleries.images.delete');
     Route::post('/galleries/{gallery}/images/{imagen}/products', [GalleryController::class, 'associateProduct'])->name('admin.galleries.images.products.associate');
     Route::delete('/galleries/{gallery}/images/{imagen}/products/{gip}', [GalleryController::class, 'disassociateProduct'])->name('admin.galleries.images.products.disassociate');
-});
-
-// TEST: simple JSON debug endpoint
-Route::middleware(['auth', 'admin.role'])->prefix('admin')->get('/test-json', function (Illuminate\Http\Request $r) {
-    $user = $r->user();
-    $tm = app(App\Services\TenantManager::class);
-    return response()->json([
-        'ok' => true,
-        'user_role' => $user?->role,
-        'user_store' => $user?->store_id,
-        'store' => $tm->getStore()?->only(['id', 'slug', 'nombre']),
-    ]);
 });

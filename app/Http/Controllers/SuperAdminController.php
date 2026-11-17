@@ -2,54 +2,75 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BloqueHome;
+use App\Models\BloqueHomeImagen;
+use App\Models\CatalogBanner;
+use App\Models\Categoria;
+use App\Models\Cliente;
+use App\Models\GalleryImage;
+use App\Models\Oferta;
+use App\Models\Pedido;
+use App\Models\PedidoItem;
+use App\Models\Producto;
+use App\Models\ProductoImagen;
+use App\Models\ProductoVariante;
 use App\Models\Store;
 use App\Models\User;
-use App\Models\Producto;
-use App\Models\Pedido;
-use App\Models\Categoria;
 use App\Services\StylingService;
-use App\Services\TenantManager;
+use App\Traits\HasMediaUrls;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SuperAdminController extends Controller
 {
+    use HasMediaUrls;
+
+    /** Subdominios que no pueden usarse como slug de tienda */
+    private const RESERVED_SLUGS = ['www', 'admin', 'super-admin', 'api', 'app', 'mail', 'static', 'assets'];
+
+    private const DOMAIN_REGEX = '/^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i';
+
     /**
      * Dashboard del Super Admin - gestiona todas las tiendas
      */
     public function dashboard(): Response
     {
         // Obtener todas las tiendas con estadísticas
-        $stores = Store::orderByDesc('created_at')->get()->map(function (Store $store) {
-            return [
-                'id' => $store->id,
-                'slug' => $store->slug,
-                'nombre' => $store->nombre,
-                'dominio' => $store->dominio,
-                'email' => $store->email,
-                'telefono' => $store->telefono,
-                'activo' => $store->activo,
-                'bg_color' => $store->bg_color ?? '#ffffff',
-                'navbar_color' => $store->navbar_color ?? '#fff',
-                'footer_color' => $store->footer_color ?? '#000000',
-                'navbar_text_color' => $store->navbar_text_color ?? '',
-                'footer_text_color' => $store->footer_text_color ?? '',
-                'created_at' => $store->created_at?->toIso8601String(),
-                // Stats por tienda
-                'stats' => [
-                    'productos' => Producto::forStore($store)->count(),
-                    'categorias' => Categoria::forStore($store)->count(),
-                    'pedidos' => Pedido::forStore($store)->count(),
-                    'admins' => User::where('store_id', $store->id)->count(),
-                ],
-            ];
-        });
+        $stores = Store::withCount(['productos', 'categorias', 'pedidos', 'usuarios'])
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (Store $store) {
+                return [
+                    'id' => $store->id,
+                    'slug' => $store->slug,
+                    'nombre' => $store->nombre,
+                    'dominio' => $store->dominio,
+                    'email' => $store->email,
+                    'telefono' => $store->telefono,
+                    'rubro' => $store->rubro ?? 'general',
+                    'activo' => $store->activo,
+                    'bg_color' => $store->bg_color ?? '#ffffff',
+                    'navbar_color' => $store->navbar_color ?? '#fff',
+                    'footer_color' => $store->footer_color ?? '#000000',
+                    'navbar_text_color' => $store->navbar_text_color ?? '',
+                    'footer_text_color' => $store->footer_text_color ?? '',
+                    'created_at' => $store->created_at?->toIso8601String(),
+                    // Stats por tienda
+                    'stats' => [
+                        'productos' => (int) $store->productos_count,
+                        'categorias' => (int) $store->categorias_count,
+                        'pedidos' => (int) $store->pedidos_count,
+                        'admins' => (int) $store->usuarios_count,
+                    ],
+                ];
+            });
 
         // Estadísticas globales del sistema
         $stats = [
@@ -115,11 +136,12 @@ class SuperAdminController extends Controller
     {
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9-]+$/', 'unique:stores,slug'],
-            'dominio' => ['nullable', 'string', 'max:255', 'unique:stores,dominio'],
+            'slug' => ['required', 'string', 'max:63', 'regex:/^[a-z0-9-]+$/', 'not_in:'.implode(',', self::RESERVED_SLUGS), 'unique:stores,slug'],
+            'dominio' => ['nullable', 'string', 'max:255', 'regex:'.self::DOMAIN_REGEX, 'unique:stores,dominio'],
             'email' => ['nullable', 'email'],
             'telefono' => ['nullable', 'string', 'max:50'],
             'descripcion' => ['nullable', 'string'],
+            'rubro' => ['nullable', Rule::in(Store::RUBROS)],
             'bg_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
             'navbar_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
             'footer_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
@@ -142,6 +164,7 @@ class SuperAdminController extends Controller
             'email' => $validated['email'] ?? null,
             'telefono' => $validated['telefono'] ?? null,
             'descripcion' => $validated['descripcion'] ?? null,
+            'rubro' => $validated['rubro'] ?? 'general',
             'bg_color' => StylingService::validateColor($validated['bg_color'] ?? null, '#ffffff'),
             'navbar_color' => StylingService::validateColor($validated['navbar_color'] ?? null, '#ffffff'),
             'footer_color' => StylingService::validateColor($validated['footer_color'] ?? null, '#ffffff'),
@@ -164,11 +187,12 @@ class SuperAdminController extends Controller
     {
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9-]+$/', Rule::unique('stores', 'slug')->ignore($store->id)],
-            'dominio' => ['nullable', 'string', 'max:255', Rule::unique('stores', 'dominio')->ignore($store->id)],
+            'slug' => ['required', 'string', 'max:63', 'regex:/^[a-z0-9-]+$/', 'not_in:'.implode(',', self::RESERVED_SLUGS), Rule::unique('stores', 'slug')->ignore($store->id)],
+            'dominio' => ['nullable', 'string', 'max:255', 'regex:'.self::DOMAIN_REGEX, Rule::unique('stores', 'dominio')->ignore($store->id)],
             'email' => ['nullable', 'email'],
             'telefono' => ['nullable', 'string', 'max:50'],
             'descripcion' => ['nullable', 'string'],
+            'rubro' => ['nullable', Rule::in(Store::RUBROS)],
             'activo' => ['required', 'boolean'],
             'bg_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
             'navbar_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
@@ -189,8 +213,10 @@ class SuperAdminController extends Controller
             'dominio' => $validated['dominio'] ?? null,
             'email' => $validated['email'] ?? null,
             'telefono' => $validated['telefono'] ?? null,
-            'descripcion' => $validated['descripcion'] ?? null,
+            // Si el formulario no envía la descripción, se conserva la actual (antes se borraba).
+            'descripcion' => $request->has('descripcion') ? ($validated['descripcion'] ?? null) : $store->descripcion,
             'activo' => $validated['activo'],
+            'rubro' => $validated['rubro'] ?? $store->rubro ?? 'general',
             'bg_color' => StylingService::validateColor($validated['bg_color'] ?? null, $store->bg_color),
             'navbar_color' => StylingService::validateColor($validated['navbar_color'] ?? null, $store->navbar_color),
             'footer_color' => StylingService::validateColor($validated['footer_color'] ?? null, $store->footer_color),
@@ -219,7 +245,14 @@ class SuperAdminController extends Controller
         }
 
         $storeName = $store->nombre;
+        $paths = $this->storeMediaPaths($store);
+
         $store->delete();
+
+        // Las filas se eliminan en cascada (FK); los archivos hay que borrarlos aparte
+        foreach ($paths as $path) {
+            $this->deleteMediaPath($path);
+        }
 
         return response()->json([
             'success' => true,
@@ -295,6 +328,23 @@ class SuperAdminController extends Controller
             $validated['store_id'] = null;
         }
 
+        // No quedarse sin super administradores (ni degradarse a sí mismo)
+        if ($user->role === 'super_admin' && $validated['role'] !== 'super_admin') {
+            if ($user->id === auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No puedes quitarte el rol de super administrador.',
+                ], 422);
+            }
+
+            if (User::withoutGlobalScopes()->where('role', 'super_admin')->count() <= 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Debe existir al menos un super administrador.',
+                ], 422);
+            }
+        }
+
         $user->update($validated);
 
         return response()->json([
@@ -343,7 +393,7 @@ class SuperAdminController extends Controller
         ]);
 
         $user->update([
-            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+            'password' => Hash::make($validated['password']),
         ]);
 
         return response()->json([
@@ -355,7 +405,7 @@ class SuperAdminController extends Controller
     /**
      * Impersonar a otro usuario
      */
-    public function impersonate(Request $request, User $user): \Illuminate\Http\RedirectResponse
+    public function impersonate(Request $request, User $user): RedirectResponse
     {
         if ($request->user()->role !== 'super_admin') {
             abort(403, 'Solo el super admin puede impersonar.');
@@ -365,10 +415,18 @@ class SuperAdminController extends Controller
             abort(403, 'No puedes impersonar a otro super admin.');
         }
 
-        // Guardar quién era el super admin original
-        session()->put('impersonator_id', $request->user()->id);
+        if ($user->role === 'admin' && ! $user->store_id) {
+            abort(422, 'El usuario no tiene una tienda asignada.');
+        }
+
+        $impersonatorId = $request->user()->id;
 
         Auth::login($user);
+
+        // Nueva sesión (evita fijación de sesión) conservando los datos y
+        // guardando quién era el super admin original
+        $request->session()->regenerate();
+        $request->session()->put('impersonator_id', $impersonatorId);
 
         // Redirigir según el rol del usuario impersonado
         return match ($user->role) {
@@ -384,11 +442,11 @@ class SuperAdminController extends Controller
     public function storeStats(Store $store): JsonResponse
     {
         $stats = [
-            'productos' => \App\Models\Producto::forStore($store)->count(),
-            'categorias' => \App\Models\Categoria::forStore($store)->count(),
-            'pedidos' => \App\Models\Pedido::forStore($store)->count(),
-            'clientes' => \App\Models\Cliente::forStore($store)->count(),
-            'ofertas' => \App\Models\Oferta::forStore($store)->count(),
+            'productos' => Producto::forStore($store)->count(),
+            'categorias' => Categoria::forStore($store)->count(),
+            'pedidos' => Pedido::forStore($store)->count(),
+            'clientes' => Cliente::forStore($store)->count(),
+            'ofertas' => Oferta::forStore($store)->count(),
             'admins' => User::where('store_id', $store->id)->count(),
         ];
 
@@ -428,11 +486,12 @@ class SuperAdminController extends Controller
         // Ventas por tienda
         $salesByStore = Store::withCount(['pedidos' => function ($q) use ($startDate) {
             $q->where('created_at', '>=', $startDate);
-        }])->with(['pedidos' => function ($q) use ($startDate) {
+        }])->withSum(['pedidos' => function ($q) use ($startDate) {
             $q->where('created_at', '>=', $startDate);
-        }])->get()->map(function ($store) {
-            $revenue = $store->pedidos->sum('total');
-            $orders = $store->pedidos->count();
+        }], 'total')->get()->map(function ($store) {
+            $revenue = (float) ($store->pedidos_sum_total ?? 0);
+            $orders = (int) $store->pedidos_count;
+
             return [
                 'id' => $store->id,
                 'nombre' => $store->nombre,
@@ -444,7 +503,7 @@ class SuperAdminController extends Controller
         })->sortByDesc('ingresos')->values();
 
         // Top productos más vendidos
-        $topProducts = \App\Models\PedidoItem::allStores()
+        $topProducts = PedidoItem::allStores()
             ->where('created_at', '>=', $startDate)
             ->with('producto')
             ->select('producto_id', DB::raw('SUM(cantidad) as total_vendido'), DB::raw('SUM(subtotal) as total_ingresos'))
@@ -496,18 +555,17 @@ class SuperAdminController extends Controller
         if ($type === 'all' || $type === 'orders') {
             $newOrders = Pedido::allStores()
                 ->where('created_at', '>=', now()->subHours(24))
-                ->with('cliente')
+                ->with(['cliente', 'store'])
                 ->orderByDesc('created_at')
                 ->limit(20)
                 ->get()
                 ->map(function ($order) {
-                    $store = Store::find($order->store_id);
                     return [
-                        'id' => 'order-' . $order->id,
+                        'id' => 'order-'.$order->id,
                         'type' => 'order',
-                        'title' => 'Nuevo pedido #' . $order->id,
-                        'message' => 'Pedido de ' . ($order->cliente?->nombre ?? 'Cliente') . ' - ' . number_format($order->total, 0, ',', '.') . ' COP',
-                        'store' => $store?->nombre,
+                        'title' => 'Nuevo pedido #'.$order->id,
+                        'message' => 'Pedido de '.($order->cliente?->nombre ?? 'Cliente').' - '.number_format($order->total, 0, ',', '.').' COP',
+                        'store' => $order->store?->nombre,
                         'timestamp' => $order->created_at?->toIso8601String(),
                         'read' => false,
                     ];
@@ -521,10 +579,10 @@ class SuperAdminController extends Controller
                 ->get()
                 ->map(function ($store) {
                     return [
-                        'id' => 'store-' . $store->id,
+                        'id' => 'store-'.$store->id,
                         'type' => 'store',
                         'title' => 'Nueva tienda creada',
-                        'message' => $store->nombre . ' (' . $store->slug . ')',
+                        'message' => $store->nombre.' ('.$store->slug.')',
                         'store' => $store->nombre,
                         'timestamp' => $store->created_at?->toIso8601String(),
                         'read' => false,
@@ -535,17 +593,17 @@ class SuperAdminController extends Controller
 
         // Notificaciones de alertas (bajo stock, etc.)
         if ($type === 'all' || $type === 'system') {
-            $lowStockProducts = \App\Models\ProductoVariante::allStores()
+            $lowStockProducts = ProductoVariante::allStores()
                 ->where('stock', '<=', 5)
                 ->with('producto')
                 ->limit(10)
                 ->get()
                 ->map(function ($variante) {
                     return [
-                        'id' => 'stock-' . $variante->id,
+                        'id' => 'stock-'.$variante->id,
                         'type' => 'alert',
                         'title' => 'Stock bajo',
-                        'message' => ($variante->producto?->referencia ?? 'Producto') . ' - Talla ' . $variante->talla . ': ' . $variante->stock . ' unidades',
+                        'message' => ($variante->producto?->referencia ?? 'Producto').' - Talla '.$variante->talla.': '.$variante->stock.' unidades',
                         'store' => null,
                         'timestamp' => now()->toIso8601String(),
                         'read' => false,
@@ -574,5 +632,26 @@ class SuperAdminController extends Controller
             'success' => true,
             'message' => 'Notificación marcada como leída',
         ]);
+    }
+
+    /**
+     * Rutas de archivos subidos que pertenecen a una tienda (para borrarlos
+     * cuando se elimina la tienda y no dejar huérfanos en disco).
+     */
+    private function storeMediaPaths(Store $store): array
+    {
+        $paths = array_merge(
+            [$store->logo_path],
+            ProductoImagen::forStore($store)->pluck('imagen')->all(),
+            Producto::forStore($store)->pluck('foto')->all(),
+            GalleryImage::forStore($store)->pluck('imagen')->all(),
+            CatalogBanner::forStore($store)->pluck('imagen')->all(),
+            BloqueHomeImagen::withoutGlobalScopes()
+                ->whereIn('bloque_home_id', BloqueHome::forStore($store)->select('id'))
+                ->pluck('imagen')
+                ->all(),
+        );
+
+        return array_values(array_unique(array_filter($paths)));
     }
 }

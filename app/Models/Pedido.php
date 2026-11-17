@@ -23,7 +23,13 @@ class Pedido extends Model
     protected $casts = [
         'total' => 'decimal:2',
         'descuento_cupon' => 'decimal:2',
+        'stock_descontado' => 'boolean',
     ];
+
+    public function cupon()
+    {
+        return $this->belongsTo(Cupon::class);
+    }
 
     public function cliente()
     {

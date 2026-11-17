@@ -1,11 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Facade;
-use Illuminate\Support\ServiceProvider;
-
 /**
  * Vendex Multi-Tenant Configuration
- * 
+ *
  * Opciones de configuración para el sistema multi-tenant de Vendex
  */
 
@@ -20,6 +17,18 @@ return [
     |
     */
     'domain' => env('VENDEX_DOMAIN', 'vendex.app'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tienda por defecto en localhost (sólo desarrollo)
+    |--------------------------------------------------------------------------
+    |
+    | En localhost/127.0.0.1 se usa esta tienda (o ?store=slug). La resolución
+    | por localhost sólo está habilitada cuando APP_ENV es local o testing, para
+    | que en producción un header Host falso no active el modo desarrollo.
+    |
+    */
+    'local_store_slug' => env('LOCAL_STORE_SLUG', 'demo'),
 
     /*
     |--------------------------------------------------------------------------

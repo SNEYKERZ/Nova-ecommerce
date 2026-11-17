@@ -1,43 +1,67 @@
 <template>
-    <div class="flex min-h-screen items-center justify-center px-4">
-      <Head title="Login Admin" />
-      <div class="w-full max-w-md rounded-xl-custom border border-[color:var(--line)] bg-[color:var(--surface)] p-8 shadow-sm">
-        <p class="chip inline-flex bg-[color:var(--sand)]">Panel administrativo</p>
-        <h1 class="font-display mt-4 text-3xl font-bold">Acceso Admin</h1>
-        <p class="mt-2 text-sm text-[color:var(--muted)]">Inicia sesion para gestionar fabrica, productos y promociones.</p>
-
-        <form class="mt-6 space-y-3" @submit.prevent="submit">
-          <div>
-            <label class="mb-1 block text-xs font-semibold uppercase text-[color:var(--muted)]">Email</label>
-            <input v-model="form.email" type="email" required class="w-full rounded-lg-custom border border-[color:var(--line)] bg-white px-3 py-2.5" />
-            <p v-if="form.errors.email" class="mt-1 text-xs text-red-600">{{ form.errors.email }}</p>
-          </div>
-
-          <div>
-            <label class="mb-1 block text-xs font-semibold uppercase text-[color:var(--muted)]">Password</label>
-            <input v-model="form.password" type="password" required class="w-full rounded-lg-custom border border-[color:var(--line)] bg-white px-3 py-2.5" />
-            <p v-if="form.errors.password" class="mt-1 text-xs text-red-600">{{ form.errors.password }}</p>
-          </div>
-
-          <button type="submit" class="btn-main w-full px-5 py-3 text-sm font-bold" :disabled="form.processing">
-            {{ form.processing ? 'Ingresando...' : 'Ingresar al panel' }}
-          </button>
-        </form>
-
-        <Link href="/" class="mt-4 inline-block text-sm font-semibold text-[color:var(--muted)]">Volver a la tienda</Link>
+  <div class="flex min-h-screen items-center justify-center bg-[var(--a-bg)] px-4 py-10">
+    <Head title="Iniciar sesión" />
+    <div class="w-full max-w-sm">
+      <div class="mb-6 text-center">
+        <img v-if="appLogo" :src="appLogo" alt="" class="mx-auto mb-3 h-12 w-12 rounded-xl object-cover" width="48" height="48" />
+        <p class="text-sm font-semibold text-[var(--a-muted)]">{{ appName }}</p>
+        <h1 class="mt-1 text-2xl font-bold text-[var(--a-ink)]">Inicia sesión</h1>
+        <p class="mt-1 text-sm text-[var(--a-ink-2)]">Gestiona pedidos, productos y la apariencia de tu tienda.</p>
       </div>
+
+      <form class="a-card a-card-pad space-y-4" novalidate @submit.prevent="submit">
+        <p v-if="generalError" class="rounded-lg bg-[var(--tone-critical-bg)] px-3 py-2 text-sm font-medium text-[var(--tone-critical)]" role="alert">{{ generalError }}</p>
+        <div>
+          <label for="login-email" class="a-label">Correo electrónico</label>
+          <input id="login-email" v-model.trim="form.email" type="email" class="a-input" autocomplete="username" inputmode="email" required autofocus :aria-invalid="form.errors.email ? 'true' : 'false'" aria-describedby="login-email-error" />
+          <p v-if="form.errors.email" id="login-email-error" class="a-error">{{ form.errors.email }}</p>
+        </div>
+        <div>
+          <label for="login-password" class="a-label">Contraseña</label>
+          <div class="relative">
+            <input id="login-password" v-model="form.password" :type="showPassword ? 'text' : 'password'" class="a-input pr-20" autocomplete="current-password" required :aria-invalid="form.errors.password ? 'true' : 'false'" aria-describedby="login-password-error" />
+            <button type="button" class="absolute inset-y-0 right-1 my-auto h-8 rounded-md px-2 text-xs font-semibold text-[var(--a-ink-2)] hover:bg-[var(--a-hover)]" :aria-pressed="showPassword ? 'true' : 'false'" @click="showPassword = !showPassword">
+              {{ showPassword ? 'Ocultar' : 'Mostrar' }}
+            </button>
+          </div>
+          <p v-if="form.errors.password" id="login-password-error" class="a-error">{{ form.errors.password }}</p>
+        </div>
+        <button type="submit" class="a-btn a-btn-primary w-full !min-h-10" :disabled="form.processing">
+          <span v-if="form.processing" class="spinner" aria-hidden="true"></span>
+          {{ form.processing ? 'Ingresando…' : 'Ingresar' }}
+        </button>
+      </form>
+
+      <p class="mt-5 text-center text-sm">
+        <Link href="/" class="font-medium text-[var(--a-ink-2)] underline underline-offset-4 hover:text-[var(--a-ink)]">Volver a la tienda</Link>
+      </p>
     </div>
+  </div>
 </template>
 
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 
-const form = useForm({
-  email: '',
-  password: '',
-});
+const page = usePage();
+const appName = computed(() => page.props.app?.name || 'Vendex');
+const appLogo = computed(() => page.props.app?.logo || null);
+const showPassword = ref(false);
+const generalError = ref('');
+
+const form = useForm({ email: '', password: '' });
 
 const submit = () => {
-  form.post('/admin/login');
+  generalError.value = '';
+  form.clearErrors();
+  if (!form.email) form.setError('email', 'Escribe tu correo.');
+  if (!form.password) form.setError('password', 'Escribe tu contraseña.');
+  if (form.hasErrors) return;
+  form.post('/admin/login', {
+    onError: (errors) => {
+      if (!Object.keys(errors).length) generalError.value = 'No pudimos iniciar sesión. Inténtalo de nuevo.';
+    },
+    onFinish: () => form.reset('password'),
+  });
 };
 </script>

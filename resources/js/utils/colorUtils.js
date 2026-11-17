@@ -105,3 +105,52 @@ export default {
   meetsWCAGAA,
   meetsWCAGAAA,
 };
+
+/* ── Storefront: tinta y "lápiz" (color de acento) ─────────────────────── */
+
+const hexToRgb = (hex) => {
+  const h = normalizeHex(hex).slice(1);
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+};
+const rgbToHex = (rgb) => `#${rgb.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('')}`;
+const mixHex = (a, b, t) => {
+  const ca = hexToRgb(a);
+  const cb = hexToRgb(b);
+  return rgbToHex(ca.map((v, i) => v + (cb[i] - v) * t));
+};
+
+/** Saturación y luminosidad HSL (0–1) */
+export function getSaturationLightness(hex) {
+  const [r, g, b] = hexToRgb(hex).map((v) => v / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const s = max === min ? 0 : (max - min) / (1 - Math.abs(2 * l - 1));
+  return { s, l };
+}
+
+/** Tinta legible sobre un fondo: la que más contraste da entre casi negro y blanco. */
+export function bestInk(background, dark = '#141414', light = '#ffffff') {
+  if (!isValidHexColor(background || '')) return dark;
+  return getContrastRatio(dark, background) >= getContrastRatio(light, background) ? dark : light;
+}
+
+/**
+ * Color de "lápiz" de la tienda: el primer color configurado con carácter
+ * (saturado, ni casi blanco ni casi negro). Se ajusta hacia la tinta hasta
+ * contrastar ≥ 4.5:1 con el fondo, porque también colorea precios y texto.
+ */
+export function pickPencil(background, candidates = [], fallback = '#c8361b') {
+  const usable = candidates
+    .filter((c) => isValidHexColor(c || ''))
+    .map(normalizeHex)
+    .find((c) => {
+      const { s, l } = getSaturationLightness(c);
+      return s >= 0.35 && l >= 0.18 && l <= 0.72;
+    });
+  let pencil = usable || fallback;
+  const bg = isValidHexColor(background || '') ? normalizeHex(background) : '#ffffff';
+  const target = bestInk(bg);
+  for (let i = 0; i < 12 && getContrastRatio(pencil, bg) < 4.5; i++) pencil = mixHex(pencil, target, 0.12);
+  return pencil;
+}

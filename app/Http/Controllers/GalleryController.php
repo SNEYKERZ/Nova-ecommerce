@@ -7,9 +7,9 @@ use App\Models\GalleryImage;
 use App\Models\GalleryImageProduct;
 use App\Models\Producto;
 use App\Traits\HasMediaUrls;
+use App\Validation\Rules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -38,7 +38,7 @@ class GalleryController extends Controller
                             'imagen_url' => $this->mediaUrl($img->imagen),
                             'orden' => $img->orden,
                             'aspect_ratio' => $img->aspect_ratio,
-                            'productos' => $img->productos->map(fn($gip) => [
+                            'productos' => $img->productos->map(fn ($gip) => [
                                 'id' => $gip->id,
                                 'producto_id' => $gip->producto_id,
                                 'referencia' => $gip->producto->referencia,
@@ -75,7 +75,7 @@ class GalleryController extends Controller
                     'imagen' => $this->mediaUrl($img->imagen),
                     'orden' => $img->orden,
                     'aspect_ratio' => $img->aspect_ratio,
-                    'productos' => $img->productos->map(fn($gip) => [
+                    'productos' => $img->productos->map(fn ($gip) => [
                         'id' => $gip->id,
                         'producto_id' => $gip->producto_id,
                         'referencia' => $gip->producto->referencia,
@@ -105,7 +105,7 @@ class GalleryController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
+            'nombre' => ['required', 'string', 'max:255', Rules::uniqueInTenant('galleries', 'nombre')],
             'descripcion' => ['nullable', 'string'],
             'orden' => ['nullable', 'integer'],
             'activo' => ['nullable', 'boolean'],
@@ -137,7 +137,7 @@ class GalleryController extends Controller
     public function update(Request $request, Gallery $gallery): JsonResponse
     {
         $validated = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
+            'nombre' => ['required', 'string', 'max:255', Rules::uniqueInTenant('galleries', 'nombre', $gallery->id)],
             'descripcion' => ['nullable', 'string'],
             'orden' => ['nullable', 'integer'],
             'activo' => ['nullable', 'boolean'],
@@ -180,7 +180,7 @@ class GalleryController extends Controller
 
         $validated = $request->validate([
             'imagen' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:20480', 'dimensions:max_width=4000'],
-            'aspect_ratio' => ['nullable', 'string', 'max:20'],
+            'aspect_ratio' => ['nullable', 'string', 'max:20', 'regex:/^\d{1,2}\/\d{1,2}$/'],
             'orden' => ['nullable', 'integer'],
         ]);
 
@@ -189,7 +189,7 @@ class GalleryController extends Controller
         $imagen = $gallery->imagenes()->create([
             'imagen' => $path,
             'aspect_ratio' => $validated['aspect_ratio'] ?? '1/1',
-            'orden' => $validated['orden'] ?? (int)$gallery->imagenes()->max('orden') + 1,
+            'orden' => $validated['orden'] ?? (int) $gallery->imagenes()->max('orden') + 1,
         ]);
 
         return response()->json([
@@ -209,7 +209,7 @@ class GalleryController extends Controller
      */
     public function deleteImage(Gallery $gallery, GalleryImage $imagen): JsonResponse
     {
-        if ($imagen->gallery_id !== $gallery->id) {
+        if ((int) $imagen->gallery_id !== (int) $gallery->id) {
             return response()->json(['success' => false, 'message' => 'Imagen no pertenece a esta galería'], 404);
         }
 
@@ -227,12 +227,12 @@ class GalleryController extends Controller
      */
     public function updateImage(Request $request, Gallery $gallery, GalleryImage $imagen): JsonResponse
     {
-        if ($imagen->gallery_id !== $gallery->id) {
+        if ((int) $imagen->gallery_id !== (int) $gallery->id) {
             return response()->json(['success' => false, 'message' => 'Imagen no pertenece a esta galería'], 404);
         }
 
         $validated = $request->validate([
-            'aspect_ratio' => ['nullable', 'string', 'max:20'],
+            'aspect_ratio' => ['nullable', 'string', 'max:20', 'regex:/^\d{1,2}\/\d{1,2}$/'],
             'orden' => ['nullable', 'integer'],
         ]);
 
@@ -247,10 +247,10 @@ class GalleryController extends Controller
     public function associateProduct(Request $request, Gallery $gallery, GalleryImage $imagen): JsonResponse
     {
         $validated = $request->validate([
-            'producto_id' => ['required', 'exists:productos,id'],
+            'producto_id' => ['required', 'integer', Rules::existsInTenant('productos')],
         ]);
 
-        if ($imagen->gallery_id !== $gallery->id) {
+        if ((int) $imagen->gallery_id !== (int) $gallery->id) {
             return response()->json(['success' => false, 'message' => 'Imagen no pertenece a esta galería'], 404);
         }
 
@@ -284,7 +284,7 @@ class GalleryController extends Controller
      */
     public function disassociateProduct(Gallery $gallery, GalleryImage $imagen, GalleryImageProduct $gip): JsonResponse
     {
-        if ($imagen->gallery_id !== $gallery->id || $gip->gallery_image_id !== $imagen->id) {
+        if ((int) $imagen->gallery_id !== (int) $gallery->id || (int) $gip->gallery_image_id !== (int) $imagen->id) {
             return response()->json(['success' => false, 'message' => 'Recurso no válido'], 404);
         }
 

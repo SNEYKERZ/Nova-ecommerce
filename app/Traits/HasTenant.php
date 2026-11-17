@@ -3,11 +3,12 @@
 namespace App\Traits;
 
 use App\Models\Store;
+use App\Services\TenantManager;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Trait HasTenant
- * 
+ *
  * Agrega automáticamente filtrado por store_id a todos los queries.
  * Uso: en modelos que tienen store_id
  */
@@ -27,8 +28,8 @@ trait HasTenant
         static::addGlobalScope('tenant', function (Builder $builder) {
             // Si hay un store activo en el contexto, filtrar por él
             // Pero primero verificar si se deshabilitó temporalmente el scope
-            if (!static::shouldIgnoreTenantScope()) {
-                $tenantManager = app(\App\Services\TenantManager::class);
+            if (! static::shouldIgnoreTenantScope()) {
+                $tenantManager = app(TenantManager::class);
                 if ($store = $tenantManager->getStore()) {
                     $builder->where('store_id', $store->id);
                 }
@@ -36,9 +37,11 @@ trait HasTenant
         });
 
         // Al crear, asignar automáticamente el store_id del tenant actual
+        // (también para super admin: si opera dentro de una tienda resuelta,
+        // los registros deben pertenecer a esa tienda y no quedar con store_id NULL)
         static::creating(function ($model) {
-            if (empty($model->store_id) && !$model->isSuperAdmin()) {
-                $store = app('tenant.store');
+            if (empty($model->store_id)) {
+                $store = app(TenantManager::class)->getStore();
                 if ($store) {
                     $model->store_id = $store->id;
                 }
@@ -68,6 +71,7 @@ trait HasTenant
     public function scopeForStore(Builder $builder, Store|int $store): Builder
     {
         $storeId = $store instanceof Store ? $store->id : $store;
+
         return $builder->withoutGlobalScopes()->where('store_id', $storeId);
     }
 
@@ -102,7 +106,8 @@ trait HasTenant
     {
         // El super admin puede actuar en cualquier store
         // Se verifica en el TenantManager
-        $tenantManager = app(\App\Services\TenantManager::class);
+        $tenantManager = app(TenantManager::class);
+
         return $tenantManager->isSuperAdmin();
     }
 }

@@ -1,291 +1,148 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="$emit('close')">
-    <!-- Main Modal -->
-    <div class="relative max-h-[90vh] max-w-4xl w-full overflow-y-auto rounded-lg bg-white shadow-xl">
-      <!-- Close Button -->
-      <button
-        class="absolute right-4 top-4 z-10 rounded-full bg-white p-2 text-slate-500 hover:text-slate-700 transition-colors"
-        @click="$emit('close')"
+  <Teleport to="#contenido">
+    <div class="fixed inset-0 z-[70] flex items-end justify-center bg-black/75 backdrop-blur-[2px] sm:items-center sm:p-6" @click.self="$emit('close')">
+      <div
+        ref="panel"
+        class="relative flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden bg-[var(--sf-paper)] text-[var(--sf-ink)] shadow-2xl md:flex-row"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="`Foto ${position} de ${gallery.nombre}`"
+        tabindex="-1"
+        @keydown.esc="onEsc"
+        @keydown.left="$emit('navigate', -1)"
+        @keydown.right="$emit('navigate', 1)"
       >
-        ✕
-      </button>
-
-      <!-- Content -->
-      <div class="grid grid-cols-1 gap-8 p-6 md:grid-cols-2">
-        <!-- Image - Large -->
-        <div class="flex items-center justify-center bg-slate-100 rounded-lg overflow-hidden h-96 md:h-96">
-          <img
-            :src="imagen.imagen_url"
-            :alt="gallery.nombre"
-            class="h-full w-full object-cover"
-            loading="lazy"
-            decoding="async"
-          />
+        <!-- Foto -->
+        <div class="relative flex shrink-0 items-center justify-center bg-[#0d0d0d] md:w-[60%]">
+          <Transition name="swap" mode="out-in">
+            <img :key="imagen.id" :src="imagen.imagen_url" :alt="`Foto ${position} de la galería ${gallery.nombre}`" class="max-h-[46vh] w-full object-contain md:h-full md:max-h-[94vh]" decoding="async" />
+          </Transition>
+          <template v-if="total > 1">
+            <button type="button" class="lens-arrow left-3" aria-label="Foto anterior" @click="$emit('navigate', -1)">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button type="button" class="lens-arrow right-3" aria-label="Foto siguiente" @click="$emit('navigate', 1)">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </template>
         </div>
 
-        <!-- Products Section - Clean & Simple -->
-        <div class="flex flex-col justify-start">
-          <h3 class="mb-6 text-3xl font-bold text-slate-900">{{ gallery.nombre }}</h3>
-
-          <!-- Products List -->
-          <div v-if="imagen.productos?.length > 0" class="space-y-6">
-            <div
-              v-for="producto in imagen.productos"
-              :key="producto.id"
-              class="border-t border-slate-200 pt-6 first:border-t-0 first:pt-0 flex gap-4"
-            >
-              <!-- Producto Thumbnail -->
-              <div class="flex-shrink-0 w-24 h-24 bg-slate-100 rounded-lg overflow-hidden">
-                <img
-                  v-if="producto.foto"
-                  :src="producto.foto"
-                  :alt="producto.nombre"
-                  class="w-full h-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <div v-else class="w-full h-full flex items-center justify-center text-slate-400 text-sm">
-                  Sin foto
-                </div>
-              </div>
-
-              <!-- Producto Info & Button -->
-              <div class="flex-1 flex flex-col justify-between">
-                <div>
-                  <h4 class="text-lg font-semibold text-slate-900">{{ producto.nombre }}</h4>
-                  <p v-if="producto.referencia" class="text-sm text-slate-500 mt-1">Ref: {{ producto.referencia }}</p>
-                  <p class="text-2xl font-bold text-slate-900 mt-3">${{ formatPrice(producto.precio) }}</p>
-                </div>
-
-                <!-- Simple Add Button -->
-                <button
-                  class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold transition-all hover:bg-slate-800 active:scale-95 mt-4"
-                  @click="initiateAddToCart(producto)"
-                >
-                  Añadir
-                </button>
-              </div>
+        <!-- Productos en la foto -->
+        <div class="flex min-h-0 flex-1 flex-col">
+          <div class="flex items-start justify-between gap-4 border-b border-[var(--sf-rule)] px-5 pb-4 pt-5 sm:px-6">
+            <div class="min-w-0">
+              <p class="sf-num text-sm text-[var(--sf-mute)]">{{ gallery.nombre }} · Nº {{ String(position).padStart(2, '0') }} de {{ String(total).padStart(2, '0') }}</p>
+              <h2 class="sf-display mt-1 text-4xl">En esta foto</h2>
             </div>
+            <button type="button" class="icon-btn -mr-2 -mt-1 shrink-0" aria-label="Cerrar" @click="$emit('close')">
+              <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.3 5.3a1 1 0 0 0-1.4 1.4L8.6 10l-3.7 3.3a1 1 0 1 0 1.4 1.4L10 11.4l3.3 3.3a1 1 0 0 0 1.4-1.4L11.4 10l3.3-3.3a1 1 0 0 0-1.4-1.4L10 8.6 6.3 5.3Z"/></svg>
+            </button>
           </div>
 
-          <!-- No Products -->
-          <div v-else class="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center text-slate-600">
-            No hay productos asociados a esta imagen.
-          </div>
-
-          <!-- Feedback Message -->
-          <div
-            v-if="feedback.message"
-            :class="{
-              'mt-4 p-3 rounded-lg text-sm font-semibold': true,
-              'border border-emerald-200 bg-emerald-50 text-emerald-800': feedback.type === 'success',
-              'border border-red-200 bg-red-50 text-red-800': feedback.type === 'error',
-              'border border-blue-200 bg-blue-50 text-blue-800': feedback.type === 'warning',
-            }"
-          >
-            {{ feedback.message }}
+          <div class="min-h-0 flex-1 overflow-y-auto px-5 sm:px-6">
+            <ol v-if="imagen.productos?.length" class="divide-y divide-[var(--sf-rule)]">
+              <li v-for="(producto, index) in imagen.productos" :key="producto.id" class="flex gap-4 py-4">
+                <span class="sf-num w-6 shrink-0 pt-0.5 text-sm text-[var(--sf-mute)]" aria-hidden="true">{{ index + 1 }}</span>
+                <Link :href="`/productos/${producto.producto_id}`" class="h-24 w-20 shrink-0 overflow-hidden bg-[var(--sf-wash-2)]" tabindex="-1" aria-hidden="true">
+                  <img v-if="producto.foto" :src="producto.foto" alt="" class="h-full w-full object-cover" loading="lazy" />
+                  <span v-else class="flex h-full items-center justify-center text-xs font-bold uppercase text-[var(--sf-mute)]">{{ initials(producto) }}</span>
+                </Link>
+                <div class="flex min-w-0 flex-1 flex-col">
+                  <Link :href="`/productos/${producto.producto_id}`" class="line-clamp-2 font-semibold underline-offset-4 hover:underline">{{ name(producto) }}</Link>
+                  <p class="sf-meta mt-0.5">Ref. {{ producto.referencia }}</p>
+                  <div class="mt-auto flex items-end justify-between gap-3 pt-2">
+                    <p class="sf-num text-base font-extrabold">{{ money(producto.precio) }}</p>
+                    <button type="button" class="sf-btn !min-h-10 !px-4" :disabled="pendingFor(producto)" @click="startAdd(producto)">
+                      <span v-if="pendingFor(producto)" class="spinner" aria-hidden="true"></span>
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+              </li>
+            </ol>
+            <p v-else class="my-6 border border-dashed border-[var(--sf-rule-strong)] p-5 text-sm text-[var(--sf-mute)]">
+              Esta foto no tiene productos asociados. Explora el <Link href="/" class="sf-link font-semibold text-[var(--sf-ink)]">catálogo</Link>.
+            </p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Size Selection Modal (Overlay) -->
-    <div
-      v-if="showSizeModal && currentProductForSize"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      @click.self="closeSizeModal"
-    >
-      <div class="relative w-full max-w-sm rounded-lg bg-white shadow-2xl p-6 animate-scale-in">
-        <!-- Close Button -->
-        <button
-          class="absolute right-3 top-3 text-slate-500 hover:text-slate-700 transition-colors"
-          @click="closeSizeModal"
-        >
-          ✕
-        </button>
-
-        <!-- Modal Content -->
-        <h3 class="text-xl font-bold text-slate-900 mb-6">Selecciona la talla</h3>
-
-        <!-- Size Grid -->
-        <div class="grid grid-cols-3 gap-3 mb-6">
-          <button
-            v-for="talla in currentProductForSize?.tallas || []"
-            :key="talla"
-            class="py-3 px-2 border border-slate-300 rounded-lg font-semibold text-sm transition-all hover:border-slate-900"
-            :class="{
-              'bg-slate-900 text-white border-slate-900': selectedSizeForModal === talla,
-              'bg-white text-slate-900': selectedSizeForModal !== talla,
-            }"
-            @click="selectedSizeForModal = talla"
-          >
-            {{ talla }}
-          </button>
-        </div>
-
-        <!-- Error Message if no size selected -->
-        <div
-          v-if="sizeModalAttempted && !selectedSizeForModal"
-          class="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-sm font-semibold text-red-800"
-        >
-          ⚠️ Por favor selecciona una talla
-        </div>
-
-        <!-- Confirm Button -->
-        <button
-          class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold transition-all hover:bg-slate-800 active:scale-95"
-          :class="{ 'opacity-50 cursor-not-allowed': !selectedSizeForModal }"
-          :disabled="!selectedSizeForModal"
-          @click="confirmAndAddToCart"
-        >
-          Confirmar y Agregar
-        </button>
-      </div>
-    </div>
-  </div>
+    <SizeSheet :open="!!sizeProduct" :product="sheetProduct" :busy="sizeProduct ? pendingFor(sizeProduct) : false" @select="onSize" @close="sizeProduct = null" />
+  </Teleport>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { Link } from '@inertiajs/vue3';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import SizeSheet from './store/SizeSheet.vue';
+import { useCart } from '../composables/useCart';
+import { money } from '../utils/format';
 
 const props = defineProps({
   gallery: { type: Object, required: true },
   imagen: { type: Object, required: true },
 });
+const emit = defineEmits(['close', 'navigate']);
 
-const emit = defineEmits(['close']);
+const cart = useCart();
+const panel = ref(null);
+const sizeProduct = ref(null);
+let lastFocus = null;
 
-// Estados del modal de talla
-const showSizeModal = ref(false);
-const selectedSizeForModal = ref('');
-const currentProductForSize = ref(null);
-const sizeModalAttempted = ref(false);
+const total = computed(() => props.gallery.imagenes?.length || 1);
+const position = computed(() => Math.max(1, (props.gallery.imagenes || []).findIndex((i) => i.id === props.imagen.id) + 1));
 
-// Estados de feedback
-const feedback = ref({ message: '', type: '' });
+const name = (p) => p.nombre || p.referencia;
+const initials = (p) => name(p).slice(0, 2);
+const toCartProduct = (p) => ({ id: p.producto_id, nombre: name(p), foto: p.foto || null, precio: p.precio });
+const sheetProduct = computed(() => (sizeProduct.value ? { ...toCartProduct(sizeProduct.value), tallas: sizeProduct.value.tallas || [] } : null));
+const pendingFor = (p) => Object.keys(cart.state.pending).some((k) => k.startsWith(`${p.producto_id}-`));
 
-/**
- * Formatea el precio con separador de miles
- */
-const formatPrice = (price) => {
-  return parseFloat(price).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const startAdd = (producto) => {
+  const tallas = producto.tallas || [];
+  if (tallas.length > 1) sizeProduct.value = producto;
+  else cart.add(toCartProduct(producto), { talla: tallas[0] ?? null });
 };
 
-/**
- * Inicia el flujo de agregar al carrito
- * Si el producto tiene tallas, muestra el modal de selección
- * Si no tiene tallas, agrega directo al carrito
- */
-const initiateAddToCart = (producto) => {
-  feedback.value = { message: '', type: '' };
-
-  // Si no tiene tallas, agregar directo
-  if (!producto.tallas || producto.tallas.length === 0) {
-    addToCart(producto, null);
-    return;
-  }
-
-  // Si tiene tallas, mostrar modal de selección
-  currentProductForSize.value = producto;
-  showSizeModal.value = true;
-  selectedSizeForModal.value = '';
-  sizeModalAttempted.value = false;
+const onSize = async (talla) => {
+  const ok = await cart.add(toCartProduct(sizeProduct.value), { talla });
+  if (ok) sizeProduct.value = null;
 };
 
-/**
- * Cierra el modal de selección de talla
- */
-const closeSizeModal = () => {
-  showSizeModal.value = false;
-  selectedSizeForModal.value = '';
-  currentProductForSize.value = null;
-  sizeModalAttempted.value = false;
+const onEsc = () => {
+  if (sizeProduct.value) sizeProduct.value = null;
+  else emit('close');
 };
 
-/**
- * Valida y confirma la selección de talla, luego agrega al carrito
- */
-const confirmAndAddToCart = () => {
-  // Validar que se seleccionó una talla
-  if (!selectedSizeForModal.value) {
-    sizeModalAttempted.value = true;
-    return;
-  }
-
-  // Agregar al carrito con talla seleccionada
-  addToCart(currentProductForSize.value, selectedSizeForModal.value);
-  closeSizeModal();
-};
-
-/**
- * Agrega el producto al carrito en la API
- */
-const addToCart = async (producto, talla) => {
-  try {
-    const productId = producto.producto_id || producto.id;
-    if (!productId) {
-      throw new Error('ID de producto inválido');
-    }
-
-    // Si requiere talla y no se proporcionó, validar
-    if (producto.tallas && producto.tallas.length > 0 && !talla) {
-      feedback.value = { message: '⚠️ Selecciona la talla', type: 'warning' };
-      return;
-    }
-
-    // Realizar petición al carrito
-    const res = await fetch('/api/carrito/agregar', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-      },
-      body: JSON.stringify({
-        producto_id: productId,
-        cantidad: 1,
-        talla: talla || null,
-      }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || 'Error al agregar al carrito');
-    }
-
-    // Éxito
-    feedback.value = {
-      message: `✓ ${producto.nombre} agregado al carrito`,
-      type: 'success',
-    };
-    window.dispatchEvent(new Event('cart-updated'));
-
-    // Limpiar mensaje después de 3 segundos
-    setTimeout(() => {
-      feedback.value = { message: '', type: '' };
-    }, 3000);
-  } catch (e) {
-    feedback.value = {
-      message: `❌ ${e.message}`,
-      type: 'error',
-    };
-    console.error('Add to cart error:', e);
-  }
-};
+onMounted(async () => {
+  lastFocus = document.activeElement;
+  document.documentElement.style.overflow = 'hidden';
+  await nextTick();
+  panel.value?.focus();
+});
+onUnmounted(() => {
+  document.documentElement.style.overflow = '';
+  lastFocus?.focus?.();
+});
 </script>
 
 <style scoped>
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.lens-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+  color: #141414;
+  border: 0;
+  transition: background 160ms ease;
 }
-
-.animate-scale-in {
-  animation: scale-in 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
+.lens-arrow:hover { background: #fff; }
+.swap-enter-active, .swap-leave-active { transition: opacity 220ms ease; }
+.swap-enter-from, .swap-leave-to { opacity: 0; }
 </style>

@@ -2,12 +2,55 @@
 
 namespace App\Validation;
 
+use App\Services\TenantManager;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
+use Illuminate\Validation\Rules\Unique;
+
 /**
  * Reglas de validación centralizadas para reutilizar en controllers.
  * Mantiene consistencia de validación en todo el proyecto.
  */
 class Rules
 {
+    /**
+     * exists:{tabla},{columna} restringido a la tienda actual.
+     *
+     * La regla 'exists' consulta la BD directamente (sin global scopes), por
+     * lo que sin este filtro se aceptarían IDs de otras tiendas.
+     */
+    public static function existsInTenant(string $table, string $column = 'id'): Exists
+    {
+        $rule = Rule::exists($table, $column);
+        $store = app(TenantManager::class)->getStore();
+
+        return $store ? $rule->where('store_id', $store->id) : $rule;
+    }
+
+    /**
+     * unique:{tabla},{columna} restringido a la tienda actual.
+     */
+    public static function uniqueInTenant(string $table, string $column, mixed $ignoreId = null): Unique
+    {
+        $rule = Rule::unique($table, $column);
+        $store = app(TenantManager::class)->getStore();
+
+        if ($store) {
+            $rule->where('store_id', $store->id);
+        }
+
+        return $ignoreId !== null ? $rule->ignore($ignoreId) : $rule;
+    }
+
+    /**
+     * Reglas de subida de imagen (jpg/png/webp, tamaño máximo configurable).
+     * SVG se excluye a propósito: puede contener JavaScript (XSS almacenado).
+     */
+    public static function uploadedImage(int $maxKb = 10240): array
+    {
+        return ['image', 'mimes:jpg,jpeg,png,webp', 'max:'.$maxKb];
+    }
+
     /**
      * Reglas para validación de colores hex
      */
@@ -56,7 +99,7 @@ class Rules
         return [
             'image',
             'mimes:jpg,jpeg,png,webp',
-            'max:' . config('styling.uploads.max_size', 10240),
+            'max:'.config('styling.uploads.max_size', 10240),
         ];
     }
 
@@ -66,6 +109,7 @@ class Rules
     public static function imageMessage(): string
     {
         $maxSize = config('styling.uploads.max_size', 10240) / 1024;
+
         return "La imagen debe ser JPG, PNG, WEBP y menor a {$maxSize}MB";
     }
 
@@ -89,7 +133,7 @@ class Rules
         return [
             'image',
             'mimes:jpg,jpeg,png,webp',
-            'max:' . config('styling.uploads.max_size', 10240),
+            'max:'.config('styling.uploads.max_size', 10240),
         ];
     }
 

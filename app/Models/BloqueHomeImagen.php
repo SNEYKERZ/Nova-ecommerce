@@ -35,7 +35,7 @@ class BloqueHomeImagen extends Model
      */
     public static function getAllForBloque(int $bloqueId)
     {
-        return static::withoutGlobalScopes()
+        return static::query()
             ->where('bloque_home_id', $bloqueId)
             ->orderBy('orden')
             ->get();

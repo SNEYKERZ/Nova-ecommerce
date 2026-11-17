@@ -6,7 +6,6 @@ use App\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 
 class BloqueHome extends Model
 {
@@ -30,7 +29,9 @@ class BloqueHome extends Model
      */
     public function imagenes(): HasMany
     {
-        return $this->hasMany(BloqueHomeImagen::class)->orderBy('orden');
+        // El bloque padre ya está filtrado por tienda; se omite el scope en las
+        // imágenes para no perder registros legacy con store_id NULL.
+        return $this->hasMany(BloqueHomeImagen::class)->withoutGlobalScope('tenant')->orderBy('orden');
     }
 
     /**
@@ -42,43 +43,28 @@ class BloqueHome extends Model
     }
 
     /**
-     * Obtener bloque por posición SIN global scope (para frontend público)
+     * Obtener bloque activo por posición de la tienda actual (frontend público).
+     *
+     * Usa el global scope de HasTenant: antes se usaba withoutGlobalScopes(),
+     * lo que mostraba (y permitía editar desde el admin) el bloque de OTRA tienda.
      */
     public static function getPorPosicion(int $posicion)
     {
-        // Sin global scope para que funcione en el homepage público
-        $bloque = static::withoutGlobalScopes()
+        return static::query()
             ->where('posicion', $posicion)
             ->where('activo', true)
+            ->with('imagenes')
             ->first();
-        
-        // Cargar imágenes también sin global scope
-        if ($bloque) {
-            $bloque->setRelation('imagenes', \App\Models\BloqueHomeImagen::withoutGlobalScopes()
-                ->where('bloque_home_id', $bloque->id)
-                ->orderBy('orden')
-                ->get());
-        }
-        
-        return $bloque;
     }
 
     /**
-     * Obtener todos los bloques (sin scope) para admin
+     * Obtener bloque por posición (activo o no) de la tienda actual, para admin.
      */
     public static function getAllPorPosicion(int $posicion)
     {
-        $bloque = static::withoutGlobalScopes()
+        return static::query()
             ->where('posicion', $posicion)
+            ->with('imagenes')
             ->first();
-
-        if ($bloque) {
-            $bloque->setRelation('imagenes', \App\Models\BloqueHomeImagen::withoutGlobalScopes()
-                ->where('bloque_home_id', $bloque->id)
-                ->orderBy('orden')
-                ->get());
-        }
-
-        return $bloque;
     }
 }

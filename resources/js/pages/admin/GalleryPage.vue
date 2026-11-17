@@ -1,519 +1,320 @@
 <template>
-  <AppLayout>
-    <Head title="Galerías - Admin" />
-    <section class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-10">
-      <!-- Header -->
-      <div class="mb-6">
-        <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Gestión de Galerías</h1>
-        <p class="mt-2 text-sm text-slate-600">Crea y organiza galerías de productos con imágenes masonry.</p>
-      </div>
+  <AdminLayout :nav="storeNav" active="galerias" variant="store" @navigate="goSection">
+    <Head title="Galerías" />
 
-      <!-- Create Gallery Form -->
-      <div v-if="!showGalleryForm" class="mb-6">
-        <button class="rounded-lg border border-indigo-600 bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="showGalleryForm = true">
-          + Nueva Galería
-        </button>
-      </div>
+    <PageHeader title="Galerías" description="Lookbooks con fotos en las que el cliente puede comprar los productos que aparecen.">
+      <a href="/galerias" target="_blank" rel="noopener" class="a-btn a-btn-secondary">Ver en la tienda <AdminIcon name="external" size="sm" /></a>
+      <button type="button" class="a-btn a-btn-primary" @click="openCreate"><AdminIcon name="plus" size="sm" />Nueva galería</button>
+    </PageHeader>
 
-      <div v-if="showGalleryForm" class="mb-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-900">{{ editingGallery ? 'Editar Galería' : 'Crear Nueva Galería' }}</h2>
-        <div class="mt-4 grid gap-3 md:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Nombre</label>
-            <input v-model="galleryForm.nombre" placeholder="ej: Verano 2026" class="w-full rounded-lg border border-slate-300 px-3 py-2.5" />
+    <div v-if="galleries.length" class="space-y-5">
+      <section v-for="gallery in galleries" :key="gallery.id" class="a-card overflow-hidden" :aria-labelledby="`g-${gallery.id}`">
+        <header class="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--a-border)] px-4 py-3">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 :id="`g-${gallery.id}`" class="a-subtitle">{{ gallery.nombre }}</h2>
+              <span class="a-badge" :class="gallery.activo ? 'tone-success' : ''">{{ gallery.activo ? 'Publicada' : 'Oculta' }}</span>
+              <span class="text-xs text-[var(--a-muted)] tabular">{{ gallery.imagenes?.length || 0 }}/{{ MAX_IMAGES }} fotos</span>
+            </div>
+            <p v-if="gallery.descripcion" class="mt-0.5 text-sm text-[var(--a-ink-2)]">{{ gallery.descripcion }}</p>
           </div>
-          <div>
-            <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Descripción</label>
-            <input v-model="galleryForm.descripcion" placeholder="Descripción opcional" class="w-full rounded-lg border border-slate-300 px-3 py-2.5" />
+          <div class="flex gap-1">
+            <button type="button" class="a-btn a-btn-secondary a-btn-sm" @click="openEdit(gallery)"><AdminIcon name="edit" size="sm" />Editar</button>
+            <button type="button" class="a-btn a-btn-plain-critical a-btn-sm a-btn-icon" :aria-label="`Eliminar galería ${gallery.nombre}`" @click="deleteGallery(gallery)"><AdminIcon name="trash" size="sm" /></button>
           </div>
-        </div>
-        <div v-if="editingGallery" class="mt-3 flex items-center gap-2">
-          <label class="text-sm font-semibold text-slate-700">
-            <input v-model="galleryForm.activo" type="checkbox" class="h-4 w-4" />
-            Activa
+        </header>
+
+        <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-4">
+          <article v-for="imagen in gallery.imagenes" :key="imagen.id" class="overflow-hidden rounded-xl border border-[var(--a-border)]" :class="editing?.id === imagen.id ? 'ring-2 ring-[var(--focus-ring)]' : ''">
+            <button type="button" class="block w-full" :aria-label="`Editar foto ${imagen.id}: ${imagen.productos?.length || 0} productos`" @click="openImage(gallery, imagen)">
+              <img :src="imagen.imagen_url" alt="" class="aspect-square w-full object-cover" loading="lazy" />
+            </button>
+            <div class="flex items-center justify-between gap-1 px-2 py-1.5">
+              <span class="text-xs text-[var(--a-ink-2)]">{{ imagen.productos?.length || 0 }} prod. · {{ ratioLabel(imagen.aspect_ratio) }}</span>
+              <button type="button" class="a-btn a-btn-plain-critical a-btn-sm a-btn-icon" :aria-label="`Eliminar foto ${imagen.id}`" @click="deleteImage(gallery, imagen)"><AdminIcon name="trash" size="sm" /></button>
+            </div>
+          </article>
+
+          <label v-if="(gallery.imagenes?.length || 0) < MAX_IMAGES" class="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[var(--a-border-strong)] p-2 text-center text-xs font-medium text-[var(--a-ink-2)] hover:bg-[var(--a-surface-2)]" :class="uploading[gallery.id] ? 'pointer-events-none opacity-60' : ''">
+            <span v-if="uploading[gallery.id]" class="spinner" aria-hidden="true"></span>
+            <AdminIcon v-else name="upload" />
+            {{ uploading[gallery.id] ? `Subiendo ${uploading[gallery.id]}` : 'Subir fotos' }}
+            <span class="text-[11px] text-[var(--a-muted)]">JPG, PNG o WebP · máx. 20 MB</span>
+            <input type="file" class="visually-hidden" multiple accept="image/jpeg,image/png,image/webp" :disabled="!!uploading[gallery.id]" @change="uploadImages(gallery, $event)" />
           </label>
         </div>
-        <div class="mt-4 flex gap-2">
-          <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer" @click="saveGallery">
-            {{ editingGallery ? 'Actualizar' : 'Crear' }}
-          </button>
-          <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 cursor-pointer" @click="cancelGalleryForm">
-            Cancelar
-          </button>
-        </div>
-      </div>
+      </section>
+    </div>
 
-      <!-- Galleries List -->
-      <div class="space-y-4">
-        <div v-for="gallery in galleries" :key="gallery.id" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <h3 class="text-lg font-semibold text-slate-900">{{ gallery.nombre }}</h3>
-              <p v-if="gallery.descripcion" class="mt-1 text-sm text-slate-600">{{ gallery.descripcion }}</p>
-              <div class="mt-2 flex items-center gap-3">
-                <span class="text-xs font-semibold" :class="gallery.activo ? 'text-emerald-600' : 'text-red-600'">
-                  {{ gallery.activo ? '● Activa' : '● Inactiva' }}
-                </span>
-                <span class="text-xs text-slate-500">{{ gallery.imagenes?.length || 0 }} / 8 imágenes</span>
-              </div>
-            </div>
+    <div v-else class="a-card">
+      <EmptyState icon="gallery" title="Crea tu primera galería" description="Sube fotos de tu colección y vincula los productos que aparecen en cada una.">
+        <button type="button" class="a-btn a-btn-primary" @click="openCreate">Nueva galería</button>
+      </EmptyState>
+    </div>
+
+    <!-- Crear / editar galería -->
+    <Drawer :open="galleryDrawer" :title="galleryForm.id ? 'Editar galería' : 'Nueva galería'" :busy="savingGallery" @close="galleryDrawer = false">
+      <form id="gallery-form" class="a-card a-card-pad space-y-4" novalidate @submit.prevent="saveGallery">
+        <FormField v-slot="f" label="Nombre" required :error="galleryErrors.nombre">
+          <input :id="f.id" v-model.trim="galleryForm.nombre" class="a-input" maxlength="255" placeholder="Ej. Verano 2026" :aria-invalid="f.invalid" :aria-describedby="f.describedby" />
+        </FormField>
+        <FormField v-slot="f" label="Descripción" optional>
+          <textarea :id="f.id" v-model.trim="galleryForm.descripcion" rows="3" class="a-input"></textarea>
+        </FormField>
+        <label class="a-check"><input v-model="galleryForm.activo" type="checkbox" />Publicada en la tienda</label>
+      </form>
+      <template #footer>
+        <button type="button" class="a-btn a-btn-secondary" :disabled="savingGallery" @click="galleryDrawer = false">Cancelar</button>
+        <button type="submit" form="gallery-form" class="a-btn a-btn-primary" :disabled="savingGallery">
+          <span v-if="savingGallery" class="spinner" aria-hidden="true"></span>
+          {{ galleryForm.id ? 'Guardar cambios' : 'Crear galería' }}
+        </button>
+      </template>
+    </Drawer>
+
+    <!-- Editar foto: formato y productos -->
+    <Drawer :open="!!editing" :title="editing ? `Foto de ${editing.galleryName}` : ''" subtitle="Formato y productos que aparecen" :busy="savingImage" @close="editing = null">
+      <template v-if="editing">
+        <img :src="editing.imagen_url" alt="" class="mx-auto max-h-64 rounded-xl object-contain" />
+        <section class="a-card a-card-pad mt-4">
+          <FormField v-slot="f" label="Formato en la cuadrícula">
             <div class="flex gap-2">
-              <button class="rounded-md border border-indigo-300 px-3 py-1.5 text-sm text-indigo-600 cursor-pointer" @click="editGallery(gallery)">
-                Editar
+              <select :id="f.id" v-model="editing.aspect_ratio" class="a-input">
+                <option value="1/1">Cuadrada (1:1)</option>
+                <option value="2/3">Vertical (2:3)</option>
+                <option value="3/2">Horizontal (3:2)</option>
+              </select>
+              <button type="button" class="a-btn a-btn-secondary" :disabled="savingImage" @click="saveImage">
+                <span v-if="savingImage" class="spinner" aria-hidden="true"></span>Guardar
               </button>
-              <button class="rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-600 cursor-pointer" @click="deleteGallery(gallery.id)">
-                Eliminar
-              </button>
             </div>
-          </div>
+          </FormField>
+        </section>
 
-          <!-- Gallery Images -->
-          <div class="mt-4 border-t border-slate-200 pt-4">
-            <h4 class="mb-3 text-sm font-semibold text-slate-700">Imágenes</h4>
-
-            <!-- Image Grid -->
-            <div v-if="gallery.imagenes?.length > 0" class="mb-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-              <div v-for="imagen in gallery.imagenes" :key="imagen.id" class="overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                <img :src="imagen.imagen_url" :alt="'Imagen ' + imagen.id" class="h-32 w-full object-cover" loading="lazy" />
-                <div class="flex items-center justify-between border-t border-slate-200 bg-white px-2 py-1.5">
-                  <span class="text-xs text-slate-500">{{ imagen.productos?.length || 0 }} prod.</span>
-                  <div class="flex gap-1">
-                    <button class="rounded bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 cursor-pointer hover:bg-indigo-100" @click="editImage(gallery, imagen)">
-                      {{ editingImage?.id === imagen.id ? 'Cerrar' : 'Productos' }}
-                    </button>
-                    <button class="rounded bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 cursor-pointer hover:bg-red-100" @click="deleteImage(gallery.id, imagen.id)">
-                      ✕
-                    </button>
-                  </div>
-                </div>
+        <section class="a-card a-card-pad mt-4" aria-labelledby="img-products">
+          <h3 id="img-products" class="a-subtitle">Productos en esta foto</h3>
+          <ul v-if="editing.productos?.length" class="mt-3 divide-y divide-[var(--a-border)]">
+            <li v-for="(prod, idx) in editing.productos" :key="prod.id" class="flex items-center justify-between gap-3 py-2 text-sm">
+              <div class="min-w-0">
+                <p class="truncate font-medium">{{ prod.nombre || prod.referencia }}</p>
+                <p class="text-xs text-[var(--a-muted)]">{{ prod.referencia }} · {{ money(prod.precio) }}</p>
               </div>
-            </div>
+              <button type="button" class="a-btn a-btn-plain-critical a-btn-sm" @click="removeProduct(idx)">Quitar</button>
+            </li>
+          </ul>
+          <p v-else class="mt-2 text-sm text-[var(--a-muted)]">Todavía no hay productos vinculados.</p>
 
-            <!-- Add Image with Preview (multiselección) -->
-            <div v-if="!gallery.imagenes || gallery.imagenes.length < 8" class="flex flex-wrap items-end gap-3">
-              <div class="flex flex-col gap-1">
-                <label class="text-xs font-semibold uppercase text-slate-500">Nuevas imágenes</label>
-                <input
-                  type="file"
-                  multiple
-                  @change="(e) => prepareImageUpload(gallery, e)"
-                  accept="image/jpeg,image/png,image.webp"
-                  class="block w-72 text-sm text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
-                />
-              </div>
-
-              <!-- File Queue Previews -->
-              <div v-if="pendingFiles.length > 0 && pendingGalleryId === gallery.id" class="flex flex-wrap items-end gap-3">
-                <div v-for="(pf, idx) in pendingFiles" :key="idx" class="relative">
-                  <img :src="pf.preview" class="h-14 w-14 rounded border border-slate-200 object-cover" />
-                  <span class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">{{ pf.uploaded ? '✓' : idx + 1 }}</span>
-                </div>
-                <div class="flex flex-col gap-1">
-                  <button
-                    class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer disabled:opacity-40"
-                    :disabled="uploading || pendingFiles.length === 0"
-                    @click="uploadNextImage(gallery)"
-                  >
-                    {{ uploading ? `Subiendo ${uploadProgress}/${pendingFiles.length}...` : `Subir ${pendingFiles.length} imagen(es)` }}
-                  </button>
-                  <button class="text-xs text-slate-500 cursor-pointer hover:text-red-600" @click="clearPendingFiles">
-                    Cancelar todo
-                  </button>
-                </div>
-              </div>
-              <p v-else-if="pendingGalleryId !== gallery.id" class="text-xs text-slate-400">Seleccioná una o más imágenes para subir</p>
-            </div>
-            <p v-else class="text-sm font-medium text-amber-600">Límite de 8 imágenes alcanzado</p>
-          </div>
-
-          <!-- Image Editor (expand/collapse individual) -->
-          <div v-if="editingImage && editingImage.gallery_id === gallery.id" class="mt-4 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
-            <div class="mb-3 flex items-start justify-between">
-              <div class="flex items-center gap-3">
-                <img :src="editingImage.imagen_url" class="h-16 w-16 rounded border border-white object-cover shadow-sm" />
-                <div>
-                  <h5 class="text-sm font-semibold text-slate-900">Editando imagen #{{ editingImage.id }}</h5>
-                  <p class="text-xs text-slate-500">{{ editingImage.productos?.length || 0 }} productos asociados</p>
-                </div>
-              </div>
-              <button class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 cursor-pointer" @click="editingImage = null">Cerrar ✕</button>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-2">
-              <!-- Aspect Ratio -->
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Aspect Ratio</label>
-                <select v-model="editingImage.aspect_ratio" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm">
-                  <option value="1/1">Cuadrada (1:1)</option>
-                  <option value="2/3">Vertical (2:3)</option>
-                  <option value="3/2">Horizontal (3:2)</option>
-                </select>
-              </div>
-
-              <!-- Save -->
-              <div class="flex items-end gap-2">
-                <button class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white cursor-pointer" @click="saveImage">
-                  Guardar Cambios
+          <div class="mt-4">
+            <SearchField v-model="productSearch" placeholder="Buscar producto por nombre o referencia" label="Buscar producto para vincular" />
+            <ul v-if="productSearch" class="mt-2 max-h-60 overflow-y-auto rounded-lg border border-[var(--a-border)]">
+              <li v-for="prod in productMatches" :key="prod.id">
+                <button type="button" class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-[var(--a-surface-2)]" @click="addProduct(prod)">
+                  <span class="truncate font-medium">{{ prod.nombre || prod.referencia }}</span>
+                  <span class="shrink-0 text-xs text-[var(--a-muted)]">{{ prod.referencia }} · {{ money(prod.precio) }}</span>
                 </button>
-              </div>
-            </div>
-
-            <!-- Product Association -->
-            <div class="mt-4 border-t border-indigo-200 pt-4">
-              <h6 class="mb-3 text-xs font-semibold uppercase text-slate-500">Productos Asociados</h6>
-
-              <!-- Current Products -->
-              <div v-if="editingImage.productos?.length > 0" class="mb-3 space-y-2">
-                <div v-for="(prod, idx) in editingImage.productos" :key="prod.id" class="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium text-slate-900">{{ prod.nombre }}</span>
-                    <span class="text-xs text-slate-400">${{ formatPrice(prod.precio) }}</span>
-                  </div>
-                  <button class="rounded-md bg-red-50 px-2 py-1 text-xs font-semibold text-red-600 cursor-pointer hover:bg-red-100" @click="removeProduct(idx)">
-                    ✕ Quitar
-                  </button>
-                </div>
-              </div>
-              <p v-else class="mb-3 text-sm text-slate-500">Sin productos asociados todavía.</p>
-
-              <!-- Searchable Product Selector -->
-              <div>
-                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Agregar Producto</label>
-                <div class="relative">
-                  <input
-                    v-model="productSearch"
-                    type="text"
-                    placeholder="Buscá por nombre o referencia..."
-                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-10 text-sm"
-                    @input="filterProducts"
-                  />
-                  <span v-if="productSearch" class="absolute right-3 top-2.5 text-xs text-slate-400 cursor-pointer" @click="productSearch = ''; filteredProducts = allProducts">✕</span>
-                </div>
-                <div v-if="productSearch && filteredProducts.length > 0" class="mt-1 max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-                  <button
-                    v-for="prod in filteredProducts"
-                    :key="prod.id"
-                    class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-indigo-50 cursor-pointer border-b border-slate-100 last:border-0"
-                    @click="addProduct(prod)"
-                  >
-                    <span class="font-medium text-slate-900">{{ prod.nombre }}</span>
-                    <span class="text-xs text-slate-400">{{ prod.referencia }} — ${{ formatPrice(prod.precio) }}</span>
-                  </button>
-                </div>
-                <div v-if="productSearch && filteredProducts.length === 0" class="mt-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                  Sin resultados para "{{ productSearch }}"
-                </div>
-              </div>
-            </div>
+              </li>
+              <li v-if="!productMatches.length" class="px-3 py-2 text-sm text-[var(--a-muted)]">Sin resultados para “{{ productSearch }}”.</li>
+            </ul>
           </div>
-        </div>
-      </div>
-
-      <!-- Feedback -->
-      <p v-if="feedback" class="mt-4 rounded-lg border px-4 py-2 text-sm font-semibold" :class="feedbackType === 'error' ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'">{{ feedback }}</p>
-    </section>
-  </AppLayout>
+        </section>
+      </template>
+    </Drawer>
+  </AdminLayout>
 </template>
 
 <script setup>
-import { Head, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import AppLayout from '../../layouts/AppLayout.vue';
+import { Head, router } from '@inertiajs/vue3';
+import { computed, reactive, ref } from 'vue';
+import AdminLayout from '../../layouts/AdminLayout.vue';
+import AdminIcon from '../../components/admin/AdminIcon.vue';
+import EmptyState from '../../components/admin/EmptyState.vue';
+import FormField from '../../components/admin/FormField.vue';
+import PageHeader from '../../components/admin/PageHeader.vue';
+import SearchField from '../../components/admin/SearchField.vue';
+import Drawer from '../../components/ui/Drawer.vue';
+import { storeNav } from '../../components/admin/adminNav';
+import { useConfirm } from '../../composables/useConfirm';
+import { useToast } from '../../composables/useToast';
+import { api } from '../../utils/http';
+import { money } from '../../utils/format';
 
 const props = defineProps({
   galleries: { type: Array, default: () => [] },
   productos: { type: Array, default: () => [] },
 });
 
-const page = usePage();
+const toast = useToast();
+const { confirm } = useConfirm();
+const MAX_IMAGES = 8;
+const MAX_BYTES = 20 * 1024 * 1024;
 
-const galleryForm = ref({ nombre: '', descripcion: '', activo: true });
-const editingGallery = ref(null);
-const editingImage = ref(null);
-const pendingFiles = ref([]);        // { file, preview, uploaded }
-const pendingGalleryId = ref(null);
-const uploading = ref(false);
-const uploadProgress = ref(0);       // cuántas van subidas del lote
-const showGalleryForm = ref(false);
-const feedback = ref('');
-const feedbackType = ref('success');
-const galleries = ref(props.galleries);
-const allProducts = ref(props.productos);
-const filteredProducts = ref(props.productos);
-const productSearch = ref('');
+const galleries = ref(props.galleries.map((g) => ({ ...g, imagenes: [...(g.imagenes || [])] })));
+const goSection = (key) => router.visit(`/admin?seccion=${key}`);
+const ratioLabel = (r) => ({ '1/1': '1:1', '2/3': '2:3', '3/2': '3:2' }[r] || r || '1:1');
 
-// CSRF token desde Inertia shared props (Siempre actualizado post-login)
-const csrf = () => page.props.csrf_token || '';
+/* ── Galerías ── */
+const galleryDrawer = ref(false);
+const galleryForm = reactive({ id: null, nombre: '', descripcion: '', activo: true });
+const galleryErrors = reactive({});
+const savingGallery = ref(false);
 
-const formatPrice = (price) => {
-  return parseFloat(price).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const openCreate = () => {
+  Object.assign(galleryForm, { id: null, nombre: '', descripcion: '', activo: true });
+  Object.keys(galleryErrors).forEach((k) => delete galleryErrors[k]);
+  galleryDrawer.value = true;
 };
-
-const notify = (message, type = 'success') => {
-  feedback.value = message;
-  feedbackType.value = type;
-  setTimeout(() => { feedback.value = ''; }, 4000);
-};
-
-const requestJson = async (url, method, body) => {
-  const res = await fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-TOKEN': csrf(),
-      'X-Requested-With': 'XMLHttpRequest',
-      'Accept': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : null,
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Error del servidor');
-  return data;
+const openEdit = (gallery) => {
+  Object.assign(galleryForm, { id: gallery.id, nombre: gallery.nombre, descripcion: gallery.descripcion || '', activo: Boolean(gallery.activo) });
+  Object.keys(galleryErrors).forEach((k) => delete galleryErrors[k]);
+  galleryDrawer.value = true;
 };
 
 const saveGallery = async () => {
-  try {
-    if (editingGallery.value) {
-      await requestJson(`/admin/galleries/${editingGallery.value.id}`, 'PUT', galleryForm.value);
-      Object.assign(editingGallery.value, galleryForm.value);
-    } else {
-      const result = await requestJson('/admin/galleries', 'POST', galleryForm.value);
-      galleries.value.push(result.data);
-    }
-    cancelGalleryForm();
-    notify('Galería guardada correctamente');
-  } catch (e) {
-    notify(e.message, 'error');
-  }
-};
-
-const editGallery = (gallery) => {
-  editingGallery.value = gallery;
-  galleryForm.value = { nombre: gallery.nombre, descripcion: gallery.descripcion, activo: gallery.activo };
-  showGalleryForm.value = true;
-};
-
-const cancelGalleryForm = () => {
-  showGalleryForm.value = false;
-  editingGallery.value = null;
-  galleryForm.value = { nombre: '', descripcion: '', activo: true };
-};
-
-const deleteGallery = async (id) => {
-  if (!confirm('¿Eliminar esta galería y todas sus imágenes?')) return;
-  try {
-    await requestJson(`/admin/galleries/${id}`, 'DELETE', {});
-    galleries.value = galleries.value.filter(g => g.id !== id);
-    notify('Galería eliminada');
-  } catch (e) {
-    notify(e.message, 'error');
-  }
-};
-
-const MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20MB
-const MAX_FILES_PER_BATCH = 8;
-
-const prepareImageUpload = (gallery, event) => {
-  const files = Array.from(event.target.files);
-  if (files.length === 0) return;
-
-  pendingGalleryId.value = gallery.id;
-
-  // Calcular cuántas se pueden agregar (respetando límite de 8)
-  const currentCount = gallery.imagenes?.length || 0;
-  const available = MAX_FILES_PER_BATCH - currentCount;
-  const toAdd = files.slice(0, available);
-
-  if (toAdd.length < files.length) {
-    notify(`Solo podés subir ${available} imagen(es) más (máx 8 por galería)`, 'error');
-  }
-
-  // Crear previews con FileReader
-  let loaded = 0;
-  toAdd.forEach((file) => {
-    if (file.size > MAX_IMAGE_SIZE) {
-      notify(`"${file.name}" excede los 20MB, se saltea`, 'error');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      pendingFiles.value.push({ file, preview: e.target.result, uploaded: false });
-    };
-    reader.readAsDataURL(file);
-  });
-};
-
-const clearPendingFiles = () => {
-  pendingFiles.value = [];
-  pendingGalleryId.value = null;
-  uploadProgress.value = 0;
-};
-
-const uploadSingleFile = async (gallery, fileEntry) => {
-  const formData = new FormData();
-  formData.append('imagen', fileEntry.file);
-
-  const res = await fetch(`/admin/galleries/${gallery.id}/images`, {
-    method: 'POST',
-    headers: {
-      'X-CSRF-TOKEN': csrf(),
-      'X-Requested-With': 'XMLHttpRequest',
-      'Accept': 'application/json',
-    },
-    body: formData,
-  });
-
-  const responseText = await res.text();
-  let data;
-  try {
-    data = JSON.parse(responseText);
-  } catch {
-    throw new Error(`El servidor respondió con HTML en vez de JSON (status ${res.status}). Probablemente la sesión expiró.`);
-  }
-
-  if (!res.ok) throw new Error(data.message || `Error HTTP ${res.status}`);
-
-  if (!gallery.imagenes) gallery.imagenes = [];
-  gallery.imagenes.push(data.data);
-  fileEntry.uploaded = true;
-
-  return data.data;
-};
-
-const uploadNextImage = async (gallery) => {
-  const toUpload = pendingFiles.value.filter(f => !f.uploaded);
-  if (toUpload.length === 0) {
-    notify('No hay imágenes pendientes', 'error');
+  Object.keys(galleryErrors).forEach((k) => delete galleryErrors[k]);
+  if (!galleryForm.nombre) {
+    galleryErrors.nombre = 'Escribe el nombre de la galería.';
     return;
   }
-
-  uploading.value = true;
-  let lastUploadedData = null;
-
+  savingGallery.value = true;
+  const body = { nombre: galleryForm.nombre, descripcion: galleryForm.descripcion || null, activo: galleryForm.activo };
   try {
-    for (const fileEntry of toUpload) {
-      uploadProgress.value = pendingFiles.value.filter(f => f.uploaded).length + 1;
-
-      if (fileEntry.file.size > MAX_IMAGE_SIZE) {
-        notify(`"${fileEntry.file.name}" excede los 20MB, se saltea`, 'error');
-        fileEntry.uploaded = true; // marca como "procesada" aunque falle
-        continue;
-      }
-
-      lastUploadedData = await uploadSingleFile(gallery, fileEntry);
-    }
-
-    // Auto-abrir el editor para la última imagen subida
-    if (lastUploadedData) {
-      editingImage.value = { ...lastUploadedData, gallery_id: gallery.id };
-      productSearch.value = '';
-      filteredProducts.value = allProducts.value;
-    }
-
-    // Limpiar si ya se subieron todas
-    const remaining = pendingFiles.value.filter(f => !f.uploaded);
-    if (remaining.length === 0) {
-      notify(`${toUpload.length} imagen(es) subida(s) correctamente`);
-      clearPendingFiles();
+    if (galleryForm.id) {
+      await api(`/admin/galleries/${galleryForm.id}`, { method: 'PUT', body });
+      const target = galleries.value.find((g) => g.id === galleryForm.id);
+      if (target) Object.assign(target, body);
+      toast.success('Galería actualizada');
     } else {
-      notify(`${toUpload.length - remaining.length} subida(s), ${remaining.length} pendiente(s)`);
+      const result = await api('/admin/galleries', { method: 'POST', body });
+      galleries.value.push({ ...result.data, imagenes: [] });
+      toast.success('Galería creada. Ahora sube sus fotos.');
     }
-  } catch (e) {
-    notify(e.message, 'error');
+    galleryDrawer.value = false;
+  } catch (error) {
+    Object.assign(galleryErrors, error.errors || {});
+    toast.error(error.message);
   } finally {
-    uploading.value = false;
+    savingGallery.value = false;
   }
 };
 
-const editImage = (gallery, imagen) => {
-  if (editingImage.value?.id === imagen.id) {
-    editingImage.value = null;
-  } else {
-    editingImage.value = { ...imagen, gallery_id: gallery.id };
-    productSearch.value = '';
-    filteredProducts.value = allProducts.value;
-  }
-};
-
-const deleteImage = async (galleryId, imagenId) => {
-  if (!confirm('¿Eliminar esta imagen?')) return;
+const deleteGallery = async (gallery) => {
+  const ok = await confirm({ title: `¿Eliminar la galería “${gallery.nombre}”?`, message: `Se borrarán sus ${gallery.imagenes?.length || 0} fotos.`, confirmLabel: 'Eliminar galería' });
+  if (!ok) return;
   try {
-    await requestJson(`/admin/galleries/${galleryId}/images/${imagenId}`, 'DELETE', {});
-    const gallery = galleries.value.find(g => g.id === galleryId);
-    if (gallery) {
-      gallery.imagenes = gallery.imagenes.filter(i => i.id !== imagenId);
-    }
-    if (editingImage.value?.id === imagenId) editingImage.value = null;
-    notify('Imagen eliminada');
-  } catch (e) {
-    notify(e.message, 'error');
+    await api(`/admin/galleries/${gallery.id}`, { method: 'DELETE' });
+    galleries.value = galleries.value.filter((g) => g.id !== gallery.id);
+    toast.success('Galería eliminada');
+  } catch (error) {
+    toast.error(error.message);
   }
 };
 
-const filterProducts = () => {
-  const q = productSearch.value.toLowerCase().trim();
-  if (!q) {
-    filteredProducts.value = allProducts.value;
-    return;
+/* ── Fotos ── */
+const uploading = reactive({});
+const uploadImages = async (gallery, event) => {
+  const files = Array.from(event.target.files || []);
+  event.target.value = '';
+  if (!files.length) return;
+  const room = MAX_IMAGES - (gallery.imagenes?.length || 0);
+  const valid = [];
+  files.forEach((file) => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) toast.error(`“${file.name}” no es JPG, PNG o WebP.`);
+    else if (file.size > MAX_BYTES) toast.error(`“${file.name}” pesa más de 20 MB.`);
+    else valid.push(file);
+  });
+  if (valid.length > room) toast.error(`Sólo caben ${room} foto(s) más en esta galería (máx. ${MAX_IMAGES}).`);
+  const batch = valid.slice(0, room);
+  let done = 0;
+  for (const file of batch) {
+    uploading[gallery.id] = `${done + 1}/${batch.length}`;
+    try {
+      const data = new FormData();
+      data.append('imagen', file);
+      const result = await api(`/admin/galleries/${gallery.id}/images`, { method: 'POST', body: data });
+      gallery.imagenes.push({ productos: [], ...result.data });
+      done += 1;
+    } catch (error) {
+      toast.error(`${file.name}: ${error.message}`);
+    }
   }
-  filteredProducts.value = allProducts.value.filter(p =>
-    p.nombre.toLowerCase().includes(q) ||
-    (p.referencia && p.referencia.toLowerCase().includes(q))
-  );
+  delete uploading[gallery.id];
+  if (done) toast.success(`${done} foto(s) subida(s). Toca una foto para vincular productos.`);
+};
+
+const deleteImage = async (gallery, imagen) => {
+  const ok = await confirm({ title: '¿Eliminar esta foto?', message: 'También se quitan los productos vinculados a ella.', confirmLabel: 'Eliminar foto' });
+  if (!ok) return;
+  try {
+    await api(`/admin/galleries/${gallery.id}/images/${imagen.id}`, { method: 'DELETE' });
+    gallery.imagenes = gallery.imagenes.filter((i) => i.id !== imagen.id);
+    if (editing.value?.id === imagen.id) editing.value = null;
+    toast.success('Foto eliminada');
+  } catch (error) {
+    toast.error(error.message);
+  }
+};
+
+/* ── Edición de una foto ── */
+const editing = ref(null);
+const savingImage = ref(false);
+const productSearch = ref('');
+
+const openImage = (gallery, imagen) => {
+  productSearch.value = '';
+  // Se edita el objeto real para que la cuadrícula refleje los cambios
+  imagen.productos = imagen.productos || [];
+  imagen.aspect_ratio = imagen.aspect_ratio || '1/1';
+  editing.value = Object.assign(imagen, { gallery_id: gallery.id, galleryName: gallery.nombre });
+};
+
+const productMatches = computed(() => {
+  const q = productSearch.value.trim().toLowerCase();
+  if (!q) return [];
+  const linked = new Set((editing.value?.productos || []).map((p) => p.producto_id));
+  return props.productos
+    .filter((p) => !linked.has(p.id))
+    .filter((p) => (p.nombre || '').toLowerCase().includes(q) || (p.referencia || '').toLowerCase().includes(q))
+    .slice(0, 30);
+});
+
+const saveImage = async () => {
+  savingImage.value = true;
+  try {
+    await api(`/admin/galleries/${editing.value.gallery_id}/images/${editing.value.id}`, { method: 'PUT', body: { aspect_ratio: editing.value.aspect_ratio } });
+    toast.success('Formato actualizado');
+  } catch (error) {
+    toast.error(error.message);
+  } finally {
+    savingImage.value = false;
+  }
 };
 
 const addProduct = async (producto) => {
   try {
-    const result = await requestJson(
-      `/admin/galleries/${editingImage.value.gallery_id}/images/${editingImage.value.id}/products`,
-      'POST',
-      { producto_id: producto.id }
-    );
-
-    if (result.producto) {
-      if (!editingImage.value.productos) editingImage.value.productos = [];
-      editingImage.value.productos.push({
-        id: result.producto.id,
-        producto_id: result.producto.producto_id,
-        referencia: result.producto.referencia,
-        nombre: result.producto.nombre,
-        precio: result.producto.precio,
-      });
-    }
-
+    const result = await api(`/admin/galleries/${editing.value.gallery_id}/images/${editing.value.id}/products`, { method: 'POST', body: { producto_id: producto.id } });
+    const linked = result.producto || {};
+    editing.value.productos.push({
+      id: linked.id,
+      producto_id: linked.producto_id ?? producto.id,
+      referencia: linked.referencia ?? producto.referencia,
+      nombre: linked.nombre ?? producto.nombre,
+      precio: linked.precio ?? producto.precio,
+    });
     productSearch.value = '';
-    filteredProducts.value = allProducts.value;
-    notify(`"${producto.nombre}" asociado a la imagen`);
-  } catch (e) {
-    notify(e.message, 'error');
+    toast.success(`${producto.nombre || producto.referencia} vinculado`);
+  } catch (error) {
+    toast.error(error.message);
   }
 };
 
-const removeProduct = async (idx) => {
-  const prod = editingImage.value.productos[idx];
+const removeProduct = async (index) => {
+  const prod = editing.value.productos[index];
   try {
-    await requestJson(
-      `/admin/galleries/${editingImage.value.gallery_id}/images/${editingImage.value.id}/products/${prod.id}`,
-      'DELETE',
-      {}
-    );
-    editingImage.value.productos.splice(idx, 1);
-    notify('Producto removido');
-  } catch (e) {
-    notify(e.message, 'error');
-  }
-};
-
-const saveImage = async () => {
-  try {
-    const result = await requestJson(
-      `/admin/galleries/${editingImage.value.gallery_id}/images/${editingImage.value.id}`,
-      'PUT',
-      { aspect_ratio: editingImage.value.aspect_ratio }
-    );
-    notify('Imagen actualizada correctamente');
-  } catch (e) {
-    notify(e.message, 'error');
+    await api(`/admin/galleries/${editing.value.gallery_id}/images/${editing.value.id}/products/${prod.id}`, { method: 'DELETE' });
+    editing.value.productos.splice(index, 1);
+    toast.success('Producto desvinculado');
+  } catch (error) {
+    toast.error(error.message);
   }
 };
 </script>

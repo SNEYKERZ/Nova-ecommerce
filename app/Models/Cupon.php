@@ -45,15 +45,39 @@ class Cupon extends Model
      */
     public function esValido(float $subtotal): bool
     {
-        if (!$this->esta_activo) return false;
+        if (! $this->esta_activo) {
+            return false;
+        }
 
-        if ($this->fecha_expiracion && now()->gt($this->fecha_expiracion)) return false;
+        if ($this->estaExpirado()) {
+            return false;
+        }
 
-        if ($this->max_usos && $this->usos_actuales >= $this->max_usos) return false;
+        if ($this->max_usos && $this->usos_actuales >= $this->max_usos) {
+            return false;
+        }
 
-        if ($this->monto_minimo && $subtotal < $this->monto_minimo) return false;
+        if ($this->monto_minimo && $subtotal < $this->monto_minimo) {
+            return false;
+        }
 
         return true;
+    }
+
+    /**
+     * Una fecha sin hora (00:00:00) se interpreta como "válido todo ese día".
+     */
+    public function estaExpirado(): bool
+    {
+        if (! $this->fecha_expiracion) {
+            return false;
+        }
+
+        $limite = $this->fecha_expiracion->format('H:i:s') === '00:00:00'
+            ? $this->fecha_expiracion->copy()->endOfDay()
+            : $this->fecha_expiracion;
+
+        return now()->gt($limite);
     }
 
     /**
@@ -61,11 +85,17 @@ class Cupon extends Model
      */
     public function calcularDescuento(float $subtotal): float
     {
+        if ($subtotal <= 0) {
+            return 0.0;
+        }
+
         if ($this->tipo === 'porcentaje') {
-            return min($subtotal * $this->valor_descuento / 100, $subtotal);
+            $pct = min(100, max(0, (float) $this->valor_descuento));
+
+            return round(min($subtotal * $pct / 100, $subtotal), 2);
         }
 
         // Fijo: no puede superar el subtotal
-        return min($this->valor_descuento, $subtotal);
+        return round(min((float) $this->valor_descuento, $subtotal), 2);
     }
 }

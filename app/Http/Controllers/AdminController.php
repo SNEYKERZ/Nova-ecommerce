@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CheckoutException;
+use App\Models\BloqueHome;
+use App\Models\BloqueHomeImagen;
 use App\Models\CatalogBanner;
 use App\Models\Categoria;
 use App\Models\Cupon;
@@ -9,13 +12,17 @@ use App\Models\Insumo;
 use App\Models\Noticia;
 use App\Models\Oferta;
 use App\Models\Pedido;
+use App\Models\PedidoItem;
 use App\Models\Producto;
 use App\Models\ProductoImagen;
 use App\Models\ProductoVariante;
 use App\Models\Store;
+use App\Services\InventarioService;
+use App\Services\PricingService;
 use App\Services\StylingService;
 use App\Services\TenantManager;
 use App\Traits\HasMediaUrls;
+use App\Validation\Rules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +56,7 @@ class AdminController extends Controller
                     $q->where('referencia', 'like', "%{$search}%")
                         ->orWhere('nombre', 'like', "%{$search}%")
                         ->orWhere('descripcion', 'like', "%{$search}%")
-                        ->orWhereHas('categoria', fn($cq) => $cq->where('categoria', 'like', "%{$search}%"));
+                        ->orWhereHas('categoria', fn ($cq) => $cq->where('categoria', 'like', "%{$search}%"));
                 });
             })
             ->orderByDesc('id')
@@ -69,7 +76,7 @@ class AdminController extends Controller
                 'estado' => $producto->estado,
                 'nueva_coleccion' => (bool) $producto->nueva_coleccion,
                 'stock_total' => (int) $producto->variantes->sum('stock'),
-                'stock_por_talla' => $producto->variantes->map(fn($variante) => [
+                'stock_por_talla' => $producto->variantes->map(fn ($variante) => [
                     'id' => $variante->id,
                     'talla' => $variante->talla,
                     'stock' => (int) $variante->stock,
@@ -96,12 +103,11 @@ class AdminController extends Controller
             'insumos' => $this->paginateAndMap(Insumo::class, $search, [
                 'sku' => 'sku',
                 'nombre' => 'nombre',
-                'codigo' => 'codigo',
-                'referencia' => 'referencia',
+                'proveedor' => 'proveedor',
             ], $perPage),
             'settings' => [
                 'store_name' => $settings?->nombre ?? 'Mi Tienda',
-                'logo_url' => $settings?->logo_path ? asset('storage/' . $settings->logo_path) : null,
+                'logo_url' => $settings?->logo_path ? asset('storage/'.$settings->logo_path) : null,
                 'bg_color' => $settings?->bg_color ?? '#ffffff',
                 'navbar_color' => $settings?->navbar_color ?? '#f5f5f5',
                 'footer_color' => $settings?->footer_color ?? '#5c5c5c',
@@ -123,30 +129,30 @@ class AdminController extends Controller
     public function storeProduct(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'referencia'              => ['required', 'string', 'max:255'],
-            'nombre'                  => ['nullable', 'string', 'max:255'],
-            'descripcion'             => ['nullable', 'string'],
-            'precio'                  => ['required', 'numeric', 'min:0'],
-            'categoria_id'            => ['required', 'exists:categorias,id'],
-            'tallas'                  => ['nullable', 'string'],
-            'estado'                  => ['required', 'in:DISPONIBLE,NO_DISPONIBLE'],
-            'nueva_coleccion'         => ['nullable', 'boolean'],
-            'stock_por_talla'         => ['nullable', 'array'],
-            'stock_por_talla.*.talla' => ['required', 'string', 'max:40'],
-            'stock_por_talla.*.stock' => ['required', 'integer', 'min:0'],
-            'images'                  => ['nullable', 'array', 'max:4'],
-            'images.*'                => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'referencia' => ['required', 'string', 'max:255', Rules::uniqueInTenant('productos', 'referencia')],
+            'nombre' => ['nullable', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string'],
+            'precio' => ['required', 'numeric', 'min:0'],
+            'categoria_id' => ['required', 'integer', Rules::existsInTenant('categorias')],
+            'tallas' => ['nullable', 'string'],
+            'estado' => ['required', 'in:DISPONIBLE,NO_DISPONIBLE'],
+            'nueva_coleccion' => ['nullable', 'boolean'],
+            'stock_por_talla' => ['nullable', 'array'],
+            'stock_por_talla.*.talla' => ['required', 'string', 'max:40', 'distinct'],
+            'stock_por_talla.*.stock' => ['required', 'integer', 'min:0', 'max:1000000'],
+            'images' => ['nullable', 'array', 'max:4'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ]);
 
         DB::transaction(function () use ($validated, $request) {
             $producto = Producto::create([
-                'referencia'      => $validated['referencia'],
-                'nombre'          => $validated['nombre'] ?? null,
-                'descripcion'     => $validated['descripcion'] ?? null,
-                'precio'          => $validated['precio'],
-                'categoria_id'    => $validated['categoria_id'],
-                'tallas'          => $validated['tallas'] ?? null,
-                'estado'          => $validated['estado'],
+                'referencia' => $validated['referencia'],
+                'nombre' => $validated['nombre'] ?? null,
+                'descripcion' => $validated['descripcion'] ?? null,
+                'precio' => $validated['precio'],
+                'categoria_id' => $validated['categoria_id'],
+                'tallas' => $validated['tallas'] ?? null,
+                'estado' => $validated['estado'],
                 'nueva_coleccion' => $validated['nueva_coleccion'] ?? false,
             ]);
 
@@ -160,30 +166,30 @@ class AdminController extends Controller
     public function updateProduct(Request $request, Producto $producto): JsonResponse
     {
         $validated = $request->validate([
-            'referencia'              => ['required', 'string', 'max:255'],
-            'nombre'                  => ['nullable', 'string', 'max:255'],
-            'descripcion'             => ['nullable', 'string'],
-            'precio'                  => ['required', 'numeric', 'min:0'],
-            'categoria_id'            => ['required', 'exists:categorias,id'],
-            'tallas'                  => ['nullable', 'string'],
-            'estado'                  => ['required', 'in:DISPONIBLE,NO_DISPONIBLE'],
-            'nueva_coleccion'         => ['nullable', 'boolean'],
-            'stock_por_talla'         => ['nullable', 'array'],
-            'stock_por_talla.*.talla' => ['required', 'string', 'max:40'],
-            'stock_por_talla.*.stock' => ['required', 'integer', 'min:0'],
-            'images'                  => ['nullable', 'array', 'max:4'],
-            'images.*'                => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'referencia' => ['required', 'string', 'max:255', Rules::uniqueInTenant('productos', 'referencia', $producto->id)],
+            'nombre' => ['nullable', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string'],
+            'precio' => ['required', 'numeric', 'min:0'],
+            'categoria_id' => ['required', 'integer', Rules::existsInTenant('categorias')],
+            'tallas' => ['nullable', 'string'],
+            'estado' => ['required', 'in:DISPONIBLE,NO_DISPONIBLE'],
+            'nueva_coleccion' => ['nullable', 'boolean'],
+            'stock_por_talla' => ['nullable', 'array'],
+            'stock_por_talla.*.talla' => ['required', 'string', 'max:40', 'distinct'],
+            'stock_por_talla.*.stock' => ['required', 'integer', 'min:0', 'max:1000000'],
+            'images' => ['nullable', 'array', 'max:4'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ]);
 
         DB::transaction(function () use ($validated, $request, $producto) {
             $producto->update([
-                'referencia'      => $validated['referencia'],
-                'nombre'          => $validated['nombre'] ?? null,
-                'descripcion'     => $validated['descripcion'] ?? null,
-                'precio'          => $validated['precio'],
-                'categoria_id'    => $validated['categoria_id'],
-                'tallas'          => $validated['tallas'] ?? null,
-                'estado'          => $validated['estado'],
+                'referencia' => $validated['referencia'],
+                'nombre' => $validated['nombre'] ?? null,
+                'descripcion' => $validated['descripcion'] ?? null,
+                'precio' => $validated['precio'],
+                'categoria_id' => $validated['categoria_id'],
+                'tallas' => $validated['tallas'] ?? null,
+                'estado' => $validated['estado'],
                 'nueva_coleccion' => $validated['nueva_coleccion'] ?? false,
             ]);
 
@@ -196,11 +202,29 @@ class AdminController extends Controller
 
     public function deleteProduct(Producto $producto): JsonResponse
     {
-        $paths = $producto->imagenes()->pluck('imagen')->toArray();
-        if (!empty($paths)) {
-            Storage::disk('public')->delete($paths);
+        // pedido_items.producto_id tiene ON DELETE CASCADE: borrar un producto
+        // vendido eliminaría líneas de pedidos históricos y descuadraría totales.
+        // Sin scope de tienda: cuenta también líneas legacy con store_id NULL
+        if (PedidoItem::withoutGlobalScopes()->where('producto_id', $producto->id)->exists()) {
+            $producto->update(['estado' => 'NO_DISPONIBLE']);
+
+            return response()->json([
+                'success' => true,
+                'archived' => true,
+                'message' => 'El producto tiene pedidos asociados: se marcó como NO DISPONIBLE en lugar de eliminarse.',
+            ]);
         }
+
+        $paths = array_filter(array_unique(array_merge(
+            $producto->imagenes()->pluck('imagen')->toArray(),
+            [$producto->foto],
+        )));
+
         $producto->delete();
+
+        foreach ($paths as $path) {
+            $this->deleteMediaPath($path);
+        }
 
         return response()->json(['success' => true, 'message' => 'Producto eliminado.']);
     }
@@ -210,7 +234,7 @@ class AdminController extends Controller
      */
     public function toggleNuevaColeccion(Producto $producto): JsonResponse
     {
-        $producto->update(['nueva_coleccion' => !$producto->nueva_coleccion]);
+        $producto->update(['nueva_coleccion' => ! $producto->nueva_coleccion]);
 
         return response()->json([
             'success' => true,
@@ -224,9 +248,9 @@ class AdminController extends Controller
         $validated = $request->validate([
             'titulo' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string'],
-            'producto_id' => ['nullable', 'exists:productos,id'],
-            'categoria_id' => ['nullable', 'exists:categorias,id'],
-            'descuento_porcentaje' => ['nullable', 'numeric', 'min:0'],
+            'producto_id' => ['nullable', 'integer', Rules::existsInTenant('productos')],
+            'categoria_id' => ['nullable', 'integer', Rules::existsInTenant('categorias')],
+            'descuento_porcentaje' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'descuento_fijo' => ['nullable', 'numeric', 'min:0'],
             'precio_oferta' => ['nullable', 'numeric', 'min:0'],
             'fecha_inicio' => ['required', 'date'],
@@ -236,6 +260,10 @@ class AdminController extends Controller
 
         if (empty($validated['producto_id']) && empty($validated['categoria_id'])) {
             return response()->json(['success' => false, 'message' => 'Selecciona producto o categoria.'], 422);
+        }
+
+        if (empty($validated['descuento_porcentaje']) && empty($validated['descuento_fijo']) && empty($validated['precio_oferta'])) {
+            return response()->json(['success' => false, 'message' => 'Indica un porcentaje, un descuento fijo o un precio de oferta.'], 422);
         }
 
         Oferta::create($validated);
@@ -248,9 +276,9 @@ class AdminController extends Controller
         $validated = $request->validate([
             'titulo' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string'],
-            'producto_id' => ['nullable', 'exists:productos,id'],
-            'categoria_id' => ['nullable', 'exists:categorias,id'],
-            'descuento_porcentaje' => ['nullable', 'numeric', 'min:0'],
+            'producto_id' => ['nullable', 'integer', Rules::existsInTenant('productos')],
+            'categoria_id' => ['nullable', 'integer', Rules::existsInTenant('categorias')],
+            'descuento_porcentaje' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'descuento_fijo' => ['nullable', 'numeric', 'min:0'],
             'precio_oferta' => ['nullable', 'numeric', 'min:0'],
             'fecha_inicio' => ['required', 'date'],
@@ -260,6 +288,10 @@ class AdminController extends Controller
 
         if (empty($validated['producto_id']) && empty($validated['categoria_id'])) {
             return response()->json(['success' => false, 'message' => 'Selecciona producto o categoria.'], 422);
+        }
+
+        if (empty($validated['descuento_porcentaje']) && empty($validated['descuento_fijo']) && empty($validated['precio_oferta'])) {
+            return response()->json(['success' => false, 'message' => 'Indica un porcentaje, un descuento fijo o un precio de oferta.'], 422);
         }
 
         $oferta->update($validated);
@@ -295,7 +327,7 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:80', 'unique:insumos,sku'],
+            'sku' => ['required', 'string', 'max:80', Rules::uniqueInTenant('insumos', 'sku')],
             'unidad' => ['required', 'string', 'max:50'],
             'tipo_registro' => ['required', 'in:PAQUETE,UNIDAD'],
             'unidades_por_paquete' => ['nullable', 'integer', 'min:1'],
@@ -318,7 +350,7 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:80', 'unique:insumos,sku,' . $insumo->id],
+            'sku' => ['required', 'string', 'max:80', Rules::uniqueInTenant('insumos', 'sku', $insumo->id)],
             'unidad' => ['required', 'string', 'max:50'],
             'tipo_registro' => ['required', 'in:PAQUETE,UNIDAD'],
             'unidades_por_paquete' => ['nullable', 'integer', 'min:1'],
@@ -348,7 +380,7 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'store_name' => ['required', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:10240'],
+            'logo' => array_merge(['nullable'], Rules::uploadedImage()),
             'bg_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
             'navbar_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
             'footer_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
@@ -361,7 +393,7 @@ class AdminController extends Controller
         $tenantManager = app(TenantManager::class);
         $store = $tenantManager->getStore();
 
-        if (!$store) {
+        if (! $store) {
             return response()->json(['success' => false, 'message' => 'No hay tienda seleccionada.'], 422);
         }
 
@@ -383,25 +415,31 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'message' => 'Configuracion de tienda actualizada.']);
     }
 
-    public function updatePedidoEstado(Request $request, Pedido $pedido): JsonResponse
+    public function updatePedidoEstado(Request $request, Pedido $pedido, InventarioService $inventario): JsonResponse
     {
         $validated = $request->validate([
             'estado' => ['required', 'in:PENDIENTE,CONFIRMADO,ENVIADO,ENTREGADO,CANCELADO'],
         ]);
 
         $nuevoEstado = $validated['estado'];
-        $pedido->update(['estado' => $nuevoEstado]);
 
-        // Si se confirma, descontar stock
-        if ($nuevoEstado === 'CONFIRMADO') {
-            $pedido->load('items');
-            foreach ($pedido->items as $item) {
-                if ($item->talla) {
-                    ProductoVariante::where('producto_id', $item->producto_id)
-                        ->where('talla', $item->talla)
-                        ->decrement('stock', $item->cantidad);
+        try {
+            DB::transaction(function () use ($pedido, $nuevoEstado, $inventario) {
+                $pedido = Pedido::whereKey($pedido->id)->lockForUpdate()->firstOrFail();
+
+                if ($nuevoEstado === 'CANCELADO') {
+                    // Reponer el stock reservado (una sola vez)
+                    $inventario->liberarPedido($pedido);
+                } elseif ($nuevoEstado !== 'PENDIENTE' || $pedido->estado === 'CANCELADO') {
+                    // Confirmar / enviar / entregar o reactivar un cancelado:
+                    // el stock debe estar descontado exactamente una vez.
+                    $inventario->reservarPedido($pedido);
                 }
-            }
+
+                $pedido->update(['estado' => $nuevoEstado]);
+            });
+        } catch (CheckoutException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
 
         return response()->json(['success' => true, 'message' => 'Estado del pedido actualizado.']);
@@ -432,8 +470,12 @@ class AdminController extends Controller
         // Actualizar datos de cliente si existe
         if ($pedido->cliente && (isset($validated['nombre']) || isset($validated['telefono']))) {
             $data = [];
-            if (isset($validated['nombre'])) $data['nombre'] = $validated['nombre'];
-            if (isset($validated['telefono'])) $data['telefono'] = $validated['telefono'];
+            if (isset($validated['nombre'])) {
+                $data['nombre'] = $validated['nombre'];
+            }
+            if (isset($validated['telefono'])) {
+                $data['telefono'] = $validated['telefono'];
+            }
             $pedido->cliente->update($data);
         }
 
@@ -443,34 +485,46 @@ class AdminController extends Controller
     /**
      * PUT /admin/pedidos/{pedido}/items/{item} - Actualizar item del pedido (cantidad, talla)
      */
-    public function updatePedidoItem(Request $request, Pedido $pedido, \App\Models\PedidoItem $item): JsonResponse
+    public function updatePedidoItem(Request $request, Pedido $pedido, PedidoItem $item, InventarioService $inventario): JsonResponse
     {
-        if ($item->pedido_id !== $pedido->id) {
+        if ((int) $item->pedido_id !== (int) $pedido->id) {
             return response()->json(['success' => false, 'message' => 'Item no pertenece al pedido.'], 422);
         }
 
         $validated = $request->validate([
-            'cantidad' => ['nullable', 'integer', 'min:1'],
-            'talla' => ['nullable', 'string', 'max:255'],
+            'cantidad' => ['nullable', 'integer', 'min:1', 'max:999'],
+            'talla' => ['nullable', 'string', 'max:40'],
         ]);
 
-        if (isset($validated['cantidad'])) {
-            $item->cantidad = $validated['cantidad'];
-        }
-        if (array_key_exists('talla', $validated)) {
-            $item->talla = $validated['talla'];
-        }
+        try {
+            DB::transaction(function () use ($validated, $pedido, $item, $inventario) {
+                $anteriorTalla = $item->talla;
+                $anteriorCantidad = (int) $item->cantidad;
 
-        // Recalcular subtotal
-        $item->subtotal = $item->precio_unitario * $item->cantidad;
-        $item->save();
+                if (isset($validated['cantidad'])) {
+                    $item->cantidad = $validated['cantidad'];
+                }
+                if (array_key_exists('talla', $validated)) {
+                    $item->talla = $validated['talla'];
+                }
 
-        // Recalcular total del pedido
-        $nuevoTotal = $pedido->items()->sum('subtotal');
-        if ($pedido->descuento_cupon > 0) {
-            $nuevoTotal -= $pedido->descuento_cupon;
+                // Ajustar inventario si el pedido tiene stock reservado
+                if ($anteriorTalla !== $item->talla) {
+                    $inventario->ajustarItem($pedido, $item->producto_id, $anteriorTalla, -$anteriorCantidad);
+                    $inventario->ajustarItem($pedido, $item->producto_id, $item->talla, (int) $item->cantidad);
+                } else {
+                    $inventario->ajustarItem($pedido, $item->producto_id, $item->talla, (int) $item->cantidad - $anteriorCantidad);
+                }
+
+                // Recalcular subtotal
+                $item->subtotal = $item->precio_unitario * $item->cantidad;
+                $item->save();
+
+                $this->recalcularTotalPedido($pedido);
+            });
+        } catch (CheckoutException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
-        $pedido->update(['total' => max(0, $nuevoTotal)]);
 
         return response()->json([
             'success' => true,
@@ -482,20 +536,17 @@ class AdminController extends Controller
     /**
      * DELETE /admin/pedidos/{pedido}/items/{item} - Eliminar item del pedido
      */
-    public function deletePedidoItem(Pedido $pedido, \App\Models\PedidoItem $item): JsonResponse
+    public function deletePedidoItem(Pedido $pedido, PedidoItem $item, InventarioService $inventario): JsonResponse
     {
-        if ($item->pedido_id !== $pedido->id) {
+        if ((int) $item->pedido_id !== (int) $pedido->id) {
             return response()->json(['success' => false, 'message' => 'Item no pertenece al pedido.'], 422);
         }
 
-        $item->delete();
-
-        // Recalcular total
-        $nuevoTotal = $pedido->items()->sum('subtotal');
-        if ($pedido->descuento_cupon > 0) {
-            $nuevoTotal -= $pedido->descuento_cupon;
-        }
-        $pedido->update(['total' => max(0, $nuevoTotal)]);
+        DB::transaction(function () use ($pedido, $item, $inventario) {
+            $inventario->ajustarItem($pedido, $item->producto_id, $item->talla, -((int) $item->cantidad));
+            $item->delete();
+            $this->recalcularTotalPedido($pedido);
+        });
 
         return response()->json([
             'success' => true,
@@ -507,33 +558,44 @@ class AdminController extends Controller
     /**
      * POST /admin/pedidos/{pedido}/items - Agregar item al pedido
      */
-    public function storePedidoItem(Request $request, Pedido $pedido): JsonResponse
+    public function storePedidoItem(Request $request, Pedido $pedido, InventarioService $inventario, PricingService $pricing): JsonResponse
     {
         $validated = $request->validate([
-            'producto_id' => ['required', 'exists:productos,id'],
-            'cantidad' => ['required', 'integer', 'min:1'],
-            'talla' => ['nullable', 'string', 'max:255'],
+            'producto_id' => ['required', 'integer', Rules::existsInTenant('productos')],
+            'cantidad' => ['required', 'integer', 'min:1', 'max:999'],
+            'talla' => ['nullable', 'string', 'max:40'],
         ]);
 
-        $producto = \App\Models\Producto::findOrFail($validated['producto_id']);
-        $precio = (float) $producto->precio;
-        $subtotal = $precio * $validated['cantidad'];
+        $producto = Producto::findOrFail($validated['producto_id']);
+        $talla = isset($validated['talla']) && trim($validated['talla']) !== '' ? trim($validated['talla']) : null;
+        $variante = $talla !== null
+            ? ProductoVariante::where('producto_id', $producto->id)->where('talla', $talla)->first()
+            : null;
 
-        $item = \App\Models\PedidoItem::create([
-            'pedido_id' => $pedido->id,
-            'producto_id' => $validated['producto_id'],
-            'cantidad' => $validated['cantidad'],
-            'precio_unitario' => $precio,
-            'subtotal' => $subtotal,
-            'talla' => $validated['talla'] ?? null,
-        ]);
+        // Precio calculado en servidor (con oferta vigente)
+        $precio = $pricing->precioUnitario($producto, $variante);
+        $subtotal = round($precio * $validated['cantidad'], 2);
 
-        // Recalcular total
-        $nuevoTotal = $pedido->items()->sum('subtotal');
-        if ($pedido->descuento_cupon > 0) {
-            $nuevoTotal -= $pedido->descuento_cupon;
+        try {
+            $item = DB::transaction(function () use ($pedido, $producto, $validated, $talla, $precio, $subtotal, $inventario) {
+                $inventario->ajustarItem($pedido, $producto->id, $talla, (int) $validated['cantidad']);
+
+                $item = PedidoItem::create([
+                    'pedido_id' => $pedido->id,
+                    'producto_id' => $producto->id,
+                    'cantidad' => $validated['cantidad'],
+                    'precio_unitario' => $precio,
+                    'subtotal' => $subtotal,
+                    'talla' => $talla,
+                ]);
+
+                $this->recalcularTotalPedido($pedido);
+
+                return $item;
+            });
+        } catch (CheckoutException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
-        $pedido->update(['total' => max(0, $nuevoTotal)]);
 
         return response()->json([
             'success' => true,
@@ -543,29 +605,39 @@ class AdminController extends Controller
         ], 201);
     }
 
+    /**
+     * Total = suma de subtotales - descuento de cupón (nunca negativo).
+     */
+    private function recalcularTotalPedido(Pedido $pedido): void
+    {
+        $nuevoTotal = (float) $pedido->items()->sum('subtotal') - (float) $pedido->descuento_cupon;
+        $pedido->update(['total' => max(0, round($nuevoTotal, 2))]);
+    }
+
     // ==================== CUPONES ====================
 
     public function storeCupon(Request $request): JsonResponse
     {
+        $request->merge(['codigo' => mb_strtoupper(trim((string) $request->input('codigo')))]);
+
         $validated = $request->validate([
-            'codigo' => ['required', 'string', 'max:50'],
+            'codigo' => ['required', 'string', 'max:50', 'regex:/^[A-Z0-9_-]+$/'],
             'tipo' => ['required', 'in:porcentaje,fijo'],
-            'valor_descuento' => ['required', 'numeric', 'min:0.01'],
+            'valor_descuento' => ['required', 'numeric', 'min:0.01', $request->input('tipo') === 'porcentaje' ? 'max:100' : 'max:99999999'],
             'monto_minimo' => ['nullable', 'numeric', 'min:0'],
             'max_usos' => ['nullable', 'integer', 'min:1'],
             'fecha_expiracion' => ['nullable', 'date'],
             'esta_activo' => ['nullable', 'boolean'],
         ]);
 
-        $tenantManager = app(TenantManager::class);
-        $store = $tenantManager->getStore();
+        $store = app(TenantManager::class)->getStore();
 
         // Verificar unicidad del código en esta tienda
         $existe = Cupon::where('codigo', $validated['codigo'])->exists();
         if ($existe) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ya existe un cupón con ese código en esta tienda.'
+                'message' => 'Ya existe un cupón con ese código en esta tienda.',
             ], 422);
         }
 
@@ -583,16 +655,18 @@ class AdminController extends Controller
         return response()->json([
             'success' => true,
             'cupon' => $cupon,
-            'message' => 'Cupón creado correctamente.'
+            'message' => 'Cupón creado correctamente.',
         ], 201);
     }
 
     public function updateCupon(Request $request, Cupon $cupon): JsonResponse
     {
+        $request->merge(['codigo' => mb_strtoupper(trim((string) $request->input('codigo')))]);
+
         $validated = $request->validate([
-            'codigo' => ['required', 'string', 'max:50'],
+            'codigo' => ['required', 'string', 'max:50', 'regex:/^[A-Z0-9_-]+$/'],
             'tipo' => ['required', 'in:porcentaje,fijo'],
-            'valor_descuento' => ['required', 'numeric', 'min:0.01'],
+            'valor_descuento' => ['required', 'numeric', 'min:0.01', $request->input('tipo') === 'porcentaje' ? 'max:100' : 'max:99999999'],
             'monto_minimo' => ['nullable', 'numeric', 'min:0'],
             'max_usos' => ['nullable', 'integer', 'min:1'],
             'fecha_expiracion' => ['nullable', 'date'],
@@ -606,7 +680,7 @@ class AdminController extends Controller
         if ($existe) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ya existe otro cupón con ese código en esta tienda.'
+                'message' => 'Ya existe otro cupón con ese código en esta tienda.',
             ], 422);
         }
 
@@ -623,7 +697,7 @@ class AdminController extends Controller
         return response()->json([
             'success' => true,
             'cupon' => $cupon,
-            'message' => 'Cupón actualizado correctamente.'
+            'message' => 'Cupón actualizado correctamente.',
         ]);
     }
 
@@ -633,7 +707,7 @@ class AdminController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cupón eliminado correctamente.'
+            'message' => 'Cupón eliminado correctamente.',
         ]);
     }
 
@@ -641,34 +715,34 @@ class AdminController extends Controller
 
     private function getPedidosList(int $perPage = 15)
     {
-        return Pedido::with(['cliente', 'items'])
+        return Pedido::with(['cliente', 'items.producto'])
             ->orderByDesc('id')
             ->paginate($perPage)
             ->withQueryString()
-            ->through(fn(Pedido $p) => [
-                'id'              => $p->id,
-                'total'           => (float) $p->total,
+            ->through(fn (Pedido $p) => [
+                'id' => $p->id,
+                'total' => (float) $p->total,
                 'descuento_cupon' => (float) ($p->descuento_cupon ?? 0),
-                'estado'          => $p->estado,
-                'origen'          => $p->origen ?? 'web',
-                'direccion'       => $p->direccion_envio,
-                'cliente'     => [
-                    'nombre'    => $p->cliente?->nombre,
+                'estado' => $p->estado,
+                'origen' => $p->origen ?? 'web',
+                'direccion' => $p->direccion_envio,
+                'cliente' => [
+                    'nombre' => $p->cliente?->nombre,
                     'apellidos' => $p->cliente?->apellidos,
-                    'email'     => $p->cliente?->email,
-                    'telefono'  => $p->cliente?->telefono,
+                    'email' => $p->cliente?->email,
+                    'telefono' => $p->cliente?->telefono,
                 ],
                 'items_count' => $p->items->count(),
-                'items'       => $p->items->map(fn($i) => [
-                    'id'                  => $i->id,
-                    'producto_id'         => $i->producto_id,
+                'items' => $p->items->map(fn ($i) => [
+                    'id' => $i->id,
+                    'producto_id' => $i->producto_id,
                     'producto_referencia' => $i->producto?->referencia ?? '—',
-                    'precio_unitario'     => (float) $i->precio_unitario,
-                    'cantidad'            => $i->cantidad,
-                    'talla'               => $i->talla,
-                    'subtotal'            => (float) $i->subtotal,
+                    'precio_unitario' => (float) $i->precio_unitario,
+                    'cantidad' => $i->cantidad,
+                    'talla' => $i->talla,
+                    'subtotal' => (float) $i->subtotal,
                 ]),
-                'created_at'  => $p->created_at?->format('d/m/Y H:i'),
+                'created_at' => $p->created_at?->format('d/m/Y H:i'),
             ]);
     }
 
@@ -681,6 +755,7 @@ class AdminController extends Controller
 
         if ($sizeKeys->isEmpty()) {
             ProductoVariante::where('producto_id', $producto->id)->delete();
+
             return;
         }
 
@@ -696,7 +771,7 @@ class AdminController extends Controller
                     'color' => 'STD',
                 ],
                 [
-                    'sku' => $producto->referencia . '-' . $item['talla'],
+                    'sku' => $producto->referencia.'-'.$item['talla'],
                     'stock' => $item['stock'],
                     'precio_adicional' => 0,
                     'esta_activa' => true,
@@ -707,7 +782,7 @@ class AdminController extends Controller
 
     private function syncProductImages(Producto $producto, Request $request, bool $replaceExisting): void
     {
-        if (!$request->hasFile('images')) {
+        if (! $request->hasFile('images')) {
             return;
         }
 
@@ -715,7 +790,7 @@ class AdminController extends Controller
 
         if ($replaceExisting) {
             $oldPaths = $producto->imagenes()->pluck('imagen')->toArray();
-            if (!empty($oldPaths)) {
+            if (! empty($oldPaths)) {
                 Storage::disk('public')->delete($oldPaths);
             }
             $producto->imagenes()->delete();
@@ -753,6 +828,7 @@ class AdminController extends Controller
 
             $validated['cantidad_compra'] = null;
             $validated['costo_unitario'] = round($total / $units, 2);
+
             return $validated;
         }
 
@@ -779,9 +855,9 @@ class AdminController extends Controller
         $result = [];
 
         for ($posicion = 1; $posicion <= 2; $posicion++) {
-            $bloque = \App\Models\BloqueHome::getAllPorPosicion($posicion);
+            $bloque = BloqueHome::getAllPorPosicion($posicion);
 
-            if (!$bloque) {
+            if (! $bloque) {
                 $result[$posicion] = [
                     'posicion' => $posicion,
                     'tipo' => 'banner',
@@ -791,6 +867,7 @@ class AdminController extends Controller
                     'activo' => true,
                     'imagenes' => [],
                 ];
+
                 continue;
             }
 
@@ -805,7 +882,7 @@ class AdminController extends Controller
             ];
 
             if ($bloque->tipo === 'banner') {
-                $data['imagenes'] = $bloque->imagenes->map(fn($img) => [
+                $data['imagenes'] = $bloque->imagenes->map(fn ($img) => [
                     'id' => $img->id,
                     'nombre' => $img->nombre,
                     'identificador' => $img->identificador,
@@ -826,7 +903,7 @@ class AdminController extends Controller
     /**
      * PUT /admin/bloques - Guardar configuración de bloque
      */
-    public function updateBloque(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    public function updateBloque(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'posicion' => 'required|integer|min:1|max:2',
@@ -845,7 +922,7 @@ class AdminController extends Controller
             'image_links.*.regex' => 'Las URLs deben ser válidas (http://, https://, ruta relativa o #ancla)',
         ]);
 
-        $bloque = \App\Models\BloqueHome::getAllPorPosicion($validated['posicion']);
+        $bloque = BloqueHome::getAllPorPosicion($validated['posicion']);
 
         if ($bloque) {
             $bloque->update([
@@ -856,7 +933,7 @@ class AdminController extends Controller
                 'activo' => $validated['activo'] ?? true,
             ]);
         } else {
-            $bloque = \App\Models\BloqueHome::create([
+            $bloque = BloqueHome::create([
                 'posicion' => $validated['posicion'],
                 'tipo' => $validated['tipo'],
                 'titulo' => $validated['titulo'] ?? null,
@@ -873,10 +950,10 @@ class AdminController extends Controller
                 $nextOrder = ((int) $bloque->imagenes()->max('orden')) + 1;
                 $path = $this->storeVisualImage($file);
 
-                \App\Models\BloqueHomeImagen::create([
+                BloqueHomeImagen::create([
                     'bloque_home_id' => $bloque->id,
                     'imagen' => $path,
-                    'nombre' => 'Slide ' . $nextOrder,
+                    'nombre' => 'Slide '.$nextOrder,
                     'identificador' => 'carrusel',
                     'url_destino' => null,
                     'orden' => $nextOrder,
@@ -885,17 +962,17 @@ class AdminController extends Controller
         }
 
         foreach (($validated['image_names'] ?? []) as $imageId => $nombre) {
-            \App\Models\BloqueHomeImagen::where('bloque_home_id', $bloque->id)
-                ->where('id', $imageId)
+            $bloque->imagenes()
+                ->whereKey($imageId)
                 ->update([
-                    'nombre' => $nombre ?: 'Slide ' . $imageId,
+                    'nombre' => $nombre ?: 'Slide '.$imageId,
                     'identificador' => 'carrusel',
                 ]);
         }
 
         foreach (($validated['image_links'] ?? []) as $imageId => $urlDestino) {
-            \App\Models\BloqueHomeImagen::where('bloque_home_id', $bloque->id)
-                ->where('id', $imageId)
+            $bloque->imagenes()
+                ->whereKey($imageId)
                 ->update(['url_destino' => $urlDestino ?: null]);
         }
 
@@ -908,14 +985,14 @@ class AdminController extends Controller
     /**
      * POST /admin/bloques/{id}/imagenes - Agregar imagen
      */
-    public function storeBloqueImagen(\Illuminate\Http\Request $request, int $id): \Illuminate\Http\JsonResponse
+    public function storeBloqueImagen(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
             'imagen' => 'required|image|mimes:jpg,jpeg,png,webp|max:10240',
-            'url_destino' => 'nullable|url',
+            'url_destino' => Rules::urlRules(),
         ]);
 
-        $bloque = \App\Models\BloqueHome::findOrFail($id);
+        $bloque = BloqueHome::findOrFail($id);
 
         if ($bloque->tipo !== 'banner') {
             return response()->json([
@@ -933,10 +1010,10 @@ class AdminController extends Controller
 
         $imagen = $this->storeVisualImage($request->file('imagen'));
 
-        $bloqueImg = \App\Models\BloqueHomeImagen::create([
+        $bloqueImg = BloqueHomeImagen::create([
             'bloque_home_id' => $bloque->id,
             'imagen' => $imagen,
-            'nombre' => 'Slide ' . (((int) $bloque->imagenes()->max('orden')) + 1),
+            'nombre' => 'Slide '.(((int) $bloque->imagenes()->max('orden')) + 1),
             'identificador' => 'carrusel',
             'url_destino' => $validated['url_destino'] ?? null,
             'orden' => $bloque->imagenes()->max('orden') + 1,
@@ -958,9 +1035,11 @@ class AdminController extends Controller
     /**
      * DELETE /admin/bloques/{id}/imagenes/{imgId} - Eliminar imagen
      */
-    public function destroyBloqueImagen(int $id, int $imgId): \Illuminate\Http\JsonResponse
+    public function destroyBloqueImagen(int $id, int $imgId): JsonResponse
     {
-        $imagen = \App\Models\BloqueHomeImagen::where('bloque_home_id', $id)->findOrFail($imgId);
+        // El bloque se busca con el scope de la tienda actual
+        $bloque = BloqueHome::findOrFail($id);
+        $imagen = $bloque->imagenes()->whereKey($imgId)->firstOrFail();
 
         $this->deleteMediaPath($imagen->imagen);
         $imagen->delete();
@@ -996,7 +1075,7 @@ class AdminController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $request) {
-            $bloque = \App\Models\BloqueHome::getAllPorPosicion(1);
+            $bloque = BloqueHome::getAllPorPosicion(1);
 
             if ($bloque) {
                 $bloque->update([
@@ -1004,7 +1083,7 @@ class AdminController extends Controller
                     'activo' => $validated['carousel_active'] ?? true,
                 ]);
             } else {
-                $bloque = \App\Models\BloqueHome::create([
+                $bloque = BloqueHome::create([
                     'posicion' => 1,
                     'tipo' => 'banner',
                     'activo' => $validated['carousel_active'] ?? true,
@@ -1012,27 +1091,27 @@ class AdminController extends Controller
             }
 
             foreach (($validated['carousel_existing_names'] ?? []) as $imageId => $nombre) {
-                \App\Models\BloqueHomeImagen::where('bloque_home_id', $bloque->id)
-                    ->where('id', $imageId)
+                $bloque->imagenes()
+                    ->whereKey($imageId)
                     ->update([
-                        'nombre' => $nombre ?: 'Slide ' . $imageId,
+                        'nombre' => $nombre ?: 'Slide '.$imageId,
                         'identificador' => 'carrusel',
                     ]);
             }
 
             foreach (($validated['carousel_existing_links'] ?? []) as $imageId => $urlDestino) {
-                \App\Models\BloqueHomeImagen::where('bloque_home_id', $bloque->id)
-                    ->where('id', $imageId)
+                $bloque->imagenes()
+                    ->whereKey($imageId)
                     ->update(['url_destino' => $urlDestino ?: null]);
             }
 
             foreach ($request->file('carousel_images', []) as $file) {
                 $nextOrder = ((int) $bloque->imagenes()->max('orden')) + 1;
 
-                \App\Models\BloqueHomeImagen::create([
+                BloqueHomeImagen::create([
                     'bloque_home_id' => $bloque->id,
                     'imagen' => $this->storeVisualImage($file),
-                    'nombre' => 'Slide ' . $nextOrder,
+                    'nombre' => 'Slide '.$nextOrder,
                     'identificador' => 'carrusel',
                     'url_destino' => null,
                     'orden' => $nextOrder,
@@ -1148,8 +1227,8 @@ class AdminController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('titulo', 'like', "%{$search}%")
                     ->orWhere('descripcion', 'like', "%{$search}%")
-                    ->orWhereHas('producto', fn($pq) => $pq->where('referencia', 'like', "%{$search}%"))
-                    ->orWhereHas('categoria', fn($cq) => $cq->where('categoria', 'like', "%{$search}%"));
+                    ->orWhereHas('producto', fn ($pq) => $pq->where('referencia', 'like', "%{$search}%"))
+                    ->orWhereHas('categoria', fn ($cq) => $cq->where('categoria', 'like', "%{$search}%"));
             });
         }
 

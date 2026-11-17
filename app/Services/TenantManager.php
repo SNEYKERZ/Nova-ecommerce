@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 /**
  * TenantManager - Servicio central para gestión de multi-tenant
- * 
+ *
  * Responsabilidades:
  * - Detectar el tenant actual desde el request (subdomain o dominio)
  * - Proporcionar acceso al store actual
@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 class TenantManager
 {
     protected ?Store $currentStore = null;
+
     protected bool $isSuperAdmin = false;
 
     /**
@@ -40,6 +41,7 @@ class TenantManager
     public function setStore(?Store $store): self
     {
         $this->currentStore = $store;
+
         return $this;
     }
 
@@ -65,7 +67,25 @@ class TenantManager
     public function setSuperAdmin(bool $value = true): self
     {
         $this->isSuperAdmin = $value;
+
         return $this;
+    }
+
+    /**
+     * ¿El request viene de localhost en un entorno de desarrollo/testing?
+     *
+     * En producción siempre devuelve false: el header Host lo controla el
+     * cliente y no debe poder activar el modo "?store=" de desarrollo.
+     */
+    public function isLocalRequest(Request $request): bool
+    {
+        if (! app()->environment('local', 'testing')) {
+            return false;
+        }
+
+        $host = $request->getHost();
+
+        return in_array($host, ['localhost', '127.0.0.1'], true);
     }
 
     /**
@@ -74,17 +94,16 @@ class TenantManager
      */
     public function resolveFromRequest(Request $request): ?Store
     {
-        $host = $request->getHost();
+        $host = strtolower($request->getHost());
         $domainSuffix = $this->getDomainSuffix();
 
-        // 0. Localhost: ?store= query param → session → env
-        $isLocal = in_array($host, ['localhost', '127.0.0.1']) ||
-                   str_starts_with($host, 'localhost:');
-        if ($isLocal) {
+        // 0. Localhost (sólo local/testing): ?store= query param → session → config
+        if ($this->isLocalRequest($request)) {
             $slug = $request->query('store')
-                 ?: session('tenant_store')
-                 ?: env('LOCAL_STORE_SLUG', 'demo');
-            return $slug
+                 ?: ($request->hasSession() ? $request->session()->get('tenant_store') : null)
+                 ?: config('vendex.local_store_slug', 'demo');
+
+            return is_string($slug) && $slug !== ''
                 ? Store::where('slug', $slug)->where('activo', true)->first()
                 : null;
         }
@@ -105,20 +124,11 @@ class TenantManager
      */
     protected function extractSubdomain(string $host, string $domainSuffix): ?string
     {
-        // Si el host termina en el dominio configurado, extraer el subdomain
-        if (str_ends_with($host, '.' . $domainSuffix)) {
-            $parts = explode('.', $host);
-            if (count($parts) >= 2) {
-                return $parts[0]; // Primera parte es el subdomain
-            }
-        }
+        if (str_ends_with($host, '.'.$domainSuffix)) {
+            $subdomain = substr($host, 0, -strlen('.'.$domainSuffix));
+            $parts = explode('.', $subdomain);
 
-        // Excepción: localhost para desarrollo
-        // Usar LOCAL_STORE_SLUG del .env para elegir qué tienda cargar en localhost
-        // Ejemplo: LOCAL_STORE_SLUG=demo o LOCAL_STORE_SLUG=urbanstyle
-        if ($host === 'localhost' || str_starts_with($host, 'localhost:')) {
-            $localSlug = env('LOCAL_STORE_SLUG', 'demo');
-            return $localSlug ?: 'demo';
+            return $parts[0] !== '' ? $parts[0] : null;
         }
 
         return null;
@@ -148,6 +158,7 @@ class TenantManager
     {
         $this->currentStore = null;
         $this->isSuperAdmin = false;
+
         return $this;
     }
 
@@ -156,14 +167,14 @@ class TenantManager
      */
     public function getBaseUrl(): string
     {
-        if (!$this->currentStore) {
+        if (! $this->currentStore) {
             return config('app.url');
         }
 
         if ($this->currentStore->dominio) {
-            return 'https://' . $this->currentStore->dominio;
+            return 'https://'.$this->currentStore->dominio;
         }
 
-        return 'https://' . $this->currentStore->slug . '.' . $this->getDomainSuffix();
+        return 'https://'.$this->currentStore->slug.'.'.$this->getDomainSuffix();
     }
 }

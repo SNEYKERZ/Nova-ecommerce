@@ -18,6 +18,7 @@ class Store extends Model
         'email',
         'telefono',
         'descripcion',
+        'rubro',
         'configuracion',
         'activo',
         'bg_color',
@@ -26,6 +27,9 @@ class Store extends Model
         'navbar_text_color',
         'footer_text_color',
     ];
+
+    /** Rubros soportados por el storefront (preset visual por tipo de negocio). */
+    public const RUBROS = ['general', 'moda', 'restaurante', 'autopartes'];
 
     protected $casts = [
         'configuracion' => 'array',

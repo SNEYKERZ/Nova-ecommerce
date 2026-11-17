@@ -24,6 +24,8 @@ return new class extends Migration
         Schema::table('productos', function (Blueprint $table) {
             $table->dropUnique('productos_referencia_store_unique');
         });
-        $table->unique('referencia', 'productos_referencia_unique');
+        Schema::table('productos', function (Blueprint $table) {
+            $table->unique('referencia', 'productos_referencia_unique');
+        });
     }
 };

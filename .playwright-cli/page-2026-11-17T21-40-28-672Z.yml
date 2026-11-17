@@ -1,0 +1,382 @@
+- generic [ref=f2e3]:
+  - link "Saltar al contenido" [ref=f2e4] [cursor=pointer]:
+    - /url: "#contenido"
+  - banner [ref=f2e5]:
+    - generic [ref=f2e6]:
+      - navigation "Principal" [ref=f2e8]:
+        - link "Catálogo" [ref=f2e9] [cursor=pointer]:
+          - /url: /
+        - link "Galería" [ref=f2e10] [cursor=pointer]:
+          - /url: /galerias
+        - link "Nosotros" [ref=f2e11] [cursor=pointer]:
+          - /url: /conocenos
+      - link "WebCaps Demo, ir al inicio" [ref=f2e12] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f2e13]: WebCaps Demo
+      - link "Carrito vacío" [ref=f2e15] [cursor=pointer]:
+        - /url: /carrito
+        - generic [ref=f2e16]: Carrito
+        - generic [aria-hidden] [ref=f2e17]: "0"
+  - main [ref=f2e18]:
+    - generic [ref=f2e19]:
+      - heading "WebCaps Demo" [level=1] [ref=f2e20]
+      - generic [ref=f2e21]:
+        - paragraph [ref=f2e22]: Tienda demo de WebCaps — gorras y accesorios urbanos
+        - generic [ref=f2e23]:
+          - paragraph [ref=f2e24]: 16 productos · 5 categorías
+          - link "Ver catálogo" [ref=f2e25] [cursor=pointer]:
+            - /url: "#catalogo"
+    - region "Promociones" [ref=f2e26]:
+      - list [ref=f2e27]:
+        - listitem [ref=f2e28]: Nueva coleccion urbana 2026
+        - listitem [ref=f2e29]: 20% off en segunda prenda
+        - listitem [ref=f2e30]: Envio gratis desde $180.000
+      - generic [aria-hidden] [ref=f2e31]:
+        - generic [ref=f2e32]: Nueva coleccion urbana 2026
+        - generic [ref=f2e33]: 20% off en segunda prenda
+        - generic [ref=f2e34]: Envio gratis desde $180.000
+    - generic [ref=f2e35]:
+      - generic [ref=f2e36]:
+        - heading "Catálogo" [level=2] [ref=f2e37]
+        - paragraph [ref=f2e38]: 16 productos
+      - generic [ref=f2e39]:
+        - generic [ref=f2e40]:
+          - generic [ref=f2e41]:
+            - generic [ref=f2e42]: Buscar en la tienda
+            - searchbox "Buscar en la tienda" [ref=f2e43]
+          - group "Categorías" [ref=f2e44]:
+            - button "Todo 16" [pressed] [ref=f2e45] [cursor=pointer]:
+              - text: Todo
+              - superscript: "16"
+            - button "Accesorios 5" [ref=f2e46] [cursor=pointer]:
+              - text: Accesorios
+              - superscript: "5"
+            - button "Buzos 2" [ref=f2e47] [cursor=pointer]:
+              - text: Buzos
+              - superscript: "2"
+            - button "Camisetas 3" [ref=f2e48] [cursor=pointer]:
+              - text: Camisetas
+              - superscript: "3"
+            - button "Chaquetas 3" [ref=f2e49] [cursor=pointer]:
+              - text: Chaquetas
+              - superscript: "3"
+            - button "Pantalones 3" [ref=f2e50] [cursor=pointer]:
+              - text: Pantalones
+              - superscript: "3"
+        - generic [ref=f2e51]:
+          - generic [ref=f2e52]:
+            - button "Opción" [ref=f2e54] [cursor=pointer]
+            - button "Precio" [ref=f2e58] [cursor=pointer]
+            - button "Publicados" [ref=f2e62] [cursor=pointer]
+            - button "Sólo novedades" [ref=f2e65] [cursor=pointer]
+          - button "Ordenar" [ref=f2e67] [cursor=pointer]
+      - generic [ref=f2e70]:
+        - article [ref=f2e71]:
+          - generic [ref=f2e72]:
+            - link [aria-hidden] [ref=f2e73] [cursor=pointer]:
+              - /url: /productos/28
+            - generic [ref=f2e75]: Agotado
+          - generic [ref=f2e76]:
+            - generic [aria-hidden] [ref=f2e77]: Nº 001
+            - paragraph [ref=f2e78]:
+              - generic [ref=f2e79]: $ 5.200
+          - heading [level=3] [ref=f2e80]:
+            - link "sfsdfs" [ref=f2e81] [cursor=pointer]:
+              - /url: /productos/28
+          - paragraph [ref=f2e82]: Accesorios · 2 opciones
+        - article [ref=f2e83]:
+          - generic [ref=f2e84]:
+            - link [aria-hidden] [ref=f2e85] [cursor=pointer]:
+              - /url: /productos/13
+            - generic [ref=f2e87]: Nuevo
+            - generic [ref=f2e90]:
+              - button "Agregar Chaqueta Puffer Cloud, opción M, al carrito" [ref=f2e91] [cursor=pointer]: M
+              - button "Agregar Chaqueta Puffer Cloud, opción L, al carrito" [ref=f2e92] [cursor=pointer]: L
+              - button "Agregar Chaqueta Puffer Cloud, opción XL, al carrito" [ref=f2e93] [cursor=pointer]: XL
+          - generic [ref=f2e94]:
+            - generic [aria-hidden] [ref=f2e95]: Nº 002
+            - paragraph [ref=f2e96]:
+              - generic [ref=f2e97]: $ 289.900
+          - heading [level=3] [ref=f2e98]:
+            - link "Chaqueta Puffer Cloud" [ref=f2e99] [cursor=pointer]:
+              - /url: /productos/13
+          - paragraph [ref=f2e100]: Chaquetas · 3 opciones
+        - article [ref=f2e101]:
+          - generic [ref=f2e102]:
+            - link [aria-hidden] [ref=f2e103] [cursor=pointer]:
+              - /url: /productos/11
+            - generic [ref=f2e105]: Nuevo
+            - generic [ref=f2e108]:
+              - button "Agregar Chaqueta Denim Stone, opción S, al carrito" [ref=f2e109] [cursor=pointer]: S
+              - button "Agregar Chaqueta Denim Stone, opción M, al carrito" [ref=f2e110] [cursor=pointer]: M
+              - button "Agregar Chaqueta Denim Stone, opción L, al carrito" [ref=f2e111] [cursor=pointer]: L
+          - generic [ref=f2e112]:
+            - generic [aria-hidden] [ref=f2e113]: Nº 003
+            - paragraph [ref=f2e114]:
+              - generic [ref=f2e115]: $ 239.900
+          - heading [level=3] [ref=f2e116]:
+            - link "Chaqueta Denim Stone" [ref=f2e117] [cursor=pointer]:
+              - /url: /productos/11
+          - paragraph [ref=f2e118]: Chaquetas · 3 opciones
+        - article [ref=f2e119]:
+          - generic [ref=f2e120]:
+            - link [aria-hidden] [ref=f2e121] [cursor=pointer]:
+              - /url: /productos/3
+            - generic [ref=f2e123]: Nuevo
+            - button "Agregar Gorra Snapback Royal, opción UNICA, al carrito" [ref=f2e127] [cursor=pointer]: UNICA
+          - generic [ref=f2e128]:
+            - generic [aria-hidden] [ref=f2e129]: Nº 004
+            - paragraph [ref=f2e130]:
+              - generic [ref=f2e131]: $ 72.900
+          - heading [level=3] [ref=f2e132]:
+            - link "Gorra Snapback Royal" [ref=f2e133] [cursor=pointer]:
+              - /url: /productos/3
+          - paragraph [ref=f2e134]: Accesorios
+        - article [ref=f2e135]:
+          - generic [ref=f2e136]:
+            - link [aria-hidden] [ref=f2e137] [cursor=pointer]:
+              - /url: /productos/1
+            - generic [ref=f2e139]: Nuevo
+            - button "Agregar Gorra Classic Black, opción UNICA, al carrito" [ref=f2e143] [cursor=pointer]: UNICA
+          - generic [ref=f2e144]:
+            - generic [aria-hidden] [ref=f2e145]: Nº 005
+            - paragraph [ref=f2e146]:
+              - generic [ref=f2e147]: $ 59.900
+          - heading [level=3] [ref=f2e148]:
+            - link "Gorra Classic Black" [ref=f2e149] [cursor=pointer]:
+              - /url: /productos/1
+          - paragraph [ref=f2e150]: Accesorios
+        - article [ref=f2e151]:
+          - generic [ref=f2e152]:
+            - link [aria-hidden] [ref=f2e153] [cursor=pointer]:
+              - /url: /productos/5
+            - generic [ref=f2e155]: Nuevo
+            - generic [ref=f2e158]:
+              - button "Agregar Camiseta Oversize Beige, opción S, al carrito" [ref=f2e159] [cursor=pointer]: S
+              - button "Agregar Camiseta Oversize Beige, opción M, al carrito" [ref=f2e160] [cursor=pointer]: M
+              - button "Agregar Camiseta Oversize Beige, opción L, al carrito" [ref=f2e161] [cursor=pointer]: L
+              - button "Agregar Camiseta Oversize Beige, opción XL, al carrito" [ref=f2e162] [cursor=pointer]: XL
+          - generic [ref=f2e163]:
+            - generic [aria-hidden] [ref=f2e164]: Nº 006
+            - paragraph [ref=f2e165]:
+              - generic [ref=f2e166]: $ 89.900
+          - heading [level=3] [ref=f2e167]:
+            - link "Camiseta Oversize Beige" [ref=f2e168] [cursor=pointer]:
+              - /url: /productos/5
+          - paragraph [ref=f2e169]: Camisetas · 4 opciones
+        - article [ref=f2e170]:
+          - generic [ref=f2e171]:
+            - link [aria-hidden] [ref=f2e172] [cursor=pointer]:
+              - /url: /productos/8
+            - generic [ref=f2e174]: Nuevo
+            - generic [ref=f2e177]:
+              - button "Agregar Pantalon Cargo Arena, opción 30, al carrito" [ref=f2e178] [cursor=pointer]: "30"
+              - button "Agregar Pantalon Cargo Arena, opción 32, al carrito" [ref=f2e179] [cursor=pointer]: "32"
+              - button "Agregar Pantalon Cargo Arena, opción 34, al carrito" [ref=f2e180] [cursor=pointer]: "34"
+              - button "Agregar Pantalon Cargo Arena, opción 36, al carrito" [ref=f2e181] [cursor=pointer]: "36"
+          - generic [ref=f2e182]:
+            - generic [aria-hidden] [ref=f2e183]: Nº 007
+            - paragraph [ref=f2e184]:
+              - generic [ref=f2e185]: $ 159.900
+          - heading [level=3] [ref=f2e186]:
+            - link "Pantalon Cargo Arena" [ref=f2e187] [cursor=pointer]:
+              - /url: /productos/8
+          - paragraph [ref=f2e188]: Pantalones · 4 opciones
+        - article [ref=f2e189]:
+          - generic [ref=f2e190]:
+            - link [aria-hidden] [ref=f2e191] [cursor=pointer]:
+              - /url: /productos/14
+            - generic [ref=f2e194]:
+              - button "Agregar Buzo Hoodie Granite, opción S, al carrito" [ref=f2e195] [cursor=pointer]: S
+              - button "Agregar Buzo Hoodie Granite, opción M, al carrito" [ref=f2e196] [cursor=pointer]: M
+              - button "Agregar Buzo Hoodie Granite, opción L, al carrito" [ref=f2e197] [cursor=pointer]: L
+              - button "Agregar Buzo Hoodie Granite, opción XL, al carrito" [ref=f2e198] [cursor=pointer]: XL
+          - generic [ref=f2e199]:
+            - generic [aria-hidden] [ref=f2e200]: Nº 008
+            - paragraph [ref=f2e201]:
+              - generic [ref=f2e202]: $ 149.900
+          - heading [level=3] [ref=f2e203]:
+            - link "Buzo Hoodie Granite" [ref=f2e204] [cursor=pointer]:
+              - /url: /productos/14
+          - paragraph [ref=f2e205]: Buzos · 4 opciones
+        - article [ref=f2e206]:
+          - generic [ref=f2e207]:
+            - link [aria-hidden] [ref=f2e208] [cursor=pointer]:
+              - /url: /productos/4
+            - button "Agregar Gorra Dad Hat Olive, opción UNICA, al carrito" [ref=f2e212] [cursor=pointer]: UNICA
+          - generic [ref=f2e213]:
+            - generic [aria-hidden] [ref=f2e214]: Nº 009
+            - paragraph [ref=f2e215]:
+              - generic [ref=f2e216]: $ 54.900
+          - heading [level=3] [ref=f2e217]:
+            - link "Gorra Dad Hat Olive" [ref=f2e218] [cursor=pointer]:
+              - /url: /productos/4
+          - paragraph [ref=f2e219]: Accesorios
+        - article [ref=f2e220]:
+          - generic [ref=f2e221]:
+            - link [aria-hidden] [ref=f2e222] [cursor=pointer]:
+              - /url: /productos/6
+            - generic [ref=f2e225]:
+              - button "Agregar Camiseta Graphic Noir, opción S, al carrito" [ref=f2e226] [cursor=pointer]: S
+              - button "Agregar Camiseta Graphic Noir, opción M, al carrito" [ref=f2e227] [cursor=pointer]: M
+              - button "Agregar Camiseta Graphic Noir, opción L, al carrito" [ref=f2e228] [cursor=pointer]: L
+              - button "Agregar Camiseta Graphic Noir, opción XL, al carrito" [ref=f2e229] [cursor=pointer]: XL
+          - generic [ref=f2e230]:
+            - generic [aria-hidden] [ref=f2e231]: Nº 010
+            - paragraph [ref=f2e232]:
+              - generic [ref=f2e233]: $ 109.900
+          - heading [level=3] [ref=f2e234]:
+            - link "Camiseta Graphic Noir" [ref=f2e235] [cursor=pointer]:
+              - /url: /productos/6
+          - paragraph [ref=f2e236]: Camisetas · 4 opciones
+        - article [ref=f2e237]:
+          - generic [ref=f2e238]:
+            - link [aria-hidden] [ref=f2e239] [cursor=pointer]:
+              - /url: /productos/10
+            - generic [ref=f2e242]:
+              - button "Agregar Jogger Essential Black, opción S, al carrito" [ref=f2e243] [cursor=pointer]: S
+              - button "Agregar Jogger Essential Black, opción M, al carrito" [ref=f2e244] [cursor=pointer]: M
+              - button "Agregar Jogger Essential Black, opción L, al carrito" [ref=f2e245] [cursor=pointer]: L
+              - button "Agregar Jogger Essential Black, opción XL, al carrito" [ref=f2e246] [cursor=pointer]: XL
+          - generic [ref=f2e247]:
+            - generic [aria-hidden] [ref=f2e248]: Nº 011
+            - paragraph [ref=f2e249]:
+              - generic [ref=f2e250]: $ 119.900
+          - heading [level=3] [ref=f2e251]:
+            - link "Jogger Essential Black" [ref=f2e252] [cursor=pointer]:
+              - /url: /productos/10
+          - paragraph [ref=f2e253]: Pantalones · 4 opciones
+        - article [ref=f2e254]:
+          - generic [ref=f2e255]:
+            - link [aria-hidden] [ref=f2e256] [cursor=pointer]:
+              - /url: /productos/15
+            - generic [ref=f2e259]:
+              - button "Agregar Buzo Crewneck Urban, opción M, al carrito" [ref=f2e260] [cursor=pointer]: M
+              - button "Agregar Buzo Crewneck Urban, opción L, al carrito" [ref=f2e261] [cursor=pointer]: L
+              - button "Agregar Buzo Crewneck Urban, opción XL, al carrito" [ref=f2e262] [cursor=pointer]: XL
+          - generic [ref=f2e263]:
+            - generic [aria-hidden] [ref=f2e264]: Nº 012
+            - paragraph [ref=f2e265]:
+              - generic [ref=f2e266]: $ 139.900
+          - heading [level=3] [ref=f2e267]:
+            - link "Buzo Crewneck Urban" [ref=f2e268] [cursor=pointer]:
+              - /url: /productos/15
+          - paragraph [ref=f2e269]: Buzos · 3 opciones
+        - article [ref=f2e270]:
+          - generic [ref=f2e271]:
+            - link [aria-hidden] [ref=f2e272] [cursor=pointer]:
+              - /url: /productos/12
+            - generic [ref=f2e275]:
+              - button "Agregar Chaqueta Bomber Olive, opción M, al carrito" [ref=f2e276] [cursor=pointer]: M
+              - button "Agregar Chaqueta Bomber Olive, opción L, al carrito" [ref=f2e277] [cursor=pointer]: L
+              - button "Agregar Chaqueta Bomber Olive, opción XL, al carrito" [ref=f2e278] [cursor=pointer]: XL
+          - generic [ref=f2e279]:
+            - generic [aria-hidden] [ref=f2e280]: Nº 013
+            - paragraph [ref=f2e281]:
+              - generic [ref=f2e282]: $ 219.900
+          - heading [level=3] [ref=f2e283]:
+            - link "Chaqueta Bomber Olive" [ref=f2e284] [cursor=pointer]:
+              - /url: /productos/12
+          - paragraph [ref=f2e285]: Chaquetas · 3 opciones
+        - article [ref=f2e286]:
+          - generic [ref=f2e287]:
+            - link [aria-hidden] [ref=f2e288] [cursor=pointer]:
+              - /url: /productos/2
+            - button "Agregar Gorra Trucker Sand, opción UNICA, al carrito" [ref=f2e292] [cursor=pointer]: UNICA
+          - generic [ref=f2e293]:
+            - generic [aria-hidden] [ref=f2e294]: Nº 014
+            - paragraph [ref=f2e295]:
+              - generic [ref=f2e296]: $ 65.900
+          - heading [level=3] [ref=f2e297]:
+            - link "Gorra Trucker Sand" [ref=f2e298] [cursor=pointer]:
+              - /url: /productos/2
+          - paragraph [ref=f2e299]: Accesorios
+        - article [ref=f2e300]:
+          - generic [ref=f2e301]:
+            - link [aria-hidden] [ref=f2e302] [cursor=pointer]:
+              - /url: /productos/7
+            - generic [ref=f2e305]:
+              - button "Agregar Camiseta Basica Blanca, opción S, al carrito" [ref=f2e306] [cursor=pointer]: S
+              - button "Agregar Camiseta Basica Blanca, opción M, al carrito" [ref=f2e307] [cursor=pointer]: M
+              - button "Agregar Camiseta Basica Blanca, opción L, al carrito" [ref=f2e308] [cursor=pointer]: L
+          - generic [ref=f2e309]:
+            - generic [aria-hidden] [ref=f2e310]: Nº 015
+            - paragraph [ref=f2e311]:
+              - generic [ref=f2e312]: $ 69.900
+          - heading [level=3] [ref=f2e313]:
+            - link "Camiseta Basica Blanca" [ref=f2e314] [cursor=pointer]:
+              - /url: /productos/7
+          - paragraph [ref=f2e315]: Camisetas · 3 opciones
+        - article [ref=f2e316]:
+          - generic [ref=f2e317]:
+            - link [aria-hidden] [ref=f2e318] [cursor=pointer]:
+              - /url: /productos/9
+            - generic [ref=f2e321]:
+              - button "Agregar Jeans Straight Mid Blue, opción 28, al carrito" [ref=f2e322] [cursor=pointer]: "28"
+              - button "Agregar Jeans Straight Mid Blue, opción 30, al carrito" [ref=f2e323] [cursor=pointer]: "30"
+              - button "Agregar Jeans Straight Mid Blue, opción 32, al carrito" [ref=f2e324] [cursor=pointer]: "32"
+              - button "Agregar Jeans Straight Mid Blue, opción 34, al carrito" [ref=f2e325] [cursor=pointer]: "34"
+              - button "Agregar Jeans Straight Mid Blue, opción 36, al carrito" [ref=f2e326] [cursor=pointer]: "36"
+          - generic [ref=f2e327]:
+            - generic [aria-hidden] [ref=f2e328]: Nº 016
+            - paragraph [ref=f2e329]:
+              - generic [ref=f2e330]: $ 179.900
+          - heading [level=3] [ref=f2e331]:
+            - link "Jeans Straight Mid Blue" [ref=f2e332] [cursor=pointer]:
+              - /url: /productos/9
+          - paragraph [ref=f2e333]: Pantalones · 5 opciones
+      - generic [ref=f2e334]:
+        - link "Banner izquierdo" [ref=f2e335] [cursor=pointer]:
+          - /url: "#catalogo"
+        - link "Banner derecho" [ref=f2e337] [cursor=pointer]:
+          - /url: "#catalogo"
+  - contentinfo [ref=f2e339]:
+    - generic [ref=f2e340]:
+      - generic [ref=f2e341]:
+        - generic [ref=f2e342]:
+          - paragraph [ref=f2e343]: Tienda demo de WebCaps — gorras y accesorios urbanos
+          - link "Escríbenos por WhatsApp" [ref=f2e344] [cursor=pointer]:
+            - /url: https://wa.me/51999888777
+        - navigation "Tienda" [ref=f2e347]:
+          - paragraph [ref=f2e348]: Tienda
+          - list [ref=f2e349]:
+            - listitem [ref=f2e350]:
+              - link "Catálogo" [ref=f2e351] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=f2e352]:
+              - link "Galería" [ref=f2e353] [cursor=pointer]:
+                - /url: /galerias
+            - listitem [ref=f2e354]:
+              - link "Nosotros" [ref=f2e355] [cursor=pointer]:
+                - /url: /conocenos
+            - listitem [ref=f2e356]:
+              - link "Carrito" [ref=f2e357] [cursor=pointer]:
+                - /url: /carrito
+            - listitem [ref=f2e358]:
+              - link "Empresas" [ref=f2e359] [cursor=pointer]:
+                - /url: https://webcaps.com/empresas
+        - generic [ref=f2e360]:
+          - paragraph [ref=f2e361]: Contacto
+          - list [ref=f2e362]:
+            - listitem [ref=f2e363]:
+              - link "+51 999 888 777" [ref=f2e364] [cursor=pointer]:
+                - /url: https://wa.me/51999888777
+            - listitem [ref=f2e365]:
+              - link "Instagram" [ref=f2e366] [cursor=pointer]:
+                - /url: https://instagram.com/webcaps
+            - listitem [ref=f2e369]:
+              - link "Facebook" [ref=f2e370] [cursor=pointer]:
+                - /url: https://facebook.com/webcaps
+            - listitem [ref=f2e373]:
+              - link "TikTok" [ref=f2e374] [cursor=pointer]:
+                - /url: https://tiktok.com/@webcaps
+            - listitem [ref=f2e377]:
+              - link "WhatsApp" [ref=f2e378] [cursor=pointer]:
+                - /url: https://wa.me/51999888777
+      - paragraph [aria-hidden] [ref=f2e381]: WebCaps Demo
+      - generic [ref=f2e382]:
+        - paragraph [ref=f2e383]: © 2026 WebCaps Demo
+        - generic [ref=f2e384]:
+          - link "Acceso tienda" [ref=f2e385] [cursor=pointer]:
+            - /url: /admin/login
+          - generic [ref=f2e386]: Hecho con Vendex

@@ -56,6 +56,8 @@ class HandleInertiaRequests extends Middleware
                 'logo' => $store?->logo_path ? asset('storage/'.$store->logo_path) : null,
                 'env' => config('app.env'),
                 'whatsapp' => $store?->telefono,
+                'descripcion' => $store?->descripcion,
+                'rubro' => in_array($store?->rubro, \App\Models\Store::RUBROS, true) ? $store->rubro : 'general',
                 'bg_color' => $bgColor,
                 'navbar_color' => $navbarColor,
                 'footer_color' => $footerColor,

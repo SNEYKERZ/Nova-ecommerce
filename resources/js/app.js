@@ -1,40 +1,46 @@
 import './bootstrap';
 import { createApp, h } from 'vue';
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, router } from '@inertiajs/vue3';
+import { useToast } from './composables/useToast';
 
-// Global error handler para capturar errores de renderizado
-window.addEventListener('error', (e) => {
-    console.error('[GLOBAL ERROR]', e.message, e.filename, e.lineno);
-    const errorDiv = document.createElement('div');
-    errorDiv.innerHTML = `<div style="padding:20px;background:#fee;color:#c00;font-size:14px;">
-        <strong>ERROR:</strong> ${e.message}<br>
-        <em>${e.filename}:${e.lineno}</em>
-    </div>`;
-    if (document.body) {
-        document.body.insertBefore(errorDiv, document.body.firstChild);
+// Nombre de la tienda actual (multi-tenant) para el <title>
+let storeName = import.meta.env.VITE_APP_NAME || 'Vendex';
+
+const syncSharedProps = (pageProps) => {
+    if (pageProps?.app?.name) storeName = pageProps.app.name;
+    // El token CSRF cambia tras login/logout: mantener la meta al día para fetch()
+    if (pageProps?.csrf_token) {
+        document.querySelector('meta[name="csrf-token"]')?.setAttribute('content', pageProps.csrf_token);
     }
-});
+};
 
-window.addEventListener('unhandledrejection', (e) => {
-    console.error('[UNHANDLED REJECTION]', e.reason);
-});
+if (import.meta.env.DEV) {
+    window.addEventListener('unhandledrejection', (e) => console.error('[unhandledrejection]', e.reason));
+}
 
 createInertiaApp({
-    title: (title) => `${title} - ${import.meta.env.VITE_APP_NAME || 'Vendex'}`,
+    title: (title) => (title ? `${title} · ${storeName}` : storeName),
 
     resolve: async (name) => {
         const pages = import.meta.glob('./pages/**/*.vue');
-        const page = await pages[`./pages/${name}.vue`]();
+        const loader = pages[`./pages/${name}.vue`];
+        if (!loader) throw new Error(`Página Inertia no encontrada: ${name}`);
+        const page = await loader();
         return page.default;
     },
 
     setup({ el, App, props, plugin }) {
-        const app = createApp({
-            render: () => h(App, props),
+        syncSharedProps(props.initialPage?.props);
+        router.on('navigate', (event) => syncSharedProps(event.detail.page.props));
+        // 419 (token CSRF caducado) fuera del login: el servidor vuelve a la página con errors.csrf
+        router.on('error', (event) => {
+            if (event.detail.errors?.csrf) useToast().error(event.detail.errors.csrf);
         });
 
+        const app = createApp({ render: () => h(App, props) });
+
         app.config.errorHandler = (err, instance, info) => {
-            console.error('[VUE ERROR]', err, info);
+            console.error('[Vue]', err, info);
         };
 
         app.use(plugin);
@@ -42,7 +48,8 @@ createInertiaApp({
     },
 
     progress: {
-        color: '#0f766e',
-        showSpinner: true,
+        color: '#c8102e',
+        delay: 200,
+        showSpinner: false,
     },
 });

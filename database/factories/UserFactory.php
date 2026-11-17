@@ -2,12 +2,14 @@
 
 namespace Database\Factories;
 
+use App\Models\Store;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
@@ -31,6 +33,28 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * Admin de una tienda.
+     */
+    public function admin(Store|int $store): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'admin',
+            'store_id' => $store instanceof Store ? $store->id : $store,
+        ]);
+    }
+
+    /**
+     * Super administrador (sin tienda).
+     */
+    public function superAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'super_admin',
+            'store_id' => null,
+        ]);
     }
 
     /**
